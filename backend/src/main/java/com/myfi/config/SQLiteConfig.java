@@ -31,6 +31,8 @@ public class SQLiteConfig {
         
         Properties properties = new Properties();
         properties.setProperty("hibernate.dialect", "org.hibernate.community.dialect.SQLiteDialect");
+        properties.setProperty("hibernate.hbm2ddl.auto", "update");
+        properties.setProperty("hibernate.show_sql", "true");
         em.setJpaProperties(properties);
         
         return em;
