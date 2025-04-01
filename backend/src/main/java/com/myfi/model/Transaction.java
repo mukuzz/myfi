@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "transactions")
@@ -34,20 +36,27 @@ public class Transaction {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     @Column(name = "category")
     private String category;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        if (transactionDate == null) {
-            transactionDate = createdAt;
-        }
-    }
+    @Column(name = "account_id")
+    private Long accountId;
+
+    @Column(name = "tag_id")
+    private Long tagId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Transaction parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Transaction> subTransactions = new ArrayList<>();
 
     public enum TransactionType {
-        INCOME,
-        EXPENSE,
-        TRANSFER
+        CREDIT,
+        DEBIT
     }
 } 
