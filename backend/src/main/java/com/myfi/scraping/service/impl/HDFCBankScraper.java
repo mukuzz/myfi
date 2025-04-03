@@ -110,7 +110,90 @@ public class HDFCBankScraper extends BankScrapper {
 
     @Override
     public List<Transaction> scrapeCreditCardTransactions(String cardNumber) {
-        throw new UnsupportedOperationException("Unimplemented method 'scrapeCreditCardTransactions'");
+        // Go to Home Page
+        page.waitForSelector("#web");
+        page.click("#web");
+        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+
+        // Hover over the webSave element
+        page.waitForSelector("#webPay");
+        page.hover("#webPay");
+        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+
+        // Click on Savings Accounts link using ng-mouseover attribute
+        page.waitForSelector("[ng-mouseover=\"getLinkClick($event,'/personal/pay/cards/credit-cards')\"]");
+        page.click("[ng-mouseover=\"getLinkClick($event,'/personal/pay/cards/credit-cards')\"]");
+        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+
+        // Wait for and click the account details link
+        // Wait for credit card section to load
+        page.waitForSelector("#goToCreditCardSection");
+        
+        // Find and click arrow for matching card number (last 4 digits)
+        String last4Digits = cardNumber.substring(cardNumber.length() - 4);
+        List<ElementHandle> cardRows = page.querySelectorAll(".panel-row");
+        for (ElementHandle row : cardRows) {
+            String cardText = row.querySelector(".f4.c2").textContent().replaceAll("\\s+", "");
+            if (cardText.endsWith(last4Digits)) {
+                ElementHandle arrow = row.querySelector("a.arrow");
+                if (arrow != null) {
+                    arrow.click();
+                    break;
+                }
+            }
+        }
+        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+
+        // Click on Unbilled Transactions section using ng-click attribute
+        page.waitForSelector("h4[ng-click='mainCtrl.showSearchBox = false; mainCtrl.hideSearchIcon = true'] .arrow-up");
+        page.click("h4[ng-click='mainCtrl.showSearchBox = false; mainCtrl.hideSearchIcon = true'] .arrow-up");
+        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+
+        // Extract transaction details from the table
+        List<Transaction> transactions = new ArrayList<>();
+
+        // Get all transaction rows
+        page.waitForSelector("ul[ng-repeat=\"transaction in mainCtrl.filteredItems.data\"]");
+        List<ElementHandle> rows = page
+                .querySelectorAll("ul[ng-repeat=\"transaction in mainCtrl.filteredItems.data\"]");
+
+        for (ElementHandle row : rows) {
+            // Extract date
+            String dateStr = row.querySelector("li:nth-child(2)").textContent();
+            LocalDateTime date = LocalDateTime.parse(dateStr + " 00:00",
+                    DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm"));
+
+            // Extract description
+            String description = row.querySelector("li.c2").textContent().trim();
+
+            // Extract amount
+            String amountStr = row.querySelector("decimal-casing").textContent()
+                    .replaceAll("[^0-9.]", ""); // Remove all non-numeric chars except decimal
+            BigDecimal amount = new BigDecimal(amountStr);
+
+            // Determine transaction type (DEBIT/CREDIT)
+            boolean isDebit = row.querySelector(".debit") != null;
+            Transaction.TransactionType type = isDebit ? Transaction.TransactionType.DEBIT
+                    : Transaction.TransactionType.CREDIT;
+
+            // Create transaction object
+            Transaction transaction = Transaction.builder()
+                    .amount(amount)
+                    .description(description)
+                    .type(type)
+                    .transactionDate(date)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            transactions.add(transaction);
+        }
+
+        return transactions;
     }
 
     @Override

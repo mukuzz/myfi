@@ -9,4 +9,5 @@ public class BankCredentials {
     private String bankName;
     private String username;
     private String password;
+    private String accountNumber;
 }
