@@ -3,6 +3,7 @@ package com.myfi.scraping.controller;
 import com.myfi.scraping.model.BankCredentials;
 import com.myfi.model.Transaction;
 import com.myfi.scraping.service.BankScrapper;
+import com.myfi.scraping.service.impl.HDFCBankScraper;
 import com.myfi.scraping.service.impl.ICICIBankScraper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,9 +20,16 @@ public class BankScrapingController {
 
     @PostMapping(value = "/scrape", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<Transaction>> scrapeTransactions(@RequestBody BankCredentials credentials) {
-        BankScrapper bankScrapper = new ICICIBankScraper();
+        BankScrapper bankScrapper;
+        if (credentials.getBankName().equals("ICICI")) {
+            bankScrapper = new ICICIBankScraper();
+        } else if (credentials.getBankName().equals("HDFC")) {
+            bankScrapper = new HDFCBankScraper();
+        } else {
+            throw new IllegalArgumentException("Invalid bank name");
+        }
         bankScrapper.login(credentials);
-        List<Transaction> res = bankScrapper.scrapeSavingsAccountTransactions("1234567890");
+        List<Transaction> res = bankScrapper.scrapeCreditCardTransactions(credentials.getAccountNumber());
         bankScrapper.logout();
         return ResponseEntity.ok(res);
     }
