@@ -118,7 +118,8 @@ public class HDFCBankScraper extends BankScrapper {
         // Navigate to HDFC login page
         page.navigate(HDFC_LOGIN_URL);
 
-        page.waitForLoadState(LoadState.LOAD);
+        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
         // Handle login
 
         Frame frame = page.frame("login_page");
