@@ -3,14 +3,19 @@ package com.myfi.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "transactions")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Transaction {
     
     @Id
@@ -53,7 +58,7 @@ public class Transaction {
     private Transaction parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Transaction> subTransactions = new ArrayList<>();
+    private List<Transaction> subTransactions;
 
     public enum TransactionType {
         CREDIT,
