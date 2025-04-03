@@ -3,7 +3,7 @@ package com.myfi.scraping.controller;
 import com.myfi.scraping.model.BankCredentials;
 import com.myfi.model.Transaction;
 import com.myfi.scraping.service.BankScrapper;
-import com.myfi.scraping.service.impl.HDFCBankScraper;
+import com.myfi.scraping.service.impl.ICICIBankScraper;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -19,7 +19,7 @@ public class BankScrapingController {
 
     @PostMapping(value = "/scrape", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<Transaction>> scrapeTransactions(@RequestBody BankCredentials credentials) {
-        BankScrapper bankScrapper = new HDFCBankScraper();
+        BankScrapper bankScrapper = new ICICIBankScraper();
         bankScrapper.login(credentials);
         List<Transaction> res = bankScrapper.scrapeSavingsAccountTransactions("1234567890");
         bankScrapper.logout();
