@@ -39,8 +39,8 @@ public class Account {
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "user_id")
-    private Long userId;
+    @Column(name = "account_number", nullable = false)
+    private String accountNumber;
 
     public enum AccountType {
         SAVINGS,

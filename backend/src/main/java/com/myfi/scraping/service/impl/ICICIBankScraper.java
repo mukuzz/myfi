@@ -6,22 +6,35 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.options.LoadState;
+import com.myfi.model.Account;
 import com.myfi.model.Transaction;
 import com.myfi.scraping.model.BankCredentials;
 import com.myfi.scraping.service.BankScrapper;
+import com.myfi.service.TransactionService;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class ICICIBankScraper extends BankScrapper {
+
+    @Autowired
+    private TransactionService transactionService;
 
     private static final String ICICI_LOGIN_URL = "https://infinity.icicibank.com/corp/AuthenticationController?FORMSGROUP_ID__=AuthenticationFG&__START_TRAN_FLAG__=Y&FG_BUTTONS__=LOAD&ACTION.LOAD=Y&AuthenticationFG.LOGIN_FLAG=1&BANK_ID=ICI";
 
-    public ICICIBankScraper() {
+    public ICICIBankScraper(TransactionService transactionService) {
         super(); // Assuming the default constructor of BankScrapper handles Playwright setup
+        this.transactionService = transactionService;
     }
 
     @Override
-    public List<Transaction> scrapeSavingsAccountTransactions(String accountNumber) {
+    public List<Transaction> scrapeBankTransactions(Account account) {
+        String accountNumber = account.getAccountNumber();
+        log.info("Starting savings account scraping for ICICI account number: {}", accountNumber);
 
         page.waitForLoadState(LoadState.DOMCONTENTLOADED);
         page.waitForLoadState(LoadState.NETWORKIDLE);
@@ -99,16 +112,23 @@ public class ICICIBankScraper extends BankScrapper {
                 .type(type)
                 .transactionDate(date)
                 .createdAt(LocalDateTime.now())
+                .accountId(account.getId())
                 .build();
+
+            // Save transaction to database
+            transactionService.createTransaction(transaction);
 
             transactions.add(transaction);
         }
 
+        log.info("Finished savings account scraping for ICICI account number: {}. Found {} transactions.", accountNumber, transactions.size());
         return transactions;
     }
 
     @Override
-    public List<Transaction> scrapeCreditCardTransactions(String cardNumber) {
+    public List<Transaction> scrapeCreditCardTransactions(Account account) {
+        String cardNumber = account.getAccountNumber();
+        log.warn("ICICI Credit Card scraping not implemented yet for card number: {}", cardNumber);
         return new ArrayList<>();
     }
 
