@@ -2,9 +2,12 @@ package com.myfi.scraping.service.impl;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
+import com.myfi.model.Account;
 import com.myfi.model.Transaction;
 import com.myfi.scraping.model.BankCredentials;
 import com.myfi.scraping.service.BankScrapper;
+import com.myfi.service.TransactionService;
+
 import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.nio.file.Paths;
@@ -16,14 +19,19 @@ import java.util.List;
 @Slf4j
 public class HDFCBankScraper extends BankScrapper {
 
+    private final TransactionService transactionService;
+
     private static final String HDFC_LOGIN_URL = "https://netbanking.hdfcbank.com/netbanking/";
 
-    public HDFCBankScraper() {
+    public HDFCBankScraper(TransactionService transactionService) {
         super();
+        this.transactionService = transactionService;
     }
 
     @Override
-    public List<Transaction> scrapeSavingsAccountTransactions(String accountNumber) {
+    public List<Transaction> scrapeBankTransactions(Account account) {
+        String accountNumber = account.getAccountNumber();
+        log.info("Starting savings account scraping for HDFC account number: {}", accountNumber);
 
         // Go to Home Page
         page.waitForSelector("#web");
@@ -95,11 +103,16 @@ public class HDFCBankScraper extends BankScrapper {
                     .type(type)
                     .transactionDate(date)
                     .createdAt(LocalDateTime.now())
+                    .accountId(account.getId())
                     .build();
+
+            // Save transaction to database
+            transactionService.createTransaction(transaction);
 
             transactions.add(transaction);
         }
 
+        log.info("Finished savings account scraping for HDFC account number: {}. Found {} transactions.", accountNumber, transactions.size());
         return transactions;
     }
 
@@ -109,7 +122,10 @@ public class HDFCBankScraper extends BankScrapper {
     }
 
     @Override
-    public List<Transaction> scrapeCreditCardTransactions(String cardNumber) {
+    public List<Transaction> scrapeCreditCardTransactions(Account account) {
+        String cardNumber = account.getAccountNumber();
+        log.info("Starting credit card scraping for HDFC card number ending in: {}", cardNumber.substring(cardNumber.length() - 4));
+
         // Go to Home Page
         page.waitForSelector("#web");
         page.click("#web");
@@ -188,11 +204,16 @@ public class HDFCBankScraper extends BankScrapper {
                     .type(type)
                     .transactionDate(date)
                     .createdAt(LocalDateTime.now())
+                    .accountId(account.getId())
                     .build();
+            
+            // Save transaction to database
+            transactionService.createTransaction(transaction);
 
             transactions.add(transaction);
         }
 
+        log.info("Finished credit card scraping for HDFC card number ending in: {}. Found {} transactions.", last4Digits, transactions.size());
         return transactions;
     }
 

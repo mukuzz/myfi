@@ -8,10 +8,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import org.springframework.util.DigestUtils;
+
 @Entity
-@Table(name = "transactions")
+@Table(name = "transactions",
+       uniqueConstraints = { @UniqueConstraint(columnNames = {"uniqueKey"}) }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -60,8 +65,28 @@ public class Transaction {
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Transaction> subTransactions;
 
+    @Column(nullable = false, length = 64)
+    private String uniqueKey;
+
     public enum TransactionType {
         CREDIT,
         DEBIT
+    }
+
+    public void generateUniqueKey() {
+        if (amount == null || description == null || type == null || transactionDate == null || accountId == null) {
+            throw new IllegalStateException("Cannot generate unique key: one or more required fields are null.");
+        }
+        String formattedDate = transactionDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        String formattedAmount = amount.stripTrailingZeros().toPlainString();
+        
+        String keyData = String.join("|", 
+            formattedAmount,
+            description, 
+            type.name(), 
+            formattedDate,
+            accountId.toString()
+        );
+        this.uniqueKey = DigestUtils.md5DigestAsHex(keyData.getBytes());
     }
 } 
