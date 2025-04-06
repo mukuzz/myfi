@@ -29,12 +29,12 @@ function TransactionDetailsCard({ transaction, tagMap, onTagClick }: Transaction
       <hr className="border-t border-border my-2" />
 
       <div className="flex justify-between items-center mt-1">
-        <span className={`text-xl font-semibold ${transaction.type === 'DEBIT' ? 'text-error' : 'text-success'}`}>
+        <span className={`whitespace-nowrap text-xl font-semibold ${transaction.type === 'DEBIT' ? 'text-error' : 'text-success'}`}>
           {transaction.type === 'DEBIT' ? '-' : '+'}
           <LuIndianRupee className="inline h-4 w-4 relative -top-[1px]" />
           {transaction.amount.toLocaleString('en-IN')}
         </span>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 whitespace-nowrap overflow-hidden text-ellipsis">
           <button
             onClick={() => onTagClick && onTagClick(transaction)}
             disabled={!onTagClick}

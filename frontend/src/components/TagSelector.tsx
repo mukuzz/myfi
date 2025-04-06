@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiX, FiSearch, FiTag, FiInfo } from 'react-icons/fi';
-import { LuIndianRupee } from 'react-icons/lu';
+import { FiSearch } from 'react-icons/fi';
 import { Tag, Transaction } from '../types';
 import { getTagIcon } from '../utils/transactionUtils';
 import { buildTagHierarchy, HierarchicalTag } from '../utils/tagUtils';
@@ -87,38 +86,25 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
         />
       </div>
 
-      <div className="flex-grow overflow-y-auto px-5 pt-1 space-y-5 no-scrollbar pb-4">
-        <div className="flex items-center py-1 cursor-pointer" onClick={() => handleSelect(null)}>
-          <input
-            type="radio"
-            name="tagSelection"
-            id="tag-none"
-            checked={selectedTagId === null}
-            onChange={() => handleSelect(null)}
-            className="mr-3 h-5 w-5 text-primary border-border focus:ring-ring focus:ring-offset-background bg-secondary flex-shrink-0"
-          />
-          <label htmlFor="tag-none" className="text-sm font-medium text-muted-foreground italic cursor-pointer">
-            No Tag
-          </label>
-        </div>
+      <div className="flex-grow overflow-y-auto pt-1 space-y-5 no-scrollbar pb-4">
 
         {filteredHierarchy.map(parentTag => (
-          <div key={parentTag.id} className="py-1">
-            <div className="flex items-center mb-3">
+          <div key={parentTag.id}>
+            <div className="flex items-center mb-3 px-5">
               <input
                 type="radio"
                 name="tagSelection"
                 id={`tag-${parentTag.id}`}
                 checked={selectedTagId === parentTag.id || parentTag.children.some(c => c.id === selectedTagId)}
                 readOnly
-                className="mr-3 h-5 w-5 text-primary border-border focus:ring-ring focus:ring-offset-background bg-secondary flex-shrink-0"
+                className="mr-3 h-5 w-5 text-primary border-border focus:ring-ring focus:ring-offset-background bg-secondary flex-shrink-0 accent-secondary-foreground"
               />
               <label htmlFor={`tag-${parentTag.id}`} onClick={() => handleSelect(parentTag.id)} className="text-base font-semibold text-foreground cursor-pointer">
                 {parentTag.name}
               </label>
             </div>
 
-            <div className="flex items-center space-x-2 overflow-x-auto whitespace-nowrap pl-8 pb-2 no-scrollbar">
+            <div className="flex items-center space-x-2 overflow-x-auto whitespace-nowrap px-5 no-scrollbar">
               {parentTag.children && parentTag.children.map(childTag => {
                 const isSelected = selectedTagId === childTag.id;
                 const icon = getTagIcon(childTag.name);
@@ -128,7 +114,7 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
                     onClick={() => handleSelect(childTag.id)}
                     className={`px-2.5 py-1.5 rounded-full text-xs transition-colors duration-150 flex items-center space-x-1.5 flex-shrink-0
                       ${isSelected
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'bg-secondary-foreground text-primary-foreground'
                         : 'bg-muted text-secondary-foreground hover:bg-border'}
                     `}
                   >
@@ -143,7 +129,7 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
                 onClick={() => handleSelect(parentTag.id)}
                 className={`px-2.5 py-1.5 rounded-full text-xs transition-colors duration-150 flex items-center space-x-1.5 flex-shrink-0
                   ${selectedTagId === parentTag.id
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-secondary-foreground text-primary-foreground'
                     : 'bg-muted text-secondary-foreground hover:bg-border'}
                 `}
               >
@@ -154,6 +140,20 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
             </div>
           </div>
         ))}
+
+        <div className="flex items-center py-1 cursor-pointer px-5" onClick={() => handleSelect(null)}>
+          <input
+            type="radio"
+            name="tagSelection"
+            id="tag-none"
+            checked={selectedTagId === null}
+            onChange={() => handleSelect(null)}
+            className="mr-3 h-5 w-5 text-primary border-border focus:ring-ring focus:ring-offset-background bg-secondary flex-shrink-0 accent-secondary-foreground"
+          />
+          <label htmlFor="tag-none" className="text-sm font-medium text-muted-foreground italic cursor-pointer">
+            No Tag
+          </label>
+        </div>
       </div>
     </>
   );

@@ -40,7 +40,7 @@ function App() {
           {/* Desktop: Side-by-side Content Area */}
           <main className="flex-grow overflow-y-auto flex flex-row space-x-4">
             <div className="flex-1 p-2 overflow-y-auto"><Home /></div>
-            <div className="flex-1 overflow-y-auto max-w-[350px]"><Transactions /></div>
+            <div className="flex-1 overflow-y-auto max-w-[400px]"><Transactions /></div>
           </main>
           {/* No BottomNav on desktop */}
         </>
