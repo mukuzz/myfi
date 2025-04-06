@@ -86,25 +86,25 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
         />
       </div>
 
-      <div className="flex-grow overflow-y-auto pt-1 space-y-5 no-scrollbar pb-4">
+      <div className="flex-grow overflow-y-auto pt-1 space-y-5 no-scrollbar p-4">
 
         {filteredHierarchy.map(parentTag => (
-          <div key={parentTag.id}>
-            <div className="flex items-center mb-3 px-5">
+          <div className="flex flex-col bg-secondary rounded-xl" key={parentTag.id}>
+            <div className="flex items-center mb-1 w-full cursor-pointer" onClick={() => handleSelect(parentTag.id)}>
               <input
                 type="radio"
                 name="tagSelection"
                 id={`tag-${parentTag.id}`}
                 checked={selectedTagId === parentTag.id || parentTag.children.some(c => c.id === selectedTagId)}
                 readOnly
-                className="mr-3 h-5 w-5 text-primary border-border focus:ring-ring focus:ring-offset-background bg-secondary flex-shrink-0 accent-secondary-foreground"
+                className="mr-3 ml-4 h-5 w-5 text-primary border-border focus:ring-ring focus:ring-offset-background bg-secondary accent-secondary-foreground cursor-pointer"
               />
-              <label htmlFor={`tag-${parentTag.id}`} onClick={() => handleSelect(parentTag.id)} className="text-base font-semibold text-foreground cursor-pointer">
+              <label htmlFor={`tag-${parentTag.id}`} className="text-base pt-4 pb-4 font-semibold text-foreground flex-grow cursor-pointer">
                 {parentTag.name}
               </label>
             </div>
 
-            <div className="flex items-center space-x-2 overflow-x-auto whitespace-nowrap px-5 no-scrollbar">
+            <div className="flex items-center space-x-2 overflow-x-auto whitespace-nowrap px-5 no-scrollbar pb-4">
               {parentTag.children && parentTag.children.map(childTag => {
                 const isSelected = selectedTagId === childTag.id;
                 const icon = getTagIcon(childTag.name);
@@ -112,13 +112,13 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
                   <button
                     key={childTag.id}
                     onClick={() => handleSelect(childTag.id)}
-                    className={`px-2.5 py-1.5 rounded-full text-xs transition-colors duration-150 flex items-center space-x-1.5 flex-shrink-0
+                    className={`px-3 py-2 rounded-full text-xs transition-colors duration-150 flex items-center space-x-1.5 flex-shrink-0
                       ${isSelected
                         ? 'bg-secondary-foreground text-primary-foreground'
-                        : 'bg-muted text-secondary-foreground hover:bg-border'}
+                        : 'bg-input text-secondary-foreground hover:bg-border'}
                     `}
                   >
-                    {icon && <span className="w-4 h-4">{icon}</span>}
+                    {/* {icon && <span className="w-4 h-4">{icon}</span>} */}
                     <span>{childTag.name}</span>
                   </button>
                 );
@@ -130,7 +130,7 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
                 className={`px-2.5 py-1.5 rounded-full text-xs transition-colors duration-150 flex items-center space-x-1.5 flex-shrink-0
                   ${selectedTagId === parentTag.id
                     ? 'bg-secondary-foreground text-primary-foreground'
-                    : 'bg-muted text-secondary-foreground hover:bg-border'}
+                    : 'bg-input text-secondary-foreground hover:bg-border'}
                 `}
               >
                 <span>Others</span>
