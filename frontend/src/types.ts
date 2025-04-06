@@ -11,9 +11,14 @@ export interface Transaction {
   type: 'CREDIT' | 'DEBIT';
   transactionDate: string; // Dates usually come as ISO strings
   tagId?: number; // Use tagId (optional if a transaction might not have a tag)
-  accountId: number; // Added based on backend model
+  accountId: number | null;
   counterParty?: string; // Added from backend model
   note?: string; // Add optional note field
+  parentId?: number | null; // Optional parent ID for subtransactions
+  subTransactions?: Transaction[]; // Optional list of subtransactions
+  uniqueKey: string;
+  notes?: string | null; // Add notes field
+  excludeFromAccounting?: boolean; // Add excludeFromAccounting field
   // Add other fields if needed, e.g., createdAt, updatedAt
 }
 

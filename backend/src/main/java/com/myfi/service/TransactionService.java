@@ -76,6 +76,8 @@ public class TransactionService {
                     existingTransaction.setTagId(transactionDetails.getTagId());
                     existingTransaction.setAccountId(transactionDetails.getAccountId()); // Allow updating account linkage
                     existingTransaction.setCounterParty(transactionDetails.getCounterParty()); // Update counterParty
+                    existingTransaction.setNotes(transactionDetails.getNotes()); // Update notes
+                    existingTransaction.setExcludeFromAccounting(transactionDetails.isExcludeFromAccounting()); // Update excludeFromAccounting
                     // Add other updatable fields as needed
                     existingTransaction.setUpdatedAt(LocalDateTime.now());
 

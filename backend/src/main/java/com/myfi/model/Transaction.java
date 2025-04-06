@@ -58,6 +58,12 @@ public class Transaction {
     @Column(name = "tag_id")
     private Long tagId;
 
+    @Column(name = "notes")
+    private String notes;
+
+    @Column(name = "exclude_from_accounting", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean excludeFromAccounting;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private Transaction parent;
