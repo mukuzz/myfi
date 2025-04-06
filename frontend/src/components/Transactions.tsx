@@ -5,6 +5,7 @@ import { groupTransactionsByMonth } from '../utils/transactionUtils';
 import TagSelector from './TagSelector';
 import { useTransactionData } from '../hooks/useTransactionData';
 import TransactionDetailsCard from './TransactionDetailsCard';
+import DraggableBottomSheet from './DraggableBottomSheet';
 
 function Transactions() {
   const {
@@ -94,15 +95,15 @@ function Transactions() {
         )}
       </div>
 
-      <TagSelector 
-        isOpen={isTagSelectorOpen}
-        onClose={closeTagSelector}
-        onSelectTag={handleUpdateTag}
-        availableTags={tags}
-        tagMap={tagMap}
-        currentTagId={selectedTransaction?.tagId}
-        transaction={selectedTransaction ?? undefined}
-      />
+      <DraggableBottomSheet isOpen={isTagSelectorOpen} onClose={closeTagSelector}>
+        <TagSelector 
+          onSelectTag={handleUpdateTag}
+          availableTags={tags}
+          tagMap={tagMap}
+          currentTagId={selectedTransaction?.tagId}
+          transaction={selectedTransaction ?? undefined}
+        />
+      </DraggableBottomSheet>
     </div>
   );
 }
