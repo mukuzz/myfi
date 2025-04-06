@@ -27,4 +27,17 @@ export interface Tag {
   id: number;
   name: string;
   parentTagId?: number | null; // Optional parent ID
+}
+
+// Define the Account type based on the Java model
+export interface Account {
+  id: number;
+  name: string;
+  type: 'SAVINGS' | 'CREDIT_CARD' | 'LOAN' | 'STOCKS' | 'FIXED_DEPOSIT' | 'MUTUAL_FUND' | 'CRYPTO';
+  balance: number;
+  currency: string;
+  createdAt: string;
+  updatedAt?: string;
+  isActive: boolean;
+  accountNumber: string;
 } 
