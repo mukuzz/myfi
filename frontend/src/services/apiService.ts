@@ -1,4 +1,4 @@
-import { Transaction } from '../types';
+import { Transaction, Account } from '../types';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://192.168.1.5:8080/api/v1'; // Use environment variable or default
 
@@ -32,6 +32,63 @@ export const updateTransaction = async (
     }
     console.error("Failed to update transaction:", errorMessage);
     throw new Error(`Failed to update transaction: ${errorMessage}`);
+  }
+
+  return response.json();
+};
+
+/**
+ * Fetches all accounts from the server.
+ * @returns An array of account objects.
+ * @throws Error if the fetch fails.
+ */
+export const fetchAccounts = async (): Promise<Account[]> => {
+  const response = await fetch(`${API_BASE_URL}/accounts`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {
+      // Ignore if response body is not JSON or empty
+    }
+    console.error("Failed to fetch accounts:", errorMessage);
+    throw new Error(`Failed to fetch accounts: ${errorMessage}`);
+  }
+
+  return response.json();
+};
+
+/**
+ * Fetches a specific account by ID.
+ * @param id The ID of the account to fetch.
+ * @returns The account data.
+ * @throws Error if the fetch fails.
+ */
+export const fetchAccountById = async (id: number): Promise<Account> => {
+  const response = await fetch(`${API_BASE_URL}/accounts/${id}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {
+      // Ignore if response body is not JSON or empty
+    }
+    console.error(`Failed to fetch account with ID ${id}:`, errorMessage);
+    throw new Error(`Failed to fetch account: ${errorMessage}`);
   }
 
   return response.json();
