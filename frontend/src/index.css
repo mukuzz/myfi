@@ -23,3 +23,7 @@ code {
 .no-scrollbar {
   scrollbar-width: none;
 }
+
+html {
+  font-size: 18px; /* Increase base font size from default 16px */
+}

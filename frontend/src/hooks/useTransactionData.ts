@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Transaction, Tag } from '../types';
 
+const API_BASE_URL = process.env.API_BASE_URL || 'http://192.168.1.5:8080'; // Default for safety
+
 export function useTransactionData() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -20,8 +22,8 @@ export function useTransactionData() {
     setError(null);
     try {
       const [transactionsResponse, tagsResponse] = await Promise.all([
-        fetch('http://localhost:8080/api/v1/transactions'),
-        fetch('http://localhost:8080/api/v1/tags')
+        fetch(`${API_BASE_URL}/api/v1/transactions`),
+        fetch(`${API_BASE_URL}/api/v1/tags`)
       ]);
 
       if (!transactionsResponse.ok) {
@@ -64,7 +66,7 @@ export function useTransactionData() {
     );
 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/transactions/${transactionId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/transactions/${transactionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
