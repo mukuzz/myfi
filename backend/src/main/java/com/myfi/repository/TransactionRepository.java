@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
     List<Transaction> findByTransactionDateBetween(LocalDateTime start, LocalDateTime end);
     List<Transaction> findByType(Transaction.TransactionType type);
-    List<Transaction> findByCategory(String category);
+    List<Transaction> findByTagId(Long tagId);
     List<Transaction> findByAccountId(Long accountId);
 
     // Method to find by the generated unique key
