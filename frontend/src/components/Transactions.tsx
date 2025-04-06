@@ -6,6 +6,7 @@ import TagSelector from './TagSelector';
 import { useTransactionData } from '../hooks/useTransactionData';
 import TransactionDetailsCard from './TransactionDetailsCard';
 import DraggableBottomSheet from './DraggableBottomSheet';
+import TransactionDetailView from './TransactionDetailView';
 
 function Transactions() {
   const {
@@ -19,26 +20,39 @@ function Transactions() {
   } = useTransactionData();
 
   const [isTagSelectorOpen, setIsTagSelectorOpen] = useState<boolean>(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransactionForTag, setSelectedTransactionForTag] = useState<Transaction | null>(null);
+  const [isDetailViewOpen, setIsDetailViewOpen] = useState<boolean>(false);
+  const [selectedTransactionForDetail, setSelectedTransactionForDetail] = useState<Transaction | null>(null);
 
   const groupedTransactions = useMemo(() => {
     if (!transactions || transactions.length === 0) return {};
     return groupTransactionsByMonth(transactions);
   }, [transactions]);
 
-  const openTagSelector = (tx: Transaction) => {
-    setSelectedTransaction(tx);
+  const openTagSelector = (tx: Transaction, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setSelectedTransactionForTag(tx);
     setIsTagSelectorOpen(true);
   };
 
   const closeTagSelector = () => {
     setIsTagSelectorOpen(false);
-    setSelectedTransaction(null);
+    setSelectedTransactionForTag(null);
   };
 
   const handleUpdateTag = async (newTagId: number | null) => {
-    if (!selectedTransaction) return;
-    await updateTransactionTag(selectedTransaction, newTagId);
+    if (!selectedTransactionForTag) return;
+    await updateTransactionTag(selectedTransactionForTag, newTagId);
+  };
+
+  const openDetailView = (tx: Transaction) => {
+    setSelectedTransactionForDetail(tx);
+    setIsDetailViewOpen(true);
+  };
+
+  const closeDetailView = () => {
+    setIsDetailViewOpen(false);
+    setSelectedTransactionForDetail(null);
   };
 
   return (
@@ -84,6 +98,7 @@ function Transactions() {
                         <TransactionDetailsCard 
                           transaction={tx} 
                           tagMap={tagMap} 
+                          onCardClick={openDetailView}
                           onTagClick={openTagSelector}
                         />
                       </li>
@@ -100,10 +115,22 @@ function Transactions() {
           onSelectTag={handleUpdateTag}
           availableTags={tags}
           tagMap={tagMap}
-          currentTagId={selectedTransaction?.tagId}
-          transaction={selectedTransaction ?? undefined}
+          currentTagId={selectedTransactionForTag?.tagId}
+          transaction={selectedTransactionForTag ?? undefined}
         />
       </DraggableBottomSheet>
+
+      {/* Detail View Bottom Sheet (New) */}
+      <DraggableBottomSheet isOpen={isDetailViewOpen} onClose={closeDetailView}>
+        {selectedTransactionForDetail && (
+          <TransactionDetailView 
+            transaction={selectedTransactionForDetail} 
+            tagMap={tagMap}
+            onTagClick={openTagSelector}
+          />
+        )}
+      </DraggableBottomSheet>
+
     </div>
   );
 }

@@ -13,6 +13,7 @@ export interface Transaction {
   tagId?: number; // Use tagId (optional if a transaction might not have a tag)
   accountId: number; // Added based on backend model
   counterParty?: string; // Added from backend model
+  note?: string; // Add optional note field
   // Add other fields if needed, e.g., createdAt, updatedAt
 }
 
