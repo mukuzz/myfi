@@ -218,7 +218,7 @@ function DraggableBottomSheet({
         </div>
 
         {/* Content Area */}
-        <div className="flex-grow overflow-hidden flex flex-col">
+        <div className="flex-grow overflow-hidden flex flex-col rounded-t-xl">
           {children}
         </div>
       </div>
