@@ -13,23 +13,23 @@ interface TransactionDetailsCardProps {
 
 function TransactionDetailsCard({ transaction, tagMap, onTagClick }: TransactionDetailsCardProps) {
   const currentTagName = transaction.tagId ? tagMap.get(transaction.tagId) : undefined;
-  const currentTagIcon = currentTagName ? getTagIcon(currentTagName) : <FiTag />;
+  const currentTagIcon = currentTagName ? getTagIcon(currentTagName) : <FiTag className="text-muted-foreground"/>;
 
   return (
-    <div className="bg-gray-800 p-3 rounded-xl shadow flex-shrink-0">
+    <div className="bg-secondary p-3 rounded-xl shadow flex-shrink-0">
       <div className="flex justify-between items-center mb-2">
-        <span className="text-gray-300 text-sm font-medium flex-grow mr-2 truncate">
+        <span className="text-foreground text-base font-medium flex-grow mr-2 truncate">
           {transaction.counterParty || transaction.description}
         </span>
-        <span className="text-gray-400 text-xs flex-shrink-0">
+        <span className="text-muted-foreground text-xs flex-shrink-0">
           {formatDate(transaction.transactionDate)}
         </span>
       </div>
 
-      <hr className="border-t border-gray-700 my-2" />
+      <hr className="border-t border-border my-2" />
 
       <div className="flex justify-between items-center mt-1">
-        <span className={`text-lg font-semibold ${transaction.type === 'DEBIT' ? 'text-red-400' : 'text-green-400'}`}>
+        <span className={`text-xl font-semibold ${transaction.type === 'DEBIT' ? 'text-error' : 'text-success'}`}>
           {transaction.type === 'DEBIT' ? '-' : '+'}
           <LuIndianRupee className="inline h-4 w-4 relative -top-[1px]" />
           {transaction.amount.toLocaleString('en-IN')}
@@ -38,7 +38,8 @@ function TransactionDetailsCard({ transaction, tagMap, onTagClick }: Transaction
           <button
             onClick={() => onTagClick && onTagClick(transaction)}
             disabled={!onTagClick}
-            className={`text-xs ${currentTagName ? 'bg-gray-700' : 'border border-dashed border-gray-600'} text-gray-300 px-2 py-1 rounded-full flex items-center space-x-1 ${onTagClick ? 'cursor-pointer hover:bg-gray-600 transition-colors' : 'cursor-default'}`}
+            className={`text-sm text-secondary-foreground px-2 py-1.5 rounded-lg flex items-center space-x-1 bg-input 
+                      ${onTagClick ? 'cursor-pointer hover:bg-border transition-colors' : 'cursor-default'}`}
           >
             {currentTagName ? (
               <>
@@ -46,12 +47,12 @@ function TransactionDetailsCard({ transaction, tagMap, onTagClick }: Transaction
                 <span>{currentTagName}</span>
               </>
             ) : (
-              <FiTag className="text-gray-500"/>
+              <FiTag className="text-muted-foreground"/>
             )}
           </button>
           {transaction.accountId && (
-            <span className="text-blue-400 flex items-center" title={`Account ID: ${transaction.accountId}`}>
-              <FiCreditCard size={14}/>
+            <span className="text-primary flex items-center" title={`Account ID: ${transaction.accountId}`}>
+              <FiCreditCard size={24}/>
             </span>
           )}
         </div>

@@ -20,15 +20,15 @@ const tabIcons: Record<Tab, React.ReactElement> = {
 
 function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
   return (
-    <nav className="border-t border-gray-700 bg-gray-900 sticky bottom-0">
+    <nav className="border-t border-border bg-background sticky bottom-0 pb-4">
       <div className="flex justify-around">
         {(Object.keys(tabIcons) as Tab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex-1 py-3 flex flex-col items-center justify-center focus:outline-none ${
-              activeTab === tab ? 'text-white' : 'text-gray-500'
-            } hover:text-white`}
+              activeTab === tab ? 'text-primary' : 'text-muted-foreground'
+            } hover:text-primary`}
             aria-label={tab} // Accessibility
           >
             {tabIcons[tab]}
