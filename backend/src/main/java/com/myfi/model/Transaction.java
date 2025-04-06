@@ -49,8 +49,8 @@ public class Transaction {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "category")
-    private String category;
+    @Column(name = "counter_party")
+    private String counterParty;
 
     @Column(name = "account_id")
     private Long accountId;

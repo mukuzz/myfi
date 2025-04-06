@@ -73,10 +73,29 @@ public class TransactionService {
                     existingTransaction.setDescription(transactionDetails.getDescription());
                     existingTransaction.setType(transactionDetails.getType());
                     existingTransaction.setTransactionDate(transactionDetails.getTransactionDate());
-                    existingTransaction.setCategory(transactionDetails.getCategory());
+                    existingTransaction.setTagId(transactionDetails.getTagId());
                     existingTransaction.setAccountId(transactionDetails.getAccountId()); // Allow updating account linkage
+                    existingTransaction.setCounterParty(transactionDetails.getCounterParty()); // Update counterParty
                     // Add other updatable fields as needed
                     existingTransaction.setUpdatedAt(LocalDateTime.now());
+
+                    // Regenerate unique key after updates
+                    try {
+                        existingTransaction.generateUniqueKey();
+                    } catch (IllegalStateException e) {
+                        // Handle cases where key generation fails due to missing fields
+                        // This might indicate a data integrity issue if mandatory fields become null during update
+                        System.err.println("Error regenerating unique key during update: " + e.getMessage());
+                        // Depending on requirements, you might throw an exception
+                        throw new RuntimeException("Failed to regenerate unique key during transaction update.", e);
+                    }
+
+                    // Optional: Re-check for duplicates based on the new key if strict uniqueness after update is required
+                    // Optional<Transaction> duplicateCheck = transactionRepository.findByUniqueKey(existingTransaction.getUniqueKey());
+                    // if (duplicateCheck.isPresent() && !duplicateCheck.get().getId().equals(existingTransaction.getId())) {
+                    //     throw new IllegalStateException("Update would result in a duplicate transaction.");
+                    // }
+
                     return transactionRepository.save(existingTransaction);
                 });
     }
