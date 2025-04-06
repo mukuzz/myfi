@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiCoffee, FiHome as FiHouse, FiMapPin, FiTag, FiSearch } from 'react-icons/fi';
+import { FiCoffee, FiHome as FiHouse, FiMapPin, FiSearch } from 'react-icons/fi';
 import { Transaction } from '../types';
 import { formatMonthYear } from './dateUtils';
 

@@ -56,7 +56,7 @@ function Transactions() {
         <input
           type="text"
           placeholder="Search transactions"
-          className="w-full bg-secondary border border-input rounded-lg pl-10 pr-4 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary"
+          className="w-full bg-secondary border border-input rounded-lg pl-10 pr-4 py-1 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary"
         />
       </div>
 
