@@ -27,8 +27,8 @@ function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex-1 py-3 flex flex-col items-center justify-center focus:outline-none ${
-              activeTab === tab ? 'text-primary' : 'text-muted-foreground'
-            } hover:text-primary`}
+              activeTab === tab ? 'accent-secondary-foreground' : 'text-muted-foreground'
+            }`}
             aria-label={tab} // Accessibility
           >
             {tabIcons[tab]}

@@ -94,4 +94,34 @@ export const fetchAccountById = async (id: number): Promise<Account> => {
   return response.json();
 };
 
+/**
+ * Creates a new account on the server.
+ * @param accountData The data for the new account.
+ * @returns The created account data from the server.
+ * @throws Error if the creation fails.
+ */
+export const createAccount = async (accountData: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>): Promise<Account> => {
+  const response = await fetch(`${API_BASE_URL}/accounts`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(accountData),
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {
+      // Ignore if response body is not JSON or empty
+    }
+    console.error("Failed to create account:", errorMessage);
+    throw new Error(`Failed to create account: ${errorMessage}`);
+  }
+
+  return response.json();
+};
+
 // Add other API functions here as needed (e.g., fetchTransactions, createTransaction, deleteTransaction) 

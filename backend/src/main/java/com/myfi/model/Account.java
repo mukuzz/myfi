@@ -42,6 +42,10 @@ public class Account {
     @Column(name = "account_number", nullable = false)
     private String accountNumber;
 
+    // Store the ID of the parent account directly
+    @Column(name = "parent_account_id")
+    private Long parentAccountId;
+
     public enum AccountType {
         SAVINGS,
         CREDIT_CARD,
