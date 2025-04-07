@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Account } from '../types';
 import { createAccount } from '../services/apiService';
-import { FiX } from 'react-icons/fi';
 
 interface AddAccountViewProps {
   onAccountCreated: (newAccount: Account) => void;
@@ -40,7 +39,9 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
     setIsLoading(true);
     setError(null);
 
-    const balanceValue = parseFloat(balance);
+    // Handle empty balance input as 0
+    const balanceValue = balance.trim() === '' ? 0 : parseFloat(balance);
+
     if (isNaN(balanceValue)) {
         setError('Please enter a valid number for the balance.');
         setIsLoading(false);
@@ -142,7 +143,6 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
                 id="balance"
                 value={balance}
                 onChange={(e) => setBalance(e.target.value)}
-                required
                 step="0.01"
                 className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
                 placeholder="0.00"
