@@ -4,7 +4,7 @@ import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
 import com.myfi.model.Account;
 import com.myfi.model.Transaction;
-import com.myfi.scraping.model.BankCredentials;
+import com.myfi.scraping.model.AccountCredentials;
 import com.myfi.scraping.service.BankScrapper;
 import com.myfi.service.TransactionService;
 
@@ -218,45 +218,51 @@ public class HDFCBankScraper extends BankScrapper {
     }
 
     @Override
-    public boolean login(BankCredentials credentials) {
-        // Navigate to HDFC login page
-        page.navigate(HDFC_LOGIN_URL);
+    public boolean login(AccountCredentials credentials) {
+        log.info("Attempting HDFC login for user: {}", credentials.getUsername());
+        try {
+            // Navigate to HDFC login page
+            page.navigate(HDFC_LOGIN_URL);
 
-        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
-        // Handle login
+            page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+            // Handle login
 
-        Frame frame = page.frame("login_page");
-        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+            Frame frame = page.frame("login_page");
+            page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+            page.waitForLoadState(LoadState.NETWORKIDLE);
 
-        frame.waitForSelector(".form-control");
-        frame.fill(".form-control", credentials.getUsername());
-        frame.waitForSelector(".login-btn");
-        frame.click(".login-btn");
-        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
-        page.screenshot(new Page.ScreenshotOptions()
-                .setPath(Paths.get("storage/hdfc-login-" + System.currentTimeMillis() + ".png"))
-                .setFullPage(true));
+            frame.waitForSelector(".form-control");
+            frame.fill(".form-control", credentials.getUsername());
+            frame.waitForSelector(".login-btn");
+            frame.click(".login-btn");
+            page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+            page.screenshot(new Page.ScreenshotOptions()
+                    .setPath(Paths.get("storage/hdfc-login-" + System.currentTimeMillis() + ".png"))
+                    .setFullPage(true));
 
-        page.waitForSelector("input[type='password']");
-        page.fill("input[type='password']", credentials.getPassword());
-        page.waitForSelector("input[type='checkbox']#secureAccessID");
-        page.click("input[type='checkbox']#secureAccessID");
-        page.screenshot(new Page.ScreenshotOptions()
-                .setPath(Paths.get("storage/hdfc-login-" + System.currentTimeMillis() + ".png"))
-                .setFullPage(true));
-        page.click("#loginBtn");
+            page.waitForSelector("input[type='password']");
+            page.fill("input[type='password']", credentials.getPassword());
+            page.waitForSelector("input[type='checkbox']#secureAccessID");
+            page.click("input[type='checkbox']#secureAccessID");
+            page.screenshot(new Page.ScreenshotOptions()
+                    .setPath(Paths.get("storage/hdfc-login-" + System.currentTimeMillis() + ".png"))
+                    .setFullPage(true));
+            page.click("#loginBtn");
 
-        // Wait for navigation and handle any security questions if present
-        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
-        page.screenshot(new Page.ScreenshotOptions()
-                .setPath(Paths.get("storage/hdfc-login-" + System.currentTimeMillis() + ".png"))
-                .setFullPage(true));
+            // Wait for navigation and handle any security questions if present
+            page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+            page.screenshot(new Page.ScreenshotOptions()
+                    .setPath(Paths.get("storage/hdfc-login-" + System.currentTimeMillis() + ".png"))
+                    .setFullPage(true));
 
-        return true;
+            return true;
+        } catch (Exception e) {
+            log.error("Login failed for HDFC", e);
+            return false;
+        }
     }
 
     @Override

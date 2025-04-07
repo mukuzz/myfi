@@ -12,7 +12,7 @@ import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.options.LoadState;
 import com.myfi.model.Account;
 import com.myfi.model.Transaction;
-import com.myfi.scraping.model.BankCredentials;
+import com.myfi.scraping.model.AccountCredentials;
 import com.myfi.scraping.service.BankScrapper;
 import com.myfi.service.TransactionService;
 
@@ -133,7 +133,7 @@ public class ICICIBankScraper extends BankScrapper {
     }
 
     @Override
-    public boolean login(BankCredentials credentials) {
+    public boolean login(AccountCredentials credentials) {
         // Navigate to login page
         page.navigate(ICICI_LOGIN_URL);
         page.waitForLoadState(LoadState.DOMCONTENTLOADED);
