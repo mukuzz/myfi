@@ -9,7 +9,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.myfi.model.Account;
 import com.myfi.model.Transaction;
-import com.myfi.scraping.model.BankCredentials;
+import com.myfi.scraping.model.AccountCredentials;
 
 public abstract class BankScrapper {
 
@@ -29,7 +29,7 @@ public abstract class BankScrapper {
 
     public abstract List<Transaction> scrapeBankTransactions(Account account);
     public abstract List<Transaction> scrapeCreditCardTransactions(Account account);
-    public abstract boolean login(BankCredentials credentials);
+    public abstract boolean login(AccountCredentials credentials);
     public abstract void logout();
     public abstract String getBankName();
 }

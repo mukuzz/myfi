@@ -1,7 +1,7 @@
 package com.myfi.scraping.controller;
 
 import com.myfi.model.Account;
-import com.myfi.scraping.model.BankCredentials;
+import com.myfi.scraping.model.AccountCredentials;
 import com.myfi.model.Transaction;
 import com.myfi.scraping.service.BankScrapper;
 import com.myfi.scraping.service.impl.HDFCBankScraper;
@@ -11,6 +11,7 @@ import com.myfi.service.TransactionService;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -30,66 +31,103 @@ public class AccountScrapingController {
     @Autowired
     private TransactionService transactionService;
     
-    @PostMapping(value = "/scrape/bank", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<Transaction>> scrapeBankTransactions(@RequestBody BankCredentials credentials) {
-        return scrape(credentials, ScrapeType.BANK);
+    // Removed separate /scrape/bank and /scrape/credit-card endpoints
+    // @PostMapping(value = "/scrape/bank", consumes = MediaType.APPLICATION_JSON_VALUE)
+    // public ResponseEntity<List<Transaction>> scrapeBankTransactions(@RequestBody List<BankCredentials> credentialsList) {
+    //     return scrape(credentialsList);
+    // }
+
+    // @PostMapping(value = "/scrape/credit-card", consumes = MediaType.APPLICATION_JSON_VALUE)
+    // public ResponseEntity<List<Transaction>> scrapeCreditCardTransactions(@RequestBody List<BankCredentials> credentialsList) {
+    //     return scrape(credentialsList);
+    // }
+
+    // Single endpoint for scraping
+    @PostMapping(value = "/scrape", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Transaction>> scrapeAccounts(@RequestBody List<AccountCredentials> credentialsList) {
+        return scrape(credentialsList);
     }
 
-    @PostMapping(value = "/scrape/credit-card", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<Transaction>> scrapeCreditCardTransactions(@RequestBody BankCredentials credentials) {
-        return scrape(credentials, ScrapeType.CREDIT_CARD);
-    }
+    private ResponseEntity<List<Transaction>> scrape(List<AccountCredentials> credentialsList) {
+        List<Transaction> allTransactions = new ArrayList<>();
+        boolean hasErrors = false;
 
-    private ResponseEntity<List<Transaction>> scrape(BankCredentials credentials, ScrapeType scrapeType) {
-        Optional<Account> optionalAccount = accountService.getAccountByAccountNumber(credentials.getAccountNumber());
+        for (AccountCredentials credentials : credentialsList) {
+            Optional<Account> optionalAccount = accountService.getAccountByAccountNumber(credentials.getAccountNumber());
 
-        if (optionalAccount.isEmpty()) {
-            log.warn("Account not found for account number: {}", credentials.getAccountNumber());
-            return ResponseEntity.notFound().build();
-        }
-
-        Account account = optionalAccount.get();
-        String accountNumberToScrape = account.getAccountNumber();
-
-        BankScrapper bankScrapper;
-        if (credentials.getBankName().equalsIgnoreCase("ICICI")) {
-            bankScrapper = new ICICIBankScraper(transactionService);
-        } else if (credentials.getBankName().equalsIgnoreCase("HDFC")) {
-            bankScrapper = new HDFCBankScraper(transactionService);
-        } else {
-            log.error("Invalid bank name provided: {}", credentials.getBankName());
-            return ResponseEntity.badRequest().body(Collections.emptyList());
-        }
-
-        try {
-            log.info("Attempting login for account number: {}", accountNumberToScrape);
-            bankScrapper.login(credentials);
-
-            List<Transaction> res;
-            if (scrapeType == ScrapeType.BANK) {
-                log.info("Scraping BANK transactions for account number: {}", accountNumberToScrape);
-                res = bankScrapper.scrapeBankTransactions(account);
-                log.info("BANK scraping successful for account number: {}. Found {} transactions.", accountNumberToScrape, res.size());
-            } else {
-                log.info("Scraping CREDIT CARD transactions for account number: {}", accountNumberToScrape);
-                res = bankScrapper.scrapeCreditCardTransactions(account);
-                log.info("CREDIT CARD scraping successful for account number: {}. Found {} transactions.", accountNumberToScrape, res.size());
+            if (optionalAccount.isEmpty()) {
+                log.warn("Account not found for account number: {}", credentials.getAccountNumber());
+                hasErrors = true; // Mark error as account wasn't found for this credential
+                continue; 
             }
 
-            bankScrapper.logout();
-            return ResponseEntity.ok(res);
-        } catch (Exception e) {
-            log.error("Error during {} scraping for account number {}: {}", scrapeType, accountNumberToScrape, e.getMessage(), e);
+            Account account = optionalAccount.get();
+            Account.AccountType accountType = account.getType(); // Get account type
+            String accountNumberToScrape = account.getAccountNumber();
+            BankScrapper bankScrapper = null;
+            String determinedScrapeType = "UNKNOWN"; // For logging
+
             try {
-                bankScrapper.logout();
-            } catch (Exception logoutEx) {
-                log.error("Error during logout after {} scraping failure for account number {}: {}", scrapeType, accountNumberToScrape, logoutEx.getMessage(), logoutEx);
-            }
-            return ResponseEntity.internalServerError().body(Collections.emptyList());
-        }
-    }
+                // Instantiate Scraper based on bank name
+                if (credentials.getBankName().equalsIgnoreCase("ICICI")) {
+                    bankScrapper = new ICICIBankScraper(transactionService);
+                } else if (credentials.getBankName().equalsIgnoreCase("HDFC")) {
+                    bankScrapper = new HDFCBankScraper(transactionService);
+                } else {
+                    log.error("Invalid bank name provided: {}", credentials.getBankName());
+                    hasErrors = true; 
+                    continue;
+                }
 
-    private enum ScrapeType {
-        BANK, CREDIT_CARD
+                log.info("Attempting login for account number: {}", accountNumberToScrape);
+                bankScrapper.login(credentials);
+
+                List<Transaction> res = Collections.emptyList();
+
+                // Determine scraping action based on AccountType
+                if (accountType == Account.AccountType.SAVINGS) { // Assuming SAVINGS is the primary bank type
+                    determinedScrapeType = "BANK";
+                    log.info("Scraping BANK transactions for account number: {} (Type: {})", accountNumberToScrape, accountType);
+                    res = bankScrapper.scrapeBankTransactions(account);
+                    log.info("BANK scraping successful for account number: {}. Found {} transactions.", accountNumberToScrape, res.size());
+                } else if (accountType == Account.AccountType.CREDIT_CARD) {
+                    determinedScrapeType = "CREDIT_CARD";
+                    log.info("Scraping CREDIT CARD transactions for account number: {} (Type: {})", accountNumberToScrape, accountType);
+                    res = bankScrapper.scrapeCreditCardTransactions(account);
+                    log.info("CREDIT CARD scraping successful for account number: {}. Found {} transactions.", accountNumberToScrape, res.size());
+                } else {
+                    // Handle other account types if necessary, e.g., log a warning or skip
+                    log.warn("Unsupported account type ({}) for scraping account number: {}. Skipping.", accountType, accountNumberToScrape);
+                    // Optionally mark as error or just skip
+                    // hasErrors = true; 
+                    // Continue without adding transactions, effectively skipping this one for scraping.
+                }
+                
+                allTransactions.addAll(res);
+
+            } catch (Exception e) {
+                log.error("Error during {} scraping for account number {}: {}", determinedScrapeType, accountNumberToScrape, e.getMessage(), e);
+                hasErrors = true; 
+            } finally {
+                if (bankScrapper != null) {
+                    try {
+                        bankScrapper.logout();
+                    } catch (Exception logoutEx) {
+                        // Log error during logout, potentially using determinedScrapeType if known
+                        log.error("Error during logout after {} scraping attempt for account number {}: {}", determinedScrapeType, accountNumberToScrape, logoutEx.getMessage(), logoutEx);
+                        hasErrors = true;
+                    }
+                }
+            }
+        }
+
+        // Decide on the final response status based on whether any errors occurred
+        if (hasErrors && allTransactions.isEmpty()) {
+            return ResponseEntity.internalServerError().body(Collections.emptyList());
+        } else if (hasErrors) {
+             return ResponseEntity.status(207).body(allTransactions); // Multi-Status
+        } else {
+            return ResponseEntity.ok(allTransactions);
+        }
     }
 }
