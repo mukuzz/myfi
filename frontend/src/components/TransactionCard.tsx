@@ -5,25 +5,25 @@ import { Transaction } from '../types';
 import { formatDate } from '../utils/dateUtils';
 import { getTagIcon } from '../utils/transactionUtils';
 
-interface TransactionDetailsCardProps {
+interface TransactionCardProps {
   transaction: Transaction;
   tagMap: Map<number, string>;
   onTagClick?: (transaction: Transaction, event: React.MouseEvent) => void;
   onCardClick?: (transaction: Transaction) => void;
 }
 
-function TransactionDetailsCard({ transaction, tagMap, onTagClick, onCardClick }: TransactionDetailsCardProps) {
+function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: TransactionCardProps) {
   const currentTagName = transaction.tagId ? tagMap.get(transaction.tagId) : undefined;
-  const currentTagIcon = currentTagName ? getTagIcon(currentTagName) : <FiTag className="text-muted-foreground"/>;
+  const currentTagIcon = currentTagName ? getTagIcon(currentTagName) : <FiTag className="text-muted-foreground" />;
 
   return (
-    <button 
-      className={`bg-secondary p-3 rounded-xl shadow flex-shrink-0 w-full text-left transition-colors ${onCardClick ? 'hover:bg-muted cursor-pointer' : 'cursor-default'}`} 
+    <button
+      className={`bg-secondary p-3 rounded-xl shadow flex-shrink-0 w-full text-left transition-colors ${onCardClick ? 'hover:bg-muted cursor-pointer' : 'cursor-default'}`}
       onClick={() => onCardClick && onCardClick(transaction)}
       disabled={!onCardClick}
     >
       <div className="flex justify-between items-center mb-2 pointer-events-none">
-        <span className="text-foreground text-base font-medium flex-grow mr-2 truncate">
+        <span className="text-muted-foreground text-base font-medium flex-grow mr-2 truncate">
           {transaction.counterParty || transaction.description}
         </span>
         <span className="text-muted-foreground text-xs flex-shrink-0">
@@ -34,10 +34,12 @@ function TransactionDetailsCard({ transaction, tagMap, onTagClick, onCardClick }
       <hr className="border-t border-border my-2 pointer-events-none" />
 
       <div className="flex justify-between items-center mt-1 pointer-events-none">
-        <span className={`whitespace-nowrap text-xl font-semibold ${transaction.type === 'DEBIT' ? 'text-error' : 'text-success'}`}>
-          {transaction.type === 'DEBIT' ? '-' : '+'}
-          <LuIndianRupee className="inline h-4 w-4 relative -top-[1px]" />
-          {transaction.amount.toLocaleString('en-IN')}
+        <span className={`whitespace-nowrap flex items-center`}>
+          <span className={`text-sm text-muted-foreground`}>{transaction.type === 'DEBIT' ? '-' : '+'}
+            <LuIndianRupee className="inline h-4 w-4 relative -top-[1px] " />
+          </span>
+
+          <span className={`text-xl font-semibold accent-foreground`}>{transaction.amount.toLocaleString('en-IN')}</span>
         </span>
         <div className="flex items-center space-x-2 whitespace-nowrap overflow-hidden text-ellipsis pointer-events-auto">
           <button
@@ -52,12 +54,12 @@ function TransactionDetailsCard({ transaction, tagMap, onTagClick, onCardClick }
                 <span>{currentTagName}</span>
               </>
             ) : (
-              <FiTag className="text-muted-foreground"/>
+              <FiTag className="text-muted-foreground" />
             )}
           </button>
           {transaction.accountId && (
             <span className="text-primary flex items-center pointer-events-none" title={`Account ID: ${transaction.accountId}`}>
-              <FiCreditCard size={24}/>
+              <FiCreditCard size={24} />
             </span>
           )}
         </div>
@@ -66,4 +68,4 @@ function TransactionDetailsCard({ transaction, tagMap, onTagClick, onCardClick }
   );
 }
 
-export default TransactionDetailsCard; 
+export default TransactionCard; 

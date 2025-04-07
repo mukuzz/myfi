@@ -3,7 +3,7 @@ import { FiTag, FiCreditCard } from 'react-icons/fi'; // Example icons, Add FiSa
 import { TbArrowsCross } from 'react-icons/tb'; // Import the icon
 import { Transaction } from '../types';
 import { getTagIcon } from '../utils/transactionUtils';
-import TransactionDetailsCard from './TransactionDetailsCard';
+import TransactionCard from './TransactionCard';
 import { updateTransaction } from '../services/apiService'; // Adjust the path as needed
 
 // A simple debounce function (consider using lodash.debounce for production)
@@ -125,7 +125,7 @@ function TransactionDetailView({
             </div>
             {/* Header Section */}
             <div className="mb-6">
-                <TransactionDetailsCard transaction={transaction} tagMap={tagMap} onTagClick={onTagClick} />
+                <TransactionCard transaction={transaction} tagMap={tagMap} onTagClick={onTagClick} />
             </div>
 
             {/* Account Chip Section */}

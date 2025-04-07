@@ -4,7 +4,7 @@ import { Transaction } from '../types';
 import { groupTransactionsByMonth } from '../utils/transactionUtils';
 import TagSelector from './TagSelector';
 import { useTransactionData } from '../hooks/useTransactionData';
-import TransactionDetailsCard from './TransactionDetailsCard';
+import TransactionCard from './TransactionCard';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import TransactionDetailView from './TransactionDetailView';
 
@@ -95,7 +95,7 @@ function Transactions() {
                         key={tx.id} 
                         className="rounded-lg"
                       >
-                        <TransactionDetailsCard 
+                        <TransactionCard 
                           transaction={tx} 
                           tagMap={tagMap} 
                           onCardClick={openDetailView}
