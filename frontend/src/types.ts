@@ -40,4 +40,5 @@ export interface Account {
   updatedAt?: string;
   isActive: boolean;
   accountNumber: string;
+  parentAccountId?: number | null; // Optional parent account ID
 } 
