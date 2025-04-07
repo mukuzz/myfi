@@ -18,7 +18,7 @@ function TransactionDetailsCard({ transaction, tagMap, onTagClick, onCardClick }
 
   return (
     <button 
-      className={`bg-secondary p-3 rounded-xl shadow flex-shrink-0 w-full text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background transition-colors ${onCardClick ? 'hover:bg-muted cursor-pointer' : 'cursor-default'}`} 
+      className={`bg-secondary p-3 rounded-xl shadow flex-shrink-0 w-full text-left transition-colors ${onCardClick ? 'hover:bg-muted cursor-pointer' : 'cursor-default'}`} 
       onClick={() => onCardClick && onCardClick(transaction)}
       disabled={!onCardClick}
     >

@@ -9,7 +9,7 @@ module.exports = {
         background: '#ffffff', // White background
         foreground: '#1f2937', // Dark gray text
         primary: {
-          DEFAULT: '#3b82f6', // Blue-500
+          DEFAULT: '#4b5563', // Gray-600
           foreground: '#ffffff', // White text on primary
         },
         secondary: {
@@ -21,12 +21,12 @@ module.exports = {
           foreground: '#6b7280', // Gray-500
         },
         accent: {
-          DEFAULT: '#10b981', // Emerald-500
+          DEFAULT: '#22c55e', // Emerald-500
           foreground: '#ffffff', // White text on accent
         },
         border: '#e5e7eb', // Gray-200
         input: '#e5e7eb', // Gray-200 (for input borders)
-        ring: '#93c5fd', // Blue-300 (for focus rings)
+        ring: '#4b5563', // Gray-600 (for focus rings)
         error: {
           DEFAULT: '#ef4444', // Red-500
           foreground: '#ffffff', // White text on error bg

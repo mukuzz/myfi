@@ -141,16 +141,16 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
           </div>
         ))}
 
-        <div className="flex items-center py-1 cursor-pointer px-5" onClick={() => handleSelect(null)}>
+        <div className="flex items-center cursor-pointer" onClick={() => handleSelect(null)}>
           <input
             type="radio"
             name="tagSelection"
             id="tag-none"
             checked={selectedTagId === null}
             onChange={() => handleSelect(null)}
-            className="mr-3 h-5 w-5 text-primary border-border focus:ring-ring focus:ring-offset-background bg-secondary flex-shrink-0 accent-secondary-foreground"
+            className="mr-3 ml-4 h-5 w-5 text-primary border-border focus:ring-ring focus:ring-offset-background bg-secondary accent-secondary-foreground cursor-pointer"
           />
-          <label htmlFor="tag-none" className="text-sm font-medium text-muted-foreground italic cursor-pointer">
+          <label htmlFor="tag-none" className="text-base pt-4 pb-4 font-semibold text-foreground flex-grow cursor-pointer">
             No Tag
           </label>
         </div>

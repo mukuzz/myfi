@@ -24,7 +24,6 @@ function App() {
   };
 
   return (
-    // Apply dark theme background to the whole app
     <div className="flex flex-col h-screen bg-background">
       {isMobile ? (
         <>
