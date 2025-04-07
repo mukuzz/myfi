@@ -3,7 +3,7 @@ import { FiSearch } from 'react-icons/fi';
 import { Tag, Transaction } from '../types';
 import { getTagIcon } from '../utils/transactionUtils';
 import { buildTagHierarchy, HierarchicalTag } from '../utils/tagUtils';
-import TransactionDetailsCard from './TransactionDetailsCard';
+import TransactionCard from './TransactionCard';
 
 interface TagSelectorProps {
   onSelectTag: (tagId: number | null) => void;
@@ -62,7 +62,7 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
 
       {transaction && (
         <div className="rounded-xl shadow overflow-hidden bg-secondary p-1 mb-4 flex-shrink-0 mx-4">
-          <TransactionDetailsCard transaction={transaction} tagMap={tagMap} />
+          <TransactionCard transaction={transaction} tagMap={tagMap} />
           {transaction.description && (
             <div className="bg-secondary p-2 mt-1">
               <div className="flex justify-between items-start">
