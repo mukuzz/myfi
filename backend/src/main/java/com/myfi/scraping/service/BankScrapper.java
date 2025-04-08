@@ -21,7 +21,8 @@ public abstract class BankScrapper {
         Playwright playwright = Playwright.create();
         try {
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-            .setHeadless(false));
+            .setHeadless(false)
+            .setTimeout(120000)); // 2 minutes timeout
             BrowserContext context = browser.newContext();
             this.page = context.newPage();
         } catch (Exception e) {

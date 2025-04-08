@@ -129,12 +129,12 @@ function TransactionDetailView({
             </div>
 
             {/* Account Chip Section */}
-            {transaction.accountId && (
+            {transaction.account && (
                 <div className="flex justify-between mb-6 w-full px-4 bg-secondary rounded-xl p-2">
                     Account
                     <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-secondary-foreground">
                         <FiCreditCard className="mr-2 h-4 w-4" />
-                        {transaction.accountId}
+                        {transaction.account.id}
                     </div>
                 </div>
             )}

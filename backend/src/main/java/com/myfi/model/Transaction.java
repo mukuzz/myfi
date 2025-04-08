@@ -12,6 +12,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.util.DigestUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "transactions",
@@ -21,6 +23,7 @@ import org.springframework.util.DigestUtils;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Transaction {
     
     @Id
@@ -52,8 +55,9 @@ public class Transaction {
     @Column(name = "counter_party")
     private String counterParty;
 
-    @Column(name = "account_id")
-    private Long accountId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account", nullable = false)
+    private Account account;
 
     @Column(name = "tag_id")
     private Long tagId;
@@ -66,6 +70,7 @@ public class Transaction {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
+    @JsonIgnore
     private Transaction parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -80,7 +85,7 @@ public class Transaction {
     }
 
     public void generateUniqueKey() {
-        if (amount == null || description == null || type == null || transactionDate == null || accountId == null) {
+        if (amount == null || description == null || type == null || transactionDate == null || account == null || account.getId() == null) {
             throw new IllegalStateException("Cannot generate unique key: one or more required fields are null.");
         }
         String formattedDate = transactionDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -91,7 +96,7 @@ public class Transaction {
             description, 
             type.name(), 
             formattedDate,
-            accountId.toString()
+            account.getId().toString()
         );
         this.uniqueKey = DigestUtils.md5DigestAsHex(keyData.getBytes());
     }

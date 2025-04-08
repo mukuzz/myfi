@@ -5,10 +5,15 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "accounts")
 @Data
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Account {
     
     @Id
@@ -45,6 +50,11 @@ public class Account {
     // Store the ID of the parent account directly
     @Column(name = "parent_account_id")
     private Long parentAccountId;
+
+    // Added relationship
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<Transaction> transactions;
 
     public enum AccountType {
         SAVINGS,

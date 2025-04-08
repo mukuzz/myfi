@@ -57,8 +57,8 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: Trans
               <FiTag className="text-muted-foreground" />
             )}
           </button>
-          {transaction.accountId && (
-            <span className="text-primary flex items-center pointer-events-none" title={`Account ID: ${transaction.accountId}`}>
+          {transaction.account && (
+            <span className="text-primary flex items-center pointer-events-none" title={`Account ID: ${transaction.account.id}`}>
               <FiCreditCard size={24} />
             </span>
           )}
