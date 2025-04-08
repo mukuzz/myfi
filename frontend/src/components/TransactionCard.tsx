@@ -17,10 +17,17 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: Trans
   const currentTagIcon = currentTagName ? getTagIcon(currentTagName) : <FiTag className="text-muted-foreground" />;
 
   return (
-    <button
+    <div
+      role={onCardClick ? "button" : undefined}
+      tabIndex={onCardClick ? 0 : undefined}
       className={`bg-secondary p-3 rounded-xl shadow flex-shrink-0 w-full text-left transition-colors ${onCardClick ? 'hover:bg-muted cursor-pointer' : 'cursor-default'}`}
       onClick={() => onCardClick && onCardClick(transaction)}
-      disabled={!onCardClick}
+      onKeyDown={(e) => {
+        if (onCardClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onCardClick(transaction);
+        }
+      }}
     >
       <div className="flex justify-between items-center mb-2 pointer-events-none">
         <span className="text-muted-foreground text-base font-medium flex-grow mr-2 truncate">
@@ -64,7 +71,7 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: Trans
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
