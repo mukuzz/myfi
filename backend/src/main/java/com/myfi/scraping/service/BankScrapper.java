@@ -17,15 +17,19 @@ public abstract class BankScrapper {
 
     private Page page;
 
+    private Playwright playwright;
+    private Browser browser;
+    private BrowserContext context;
+
     public Page getPage() {
         if (page == null) {
-            Playwright playwright = Playwright.create();
+            playwright = Playwright.create();
             try {
-            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-            .setHeadless(false)
-            .setTimeout(120000)); // 2 minutes timeout
-            BrowserContext context = browser.newContext();
-            this.page = context.newPage();
+                browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                    .setHeadless(false)
+                    .setTimeout(120000)); // 2 minutes timeout
+                context = browser.newContext();
+                this.page = context.newPage();
             } catch (Exception e) {
                 throw new RuntimeException("Error initializing browser", e);
             }
@@ -37,6 +41,21 @@ public abstract class BankScrapper {
         if (page != null) {
             page.close();
             page = null;
+            
+            if (context != null) {
+                context.close();
+                context = null;
+            }
+            
+            if (browser != null) {
+                browser.close();
+                browser = null;
+            }
+            
+            if (playwright != null) {
+                playwright.close();
+                playwright = null;
+            }
         }
     }
 
