@@ -8,7 +8,7 @@ interface BottomNavProps {
 }
 
 const tabIcons: Record<Tab, React.ReactElement> = {
-  Home: <FiHome size={24} />,
+  Home: <FiHome size={32} />,
   Transactions: <FiList size={32} />,
   Accounts: <FiCreditCard size={32} />,
   // Consider the icons from the image if you want to match exactly
