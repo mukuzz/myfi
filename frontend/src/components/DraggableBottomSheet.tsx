@@ -19,38 +19,30 @@ function DraggableBottomSheet({
   const dragStartY = useRef(0);
   const modalRef = useRef<HTMLDivElement>(null);
   const modalBackgroundRef = useRef<HTMLDivElement>(null);
-  // Reset state and clear inline transition when modal is closed/reopened
+
+  // Reset state and manage inline styles based on isOpen
   useEffect(() => {
-    if (!isOpen) {
+    const modalElement = modalRef.current;
+    if (!modalElement) return;
+
+    if (isOpen) {
+      // When opening, clear any inline transform/transition
+      // so the CSS class 'translate-y-0' controls the animation.
+      modalElement.style.transform = '';
+      modalElement.style.transition = '';
+      setCurrentTranslateY(0); // Ensure drag state is reset
+    } else {
+      // When closing (either via drag or externally),
+      // clear inline styles and reset drag state.
+      // The CSS class 'translate-y-full' will handle the closed position.
       setCurrentTranslateY(0);
-      if (modalRef.current) {
-        // Only clear transition style immediately; transform is cleared after animation
-        modalRef.current.style.transition = '';
-        
-      }
+      // Clear styles immediately. If closing animation was running,
+      // this ensures the CSS class takes over cleanly.
+      modalElement.style.transition = '';
+      modalElement.style.transform = '';
     }
-    // We don't reset transform here anymore
+    // We only need this one effect reacting to isOpen for style cleanup.
   }, [isOpen]);
-
-  // Effect to cleanup inline transform style *after* the closing animation completes
-  useEffect(() => {
-    let timerId: NodeJS.Timeout | null = null;
-    if (!isOpen && modalRef.current) {
-      // Wait for the duration of the CSS close animation
-      timerId = setTimeout(() => {
-        if (modalRef.current) {
-           modalRef.current.style.transform = '';
-        }
-      }, 300); // Match CSS transition duration (CHANGED to 300)
-    }
-
-    // Cleanup the timer if the component unmounts or isOpen changes back to true
-    return () => {
-       if (timerId) {
-          clearTimeout(timerId);
-       }
-    };
-  }, [isOpen]); // Depend only on isOpen
 
   // Effect to manage background color opacity via JS
   useEffect(() => {
@@ -149,40 +141,40 @@ function DraggableBottomSheet({
     isDragging.current = false;
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     
-    // Enable smooth transition (for snap-back)
-    modalElement.style.transition = 'transform 0.3s ease-in-out'; // Keep snap-back at 300ms
-    backgroundElement.style.transition = 'background-color 0.2s ease-in-out';
-
+    // Decide whether to close or snap back based on drag distance
     if (currentTranslateY > DRAG_THRESHOLD) {
-      // Ensure closing animation matches overlay duration (300ms)
-      modalElement.style.transition = 'transform 0.3s ease-in-out'; // CHANGED back to 0.3s
-      // Animate smoothly down to 100% translateY using the transition
+      // Animate smoothly down using inline styles
+      modalElement.style.transition = 'transform 0.3s ease-in-out';
       modalElement.style.transform = 'translateY(100%)';
+      // Ensure background also animates out
+      backgroundElement.style.transition = 'background-color 0.2s ease-in-out';
       backgroundElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)';
-      
-      // Delay the actual onClose call until the animation finishes (300ms)
+
+      // Call onClose after the animation finishes
       setTimeout(() => {
         onClose();
-        // No need to reset currentTranslateY or transform here, 
-        // the useEffect hooks triggered by isOpen changing will handle it.
-      }, 300); // Match overlay CSS transition duration (CHANGED back to 300)
-      
+        // No need to reset styles here; the main useEffect hook triggered
+        // by the 'isOpen' change will now handle clearing inline styles.
+      }, 300); // Match transform animation duration
+
     } else {
-      // Snap back to the open position (top) - uses the 300ms transition set above
+      // Snap back to the open position (top)
+      modalElement.style.transition = 'transform 0.3s ease-in-out';
       modalElement.style.transform = 'translateY(0px)';
       setCurrentTranslateY(0); // Reset drag state immediately
-      
-      // Clean up inline styles *after* the snap-back animation completes (still 300ms)
+
+      // Clean up inline styles *after* the snap-back animation completes
       setTimeout(() => {
-        // Check if the modal still exists and is still snapped back before clearing.
+        // Check if the modal still exists and is still open before clearing.
         // Avoids clearing styles if another interaction (like closing) happened quickly.
-        if (modalElement && modalElement.style.transform === 'translateY(0px)') { 
-           modalElement.style.transform = ''; // Remove inline transform
-           modalElement.style.transition = ''; // Remove inline transition too
+        if (modalElement && isOpen && modalElement.style.transform === 'translateY(0px)') {
+           modalElement.style.transform = '';
+           modalElement.style.transition = '';
          }
-      }, 300); // Match SLOWER (snap-back) CSS transition duration (Unchanged at 300)
+      }, 300); // Match snap-back animation duration
     }
-  }, [currentTranslateY, onClose]);
+    // No need to reset touchAction here, handled by style attribute binding
+  }, [currentTranslateY, onClose, isOpen]); // Added isOpen dependency
 
   return (
     <div

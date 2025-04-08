@@ -16,6 +16,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -38,17 +45,6 @@ public class AccountScrapingController {
     private TransactionService transactionService;
     @Autowired
     private SystemStatusService systemStatusService;
-    
-    // Removed separate /scrape/bank and /scrape/credit-card endpoints
-    // @PostMapping(value = "/scrape/bank", consumes = MediaType.APPLICATION_JSON_VALUE)
-    // public ResponseEntity<List<Transaction>> scrapeBankTransactions(@RequestBody List<BankCredentials> credentialsList) {
-    //     return scrape(credentialsList);
-    // }
-
-    // @PostMapping(value = "/scrape/credit-card", consumes = MediaType.APPLICATION_JSON_VALUE)
-    // public ResponseEntity<List<Transaction>> scrapeCreditCardTransactions(@RequestBody List<BankCredentials> credentialsList) {
-    //     return scrape(credentialsList);
-    // }
 
     // Single endpoint for scraping
     @PostMapping(value = "/scrape", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -59,89 +55,146 @@ public class AccountScrapingController {
     }
 
     private ResponseEntity<List<Transaction>> scrape(List<AccountCredentials> credentialsList) {
-        List<Transaction> allTransactions = new ArrayList<>();
-        boolean hasErrors = false;
+        List<Transaction> allTransactions = Collections.synchronizedList(new ArrayList<>());
+        AtomicBoolean hasErrors = new AtomicBoolean(false);
+        int poolSize = Math.min(credentialsList.size(), 4); // Limit pool size to 4 or less if fewer credentials
+        ExecutorService executor = Executors.newFixedThreadPool(poolSize > 0 ? poolSize : 1); // Ensure pool size is at least 1
+        List<Future<List<Transaction>>> futures = new ArrayList<>();
+
+        log.info("Starting parallel scraping for {} accounts with pool size {}", credentialsList.size(), poolSize);
 
         for (AccountCredentials credentials : credentialsList) {
-            Optional<Account> optionalAccount = accountService.getAccountByAccountNumber(credentials.getAccountNumber());
+            Callable<List<Transaction>> task = () -> {
+                Optional<Account> optionalAccount = accountService.getAccountByAccountNumber(credentials.getAccountNumber());
 
-            if (optionalAccount.isEmpty()) {
-                log.warn("Account not found for account number: {}", credentials.getAccountNumber());
-                hasErrors = true; // Mark error as account wasn't found for this credential
-                continue; 
-            }
-
-            Account account = optionalAccount.get();
-            Account.AccountType accountType = account.getType(); // Get account type
-            String accountNumberToScrape = account.getAccountNumber();
-            BankScrapper bankScrapper = null;
-            String determinedScrapeType = "UNKNOWN"; // For logging
-
-            try {
-                // Instantiate Scraper based on bank name
-                if (credentials.getAccountName().equalsIgnoreCase("ICICI")) {
-                    bankScrapper = new ICICIBankScraper(transactionService);
-                } else if (credentials.getAccountName().equalsIgnoreCase("HDFC")) {
-                    bankScrapper = new HDFCBankScraper(transactionService);
-                } else {
-                    log.error("Invalid bank name provided: {}", credentials.getAccountName());
-                    hasErrors = true; 
-                    continue;
+                if (optionalAccount.isEmpty()) {
+                    log.warn("Account not found for account number: {}", credentials.getAccountNumber());
+                    hasErrors.set(true); // Mark error as account wasn't found
+                    return Collections.emptyList(); // Return empty list for this task
                 }
 
-                log.info("Attempting login for account number: {}", accountNumberToScrape);
-                bankScrapper.login(credentials);
+                Account account = optionalAccount.get();
+                Account.AccountType accountType = account.getType(); // Get account type
+                String accountNumberToScrape = account.getAccountNumber();
+                BankScrapper bankScrapper = null;
+                String determinedScrapeType = "UNKNOWN"; // For logging
+                boolean taskError = false; // Track error within this task
 
-                List<Transaction> res = Collections.emptyList();
+                try {
+                    // Instantiate Scraper based on bank name
+                    if (credentials.getAccountName().equalsIgnoreCase("ICICI")) {
+                        bankScrapper = new ICICIBankScraper(transactionService);
+                    } else if (credentials.getAccountName().equalsIgnoreCase("HDFC")) {
+                        bankScrapper = new HDFCBankScraper(transactionService);
+                    } else {
+                        log.error("Invalid bank name provided: {}", credentials.getAccountName());
+                        taskError = true;
+                        return Collections.emptyList(); // Cannot proceed without a scraper
+                    }
 
-                // Determine scraping action based on AccountType
-                if (accountType == Account.AccountType.SAVINGS) { // Assuming SAVINGS is the primary bank type
-                    determinedScrapeType = "BANK";
-                    log.info("Scraping BANK transactions for account number: {} (Type: {})", accountNumberToScrape, accountType);
-                    res = bankScrapper.scrapeBankTransactions(account);
-                    log.info("BANK scraping successful for account number: {}. Found {} transactions.", accountNumberToScrape, res.size());
-                } else if (accountType == Account.AccountType.CREDIT_CARD) {
-                    determinedScrapeType = "CREDIT_CARD";
-                    log.info("Scraping CREDIT CARD transactions for account number: {} (Type: {})", accountNumberToScrape, accountType);
-                    res = bankScrapper.scrapeCreditCardTransactions(account);
-                    log.info("CREDIT CARD scraping successful for account number: {}. Found {} transactions.", accountNumberToScrape, res.size());
-                } else {
-                    // Handle other account types if necessary, e.g., log a warning or skip
-                    log.warn("Unsupported account type ({}) for scraping account number: {}. Skipping.", accountType, accountNumberToScrape);
-                    // Optionally mark as error or just skip
-                    // hasErrors = true; 
-                    // Continue without adding transactions, effectively skipping this one for scraping.
-                }
-                
-                allTransactions.addAll(res);
+                    log.info("Attempting login for account number: {}", accountNumberToScrape);
+                    bankScrapper.login(credentials);
 
-            } catch (Exception e) {
-                log.error("Error during {} scraping for account number {}: {}", determinedScrapeType, accountNumberToScrape, e.getMessage(), e);
-                hasErrors = true; 
-            } finally {
-                if (bankScrapper != null) {
-                    try {
-                        bankScrapper.logout();
-                    } catch (Exception logoutEx) {
-                        // Log error during logout, potentially using determinedScrapeType if known
-                        log.error("Error during logout after {} scraping attempt for account number {}: {}", determinedScrapeType, accountNumberToScrape, logoutEx.getMessage(), logoutEx);
-                        hasErrors = true;
+                    List<Transaction> res = Collections.emptyList();
+
+                    // Determine scraping action based on AccountType
+                    if (accountType == Account.AccountType.SAVINGS) {
+                        determinedScrapeType = "BANK";
+                        log.info("Scraping BANK transactions for account number: {} (Type: {})", accountNumberToScrape, accountType);
+                        res = bankScrapper.scrapeBankTransactions(account);
+                        log.info("BANK scraping successful for account number: {}. Found {} transactions.", accountNumberToScrape, res.size());
+                    } else if (accountType == Account.AccountType.CREDIT_CARD) {
+                        determinedScrapeType = "CREDIT_CARD";
+                        log.info("Scraping CREDIT CARD transactions for account number: {} (Type: {})", accountNumberToScrape, accountType);
+                        res = bankScrapper.scrapeCreditCardTransactions(account);
+                        log.info("CREDIT CARD scraping successful for account number: {}. Found {} transactions.", accountNumberToScrape, res.size());
+                    } else {
+                        log.warn("Unsupported account type ({}) for scraping account number: {}. Skipping.", accountType, accountNumberToScrape);
+                        // Skipping is not an error in itself
+                    }
+                    
+                    return res; // Return transactions scraped by this task
+
+                } catch (Exception e) {
+                    log.error("Error during {} scraping for account number {}: {}", determinedScrapeType, accountNumberToScrape, e.getMessage(), e);
+                    taskError = true; 
+                    return Collections.emptyList(); // Return empty on error
+                } finally {
+                    if (bankScrapper != null) {
+                        try {
+                            bankScrapper.logout();
+                        } catch (Exception logoutEx) {
+                            log.error("Error during logout after {} scraping attempt for account number {}: {}", determinedScrapeType, accountNumberToScrape, logoutEx.getMessage(), logoutEx);
+                            taskError = true; // Logout error is also an error
+                        }
+                    }
+                    if (taskError) {
+                        hasErrors.set(true); // Set the global error flag if this task encountered any error
                     }
                 }
+            };
+            futures.add(executor.submit(task));
+        }
+
+        // Wait for all tasks to complete and collect results
+        for (Future<List<Transaction>> future : futures) {
+            try {
+                List<Transaction> result = future.get(); // This waits for the task to complete
+                if (result != null) {
+                     allTransactions.addAll(result);
+                }
+                 // If a task threw an exception caught by Callable, it returns empty list + sets hasErrors.
+                 // If future.get() throws ExecutionException, it means an uncaught exception occurred in the task.
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Scraping task interrupted: {}", e.getMessage(), e);
+                hasErrors.set(true);
+            } catch (ExecutionException e) {
+                // Log the cause of the execution exception if available
+                 Throwable cause = e.getCause();
+                 log.error("Error executing scraping task: {}", cause != null ? cause.getMessage() : e.getMessage(), cause != null ? cause : e);
+                 hasErrors.set(true); // Mark as error if task execution failed
             }
         }
 
+        // Shutdown the executor service
+        executor.shutdown();
+        try {
+            // Wait a reasonable amount of time for tasks to finish execution
+            if (!executor.awaitTermination(15, TimeUnit.MINUTES)) {
+                 log.warn("Executor did not terminate in the specified time (15 minutes).");
+                 List<Runnable> droppedTasks = executor.shutdownNow();
+                 log.warn("Executor was abruptly shut down. {} tasks may not have completed.", droppedTasks.size());
+                 // Consider marking error if tasks were dropped
+                 if (!droppedTasks.isEmpty()) {
+                     hasErrors.set(true);
+                 }
+            }
+            log.info("Executor terminated successfully.");
+        } catch (InterruptedException e) {
+             log.warn("Executor shutdown sequence interrupted.");
+             executor.shutdownNow();
+             Thread.currentThread().interrupt();
+             hasErrors.set(true); // Interruption during shutdown might indicate issues
+        }
+
+        log.info("Parallel scraping finished. Total transactions retrieved: {}. Errors occurred: {}", allTransactions.size(), hasErrors.get());
+
         // Decide on the final response status based on whether any errors occurred
-        if (hasErrors && allTransactions.isEmpty()) {
+        if (hasErrors.get() && allTransactions.isEmpty()) {
             // Don't update time if it completely failed for all
+            log.warn("Scraping failed for all accounts.");
             return ResponseEntity.internalServerError().body(Collections.emptyList());
         } else {
             // Update timestamp on partial or full success before returning
             systemStatusService.updateLastScrapeTime(); 
-            if (hasErrors) {
-                 return ResponseEntity.status(207).body(allTransactions); // Multi-Status
+            if (hasErrors.get()) {
+                 log.warn("Scraping completed with some errors.");
+                 // Return 207 Multi-Status indicating partial success
+                 return ResponseEntity.status(207).body(new ArrayList<>(allTransactions)); // Return a mutable copy
             } else {
-                return ResponseEntity.ok(allTransactions);
+                 log.info("Scraping completed successfully for all provided accounts.");
+                 return ResponseEntity.ok(new ArrayList<>(allTransactions)); // Return a mutable copy
             }
         }
     }
