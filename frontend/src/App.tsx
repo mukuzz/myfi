@@ -9,11 +9,12 @@ import RefreshSheetContent from './components/RefreshSheetContent'; // Import sh
 import { getLastScrapeTime } from './services/apiService'; // Import the new API function
 import { useIsMobile } from './hooks/useIsMobile'; // Import the hook
 import { FiRefreshCw } from 'react-icons/fi'; // Import an icon
+import { formatDistanceToNow } from './utils/datetimeUtils';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('Transactions'); // Default to Transactions
   const [isRefreshSheetOpen, setIsRefreshSheetOpen] = useState(false);
-  const [lastRefreshTime, setLastRefreshTime] = useState<string | null>(null);
+  const [lastRefreshTime, setLastRefreshTime] = useState<number | null>(null);
   const [isLoadingTime, setIsLoadingTime] = useState<boolean>(true);
   const isMobile = useIsMobile();
 
@@ -64,11 +65,11 @@ function App() {
             onClick={openRefreshSheet}
           >
             <FiRefreshCw className="mr-2 h-4 w-4" />
-            <span className="text-sm font-medium">
+            <span className="text-xs font-normal">
               {isLoadingTime ? (
                 'Loading refresh status...'
               ) : lastRefreshTime ? (
-                `Last refresh: ${formatDistanceToNow(new Date(lastRefreshTime), { addSuffix: true })}`
+                `Last refresh: ${formatDistanceToNow(lastRefreshTime, { addSuffix: false })}`
               ) : (
                 'Refresh Accounts'
               )}

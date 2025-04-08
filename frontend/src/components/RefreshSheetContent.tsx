@@ -2,13 +2,14 @@ import React, { useState, useCallback } from 'react';
 import { fetchAccounts, triggerScraping } from '../services/apiService'; // Assuming triggerScraping will be added
 import { Account, ScrapeRequest } from '../types'; // Assuming ScrapeRequest will be defined
 import { FiRefreshCw, FiLoader, FiXCircle, FiCheckCircle, FiInfo } from 'react-icons/fi';
+import { formatDistanceToNow } from '../utils/datetimeUtils';
 
 // Key prefix for local storage (should match AddAccountSheet)
 const NETBANKING_STORAGE_PREFIX = 'netbanking_';
 
 interface RefreshSheetContentProps {
   onClose: () => void;
-  lastRefreshTime: string | null; // Receive last refresh time
+  lastRefreshTime: number | null; // Receive last refresh time
   onRefreshSuccess: () => void; // Callback for success
 }
 
@@ -74,6 +75,9 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
 
       // Optionally close the sheet after a short delay on success
       setTimeout(() => {
+         // Reset state before closing
+         setStatus('idle');
+         setErrorMessage(null);
          onClose();
          // Reset status for next open? Or keep success message?
          // setStatus('idle'); 
@@ -134,9 +138,14 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
         {/* Display Last Refresh Time */}
         <div className="mb-6 text-center">
           {lastRefreshTime ? (
+            <>
             <p className="text-sm text-muted-foreground">
-              Last successful refresh: {formatDistanceToNow(new Date(lastRefreshTime), { addSuffix: true })}
+              Last successful refresh:
             </p>
+            <p className="text-sm text-muted-foreground">
+              {formatDistanceToNow(lastRefreshTime, { addSuffix: true })}
+            </p>
+            </>
           ) : (
             <p className="text-sm text-muted-foreground flex items-center justify-center">
               <FiInfo className="mr-1 h-4 w-4"/> No refresh history found.

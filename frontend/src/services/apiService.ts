@@ -1,4 +1,4 @@
-import { Transaction, Account, ScrapeRequest } from '../types';
+import { Transaction, Account, ScrapeRequest, Tag } from '../types';
 
 // Use environment variable or default.
 // NOTE: For Vite projects, prefer `import.meta.env.VITE_API_URL`.
@@ -162,7 +162,7 @@ export const triggerScraping = async (scrapeRequests: ScrapeRequest[]): Promise<
 };
 
 // Fetch the last scrape time
-export const getLastScrapeTime = async (): Promise<string | null> => {
+export const getLastScrapeTime = async (): Promise<number | null> => {
   try {
     const response = await fetch(`${API_BASE_URL}/status/last-scrape-time`);
     if (!response.ok) {
@@ -174,7 +174,7 @@ export const getLastScrapeTime = async (): Promise<string | null> => {
     }
     // Expecting the timestamp directly as a string in the body, or empty if null
     const timeString = await response.text(); 
-    return timeString ? timeString : null;
+    return timeString ? parseInt(timeString) : null;
   } catch (error) {
     console.error('Failed to fetch last scrape time:', error);
     // Depending on requirements, you might want to re-throw or return null
@@ -211,5 +211,51 @@ export const getSupportedAccountInfo = async (): Promise<Record<string, string[]
     // {"CRYPTO":[],"LOAN":[],"MUTUAL_FUND":[],"SAVINGS":["HDFC","ICICI"],"FIXED_DEPOSIT":[],"STOCKS":[],"CREDIT_CARD":["HDFC","ICICI"]}
     return response.json();
 };
+
+export async function fetchTransactionsAndTags(): Promise<{ transactions: Transaction[], tags: Tag[] }> {
+  const [transactionsResponse, tagsResponse] = await Promise.all([
+    fetch(`${API_BASE_URL}/transactions`),
+    fetch(`${API_BASE_URL}/tags`)
+  ]);
+
+  if (!transactionsResponse.ok) {
+    throw new Error(`HTTP error fetching transactions! status: ${transactionsResponse.status}`);
+  }
+  if (!tagsResponse.ok) {
+    throw new Error(`HTTP error fetching tags! status: ${tagsResponse.status}`);
+  }
+
+  const transactionsData = await transactionsResponse.json();
+  const tagsData = await tagsResponse.json();
+
+  const transactions = Array.isArray(transactionsData) ? transactionsData : [];
+  const tags = Array.isArray(tagsData) ? tagsData : [];
+
+  return { transactions, tags };
+}
+
+export async function updateTransactionTagApi(
+  transactionId: number,
+  transactionData: Omit<Transaction, 'id' | 'tagId'>, // Send other transaction fields
+  newTagId: number | null
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/transactions/${transactionId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      ...transactionData,
+      tagId: newTagId // Only update the tagId field
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error("Server error response:", errorBody);
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  console.log("Transaction tag updated successfully via API");
+}
 
 // Add other API functions here as needed (e.g., fetchTransactions, createTransaction, deleteTransaction) 
