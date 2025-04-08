@@ -41,10 +41,10 @@ public class ICICIBankScraper extends BankScrapper {
         String accountNumber = account.getAccountNumber();
         log.info("Starting savings account scraping for ICICI account number: {}", accountNumber);
 
-        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+        getPage().waitForLoadState(LoadState.NETWORKIDLE);
 
-        List<ElementHandle> rows = page.querySelectorAll("#topbar p");
+        List<ElementHandle> rows = getPage().querySelectorAll("#topbar p");
         for (ElementHandle row : rows) {
             if (row.textContent().contains("BANK ACCOUNTS")) {
                 row.hover();
@@ -53,18 +53,18 @@ public class ICICIBankScraper extends BankScrapper {
         }
         
         // Wait for and click the Accounts link by finding the parent anchor tag containing the specific image
-        page.waitForSelector("a:has(img[src='PR2/L001/consumer/theme/dashboardRevamp/topMenuImages/RACTS/ROACTM.svg'])");
-        page.click("a:has(img[src='PR2/L001/consumer/theme/dashboardRevamp/topMenuImages/RACTS/ROACTM.svg'])");
+        getPage().waitForSelector("a:has(img[src='PR2/L001/consumer/theme/dashboardRevamp/topMenuImages/RACTS/ROACTM.svg'])");
+        getPage().click("a:has(img[src='PR2/L001/consumer/theme/dashboardRevamp/topMenuImages/RACTS/ROACTM.svg'])");
         
         // Wait for page load after clicking
-        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+        getPage().waitForLoadState(LoadState.NETWORKIDLE);
 
         // Wait for the account summary table to load
-        page.waitForSelector("#SummaryList");
+        getPage().waitForSelector("#SummaryList");
 
         // Find and click the radio button for the specified account number
-        rows = page.querySelectorAll("#SummaryList tr");
+        rows = getPage().querySelectorAll("#SummaryList tr");
         for (ElementHandle row : rows) {
             if (row.textContent().contains(accountNumber)) {
                 ElementHandle radio = row.querySelector("input[type='radio']");
@@ -76,20 +76,20 @@ public class ICICIBankScraper extends BankScrapper {
         }
 
         // Click the "Last 10 Transactions" button
-        page.waitForSelector("input[name='Action.VIEW_MINI_STATEMENT']");
-        page.click("input[name='Action.VIEW_MINI_STATEMENT']");
+        getPage().waitForSelector("input[name='Action.VIEW_MINI_STATEMENT']");
+        getPage().click("input[name='Action.VIEW_MINI_STATEMENT']");
 
         // Wait for page load after selecting account
-        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+        getPage().waitForLoadState(LoadState.NETWORKIDLE);
 
         // Wait for transactions table to load
-        page.waitForSelector("#transactionsList");
+        getPage().waitForSelector("#transactionsList");
 
         List<Transaction> transactions = new ArrayList<>();
 
         // Get all transaction rows except header and separator rows
-        rows = page.querySelectorAll("#transactionsList tr[id]");
+        rows = getPage().querySelectorAll("#transactionsList tr[id]");
 
         for (ElementHandle row : rows) {
             // Extract date
@@ -140,25 +140,25 @@ public class ICICIBankScraper extends BankScrapper {
     @Override
     public boolean login(AccountCredentials credentials) {
         // Navigate to login page
-        page.navigate(ICICI_LOGIN_URL);
-        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        getPage().navigate(ICICI_LOGIN_URL);
+        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+        getPage().waitForLoadState(LoadState.NETWORKIDLE);
 
 
-        page.click("#DUMMY1");
-        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+        getPage().click("#DUMMY1");
+        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
 
-        // page.click("#user-id-goahead");
-        // page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        // page.waitForLoadState(LoadState.NETWORKIDLE);
+        // getPage().click("#user-id-goahead");
+        // getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+        // getPage().waitForLoadState(LoadState.NETWORKIDLE);
 
-        page.waitForSelector("[name='AuthenticationFG.USER_PRINCIPAL']");
-        page.fill("[name='AuthenticationFG.USER_PRINCIPAL']", credentials.getUsername());
+        getPage().waitForSelector("[name='AuthenticationFG.USER_PRINCIPAL']");
+        getPage().fill("[name='AuthenticationFG.USER_PRINCIPAL']", credentials.getUsername());
 
-        page.waitForSelector("[name='AuthenticationFG.ACCESS_CODE']");
-        page.fill("[name='AuthenticationFG.ACCESS_CODE']", credentials.getPassword());
+        getPage().waitForSelector("[name='AuthenticationFG.ACCESS_CODE']");
+        getPage().fill("[name='AuthenticationFG.ACCESS_CODE']", credentials.getPassword());
 
-        page.click("#VALIDATE_CREDENTIALS1");
+        getPage().click("#VALIDATE_CREDENTIALS1");
         
         return true; // Return true on successful login
     }
@@ -166,14 +166,14 @@ public class ICICIBankScraper extends BankScrapper {
     @Override
     public void logout() {
         // Wait for and click the logout button
-        page.waitForSelector("#HREF_Logout");
-        page.click("#HREF_Logout");
+        getPage().waitForSelector("#HREF_Logout");
+        getPage().click("#HREF_Logout");
         
         // Wait for logout to complete
-        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+        getPage().waitForLoadState(LoadState.NETWORKIDLE);
 
-        page.close();
+        closePage();
     }
 
     @Override
