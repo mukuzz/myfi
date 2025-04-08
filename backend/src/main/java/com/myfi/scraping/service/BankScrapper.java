@@ -15,18 +15,28 @@ import com.myfi.model.Account.AccountType;
 
 public abstract class BankScrapper {
 
-    public Page page;
+    private Page page;
 
-    public BankScrapper() {
-        Playwright playwright = Playwright.create();
-        try {
+    public Page getPage() {
+        if (page == null) {
+            Playwright playwright = Playwright.create();
+            try {
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
             .setHeadless(false)
             .setTimeout(120000)); // 2 minutes timeout
             BrowserContext context = browser.newContext();
             this.page = context.newPage();
-        } catch (Exception e) {
-            throw new RuntimeException("Error initializing browser", e);
+            } catch (Exception e) {
+                throw new RuntimeException("Error initializing browser", e);
+            }
+        }
+        return page;
+    }
+
+    public void closePage() {
+        if (page != null) {
+            page.close();
+            page = null;
         }
     }
 
