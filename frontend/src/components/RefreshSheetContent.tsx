@@ -84,8 +84,8 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
       }, 1500); 
 
     } catch (err: any) {
-      console.error('Failed to refresh transactions:', err);
-      setErrorMessage(err.message || 'Failed to trigger transaction refresh. Please try again.');
+      console.error('Failed to refresh accounts:', err);
+      setErrorMessage(err.message || 'Failed to trigger account refresh. Please try again.');
       setStatus('error');
     }
   }, [onClose, onRefreshSuccess]);
@@ -118,7 +118,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
         return (
           <>
             <FiRefreshCw className="mr-2 h-5 w-5" />
-            Refresh Transactions
+            Refresh Accounts
           </>
         );
     }
