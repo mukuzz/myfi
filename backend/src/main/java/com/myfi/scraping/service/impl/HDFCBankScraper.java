@@ -7,6 +7,9 @@ import com.myfi.model.Transaction;
 import com.myfi.scraping.model.AccountCredentials;
 import com.myfi.scraping.service.BankScrapper;
 import com.myfi.service.TransactionService;
+import com.myfi.model.Account.AccountType;
+import java.util.Set;
+import java.util.EnumSet;
 
 import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
@@ -15,8 +18,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class HDFCBankScraper extends BankScrapper {
 
     private final TransactionService transactionService;
@@ -285,5 +290,11 @@ public class HDFCBankScraper extends BankScrapper {
                     
             // Close the browser page
             page.close();
+    }
+
+    @Override
+    public Set<AccountType> getSupportedAccountTypes() {
+        // HDFC scraper implements both bank and credit card scraping
+        return EnumSet.of(AccountType.SAVINGS, AccountType.CREDIT_CARD);
     }
 }
