@@ -6,18 +6,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#ffffff', // White background
+        background: '#f9fafb', // Very light gray background (Gray-50)
         foreground: '#1f2937', // Dark gray text
         primary: {
           DEFAULT: '#4b5563', // Gray-600
           foreground: '#ffffff', // White text on primary
         },
         secondary: {
-          DEFAULT: '#f3f4f6', // Gray-100
+          DEFAULT: '#ffffff', // White
           foreground: '#1f2937', // Dark gray text on secondary
         },
         muted: {
-          DEFAULT: '#f3f4f6', // Gray-100 (same as secondary for now)
+          DEFAULT: '#f3f4f6', // Gray-100
           foreground: '#6b7280', // Gray-500
         },
         accent: {

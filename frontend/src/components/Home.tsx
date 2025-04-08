@@ -1,7 +1,11 @@
-import React from 'react';
+import AccountsCard from './AccountsCard';
+import TotalBalanceCard from './TotalBalanceCard';
 
 function Home() {
-  return <div className="p-4 bg-background text-foreground">Welcome Home! Content goes here.</div>;
+  return <div className="bg-background text-foreground flex flex-col space-y-4 p-4">
+    <TotalBalanceCard />
+    <AccountsCard />
+  </div>;
 }
 
 export default Home; 

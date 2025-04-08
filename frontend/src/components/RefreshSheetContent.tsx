@@ -103,7 +103,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
         return (
           <>
             <FiCheckCircle className="mr-2 h-5 w-5" />
-            Refresh Started!
+            Refresh Successful!
           </>
         );
       case 'error':

@@ -18,7 +18,7 @@ const AccountCard: React.FC<AccountCardProps> = ({
   handleCopyAccountNumber
 }) => {
   return (
-    <div className="p-4"> 
+    <div className="p-4 bg-secondary"> 
       {/* Top row: Logo/Balance */}
       <div className="flex justify-between items-center">
         {getBankLogo(account.name)}
@@ -31,13 +31,13 @@ const AccountCard: React.FC<AccountCardProps> = ({
          <h2 className="font-bold text-foreground text-xl"> 
             {account.name}
          </h2>
-         <p className="text-foreground text-xs bg-secondary px-2 py-1 rounded-full">
+         <p className="text-foreground text-xs bg-muted px-2 py-1 rounded-full">
             {getAccountTypeLabel(account.type)}
          </p>
       </div>
        {/* Bottom row: Number/Copy */}
-      <div className="flex justify-between items-center mt-2"> 
-        <p className="text-muted-foreground text-sm uppercase"> 
+      <div className="flex justify-between items-center mt-2 space-x-2"> 
+        <p className="text-muted-foreground text-xs uppercase truncate"> 
           Account Number
         </p>
         <div className="flex items-center space-x-2">
