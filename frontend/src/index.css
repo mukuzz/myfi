@@ -35,5 +35,6 @@ code {
 
 html {
   font-size: 18px;
+  position: relative;
   /* Increase base font size from default 16px */
 }

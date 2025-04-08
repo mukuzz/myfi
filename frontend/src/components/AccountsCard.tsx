@@ -79,7 +79,7 @@ function AccountsCard() {
   const getBankLogo = (bankName: string) => {
     return (
       <div className="w-10 h-10 flex items-center justify-center text-primary">
-        <div className="bg-secondary px-2 py-1 rounded">
+        <div className="bg-muted px-2 py-1 rounded">
           {bankName.charAt(0).toUpperCase()}
         </div>
       </div>

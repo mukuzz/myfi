@@ -47,31 +47,21 @@ function TotalBalanceCard() {
     const parentAccounts = accounts.filter(acc => acc.parentAccountId === null || acc.parentAccountId === undefined);
     const total = parentAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
     
-    // Aggregate balances by bank name (simplified example)
     const aggregated = parentAccounts.reduce((acc, current) => {
-      // Basic aggregation logic - needs refinement based on actual bank names/types
-      const key = current.name.includes('ICICI') ? 'ICICI' : 
-                  current.name.includes('HDFC') ? 'HDFC' : 
-                  current.name.includes('Star') ? 'STAR' : 'OTHERS'; // Example logic
-      
+      const key = current.name; 
+
       if (!acc[key]) {
-        acc[key] = { balance: 0, count: 0, name: key };
+        acc[key] = { balance: 0, count: 0, name: key, logoKey: key }; // Add logoKey here
       }
       acc[key].balance += current.balance || 0;
-      acc[key].count += 1; // Example: counting accounts, image shows different numbers (23?)
+      acc[key].count += 1;
       return acc;
-    }, {} as Record<string, { balance: number; count: number; name: string }>);
+    }, {} as Record<string, { balance: number; count: number; name: string; logoKey: string }>); // Added logoKey type
 
-    // Mocking the exact structure from the image
-    const specificAggregates = [
-      { name: 'ICICI', balance: aggregated['ICICI']?.balance ?? 47700, logoKey: 'ICICI' },
-      { name: 'STAR', balance: aggregated['STAR']?.balance ?? 0, logoKey: 'STAR' },
-      { name: 'OTHERS', balance: aggregated['OTHERS']?.balance ?? 23, logoKey: 'OTHERS' }, // Example with count '23'
-      { name: 'HDFC', balance: aggregated['HDFC']?.balance ?? 28000, logoKey: 'HDFC' },
-    ];
+    // Create the array from the aggregated object
+    const finalAggregatedBalances = Object.values(aggregated);
 
-
-    return { totalBalance: total, aggregatedBalances: specificAggregates };
+    return { totalBalance: total, aggregatedBalances: finalAggregatedBalances };
   }, [accounts]);
 
   const formatCurrency = (amount: number, currency: string = 'INR', compact: boolean = false) => {
@@ -111,10 +101,11 @@ function TotalBalanceCard() {
 
   const renderBankItem = (item: { name: string; balance: number; logoKey: string }) => {
     const logoInfo = bankLogos[item.logoKey] || bankLogos['OTHERS'];
-    const displayValue = item.logoKey === 'OTHERS' ? item.balance : formatCurrency(item.balance, 'INR', true); // Use count for 'OTHERS', compact currency otherwise
+    // Always format as currency, use compact format
+    const displayValue = formatCurrency(item.balance, 'INR', true);
 
     return (
-        <div key={item.name} className="flex items-center bg-muted/50 rounded-full text-sm">
+        <div key={item.name} className="flex items-center bg-muted/80 rounded-full text-sm p-1 pr-3"> {/* Added padding */}
            {typeof logoInfo.icon === 'string' ? (
                <span className={`w-5 h-5 rounded-full ${logoInfo.color} text-white flex items-center justify-center text-xs font-bold mr-2`}>
                    {logoInfo.icon}
@@ -158,7 +149,7 @@ function TotalBalanceCard() {
         </div>
 
         {/* Aggregated Balances */}
-        <div className="flex flex-wrap flex-row gap-x-6 gap-y-4">
+        <div className="flex flex-wrap flex-row gap-4">
            {aggregatedBalances.map(renderBankItem)}
         </div>
       </div>
