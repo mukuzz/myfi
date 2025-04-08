@@ -5,6 +5,13 @@ import { Transaction, Account, ScrapeRequest } from '../types';
 // If using that causes a type error, ensure "vite/client" is in your tsconfig types.
 const API_BASE_URL = process.env.API_BASE_URL || 'http://192.168.1.5:8080/api/v1';
 
+// Define the expected structure for supported account info
+// Matches the interface in AddAccountSheet.tsx
+interface SupportedAccountInfo {
+  type: Account['type'];
+  name: string;
+}
+
 /**
  * Updates a transaction on the server.
  * @param id The ID of the transaction to update.
@@ -173,6 +180,36 @@ export const getLastScrapeTime = async (): Promise<string | null> => {
     // Depending on requirements, you might want to re-throw or return null
     return null; 
   }
+};
+
+/**
+ * Fetches the supported account types and their suggested names.
+ * @returns An array of objects, each containing an account type and name.
+ * @throws Error if the fetch fails.
+ */
+export const getSupportedAccountInfo = async (): Promise<Record<string, string[]>> => {
+    const response = await fetch(`${API_BASE_URL}/accounts/supported`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorBody = await response.json();
+        errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+      } catch (e) {
+        // Ignore if response body is not JSON or empty
+      }
+      console.error("Failed to fetch supported account info:", errorMessage);
+      throw new Error(`Failed to fetch supported account info: ${errorMessage}`);
+    }
+
+    // API returns an object like:
+    // {"CRYPTO":[],"LOAN":[],"MUTUAL_FUND":[],"SAVINGS":["HDFC","ICICI"],"FIXED_DEPOSIT":[],"STOCKS":[],"CREDIT_CARD":["HDFC","ICICI"]}
+    return response.json();
 };
 
 // Add other API functions here as needed (e.g., fetchTransactions, createTransaction, deleteTransaction) 

@@ -117,7 +117,7 @@ public class ICICIBankScraper extends BankScrapper {
                 .type(type)
                 .transactionDate(date)
                 .createdAt(LocalDateTime.now())
-                .accountId(account.getId())
+                .account(account)
                 .build();
 
             // Save transaction to database

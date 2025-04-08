@@ -38,7 +38,7 @@ public class TransactionService {
             throw new IllegalArgumentException("Mandatory transaction fields (amount, description, type, transactionDate) must be provided.");
         }
         // AccountId is mandatory
-        if (transaction.getAccountId() == null) {
+        if (transaction.getAccount() == null || transaction.getAccount().getId() == null) {
             throw new IllegalArgumentException("AccountId must be provided for a transaction.");
         }
 
@@ -74,7 +74,7 @@ public class TransactionService {
                     existingTransaction.setType(transactionDetails.getType());
                     existingTransaction.setTransactionDate(transactionDetails.getTransactionDate());
                     existingTransaction.setTagId(transactionDetails.getTagId());
-                    existingTransaction.setAccountId(transactionDetails.getAccountId()); // Allow updating account linkage
+                    existingTransaction.setAccount(transactionDetails.getAccount()); // Allow updating account linkage
                     existingTransaction.setCounterParty(transactionDetails.getCounterParty()); // Update counterParty
                     existingTransaction.setNotes(transactionDetails.getNotes()); // Update notes
                     existingTransaction.setExcludeFromAccounting(transactionDetails.isExcludeFromAccounting()); // Update excludeFromAccounting

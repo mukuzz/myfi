@@ -10,16 +10,17 @@ export interface Transaction {
   description: string;
   type: 'CREDIT' | 'DEBIT';
   transactionDate: string; // Dates usually come as ISO strings
+  createdAt: string; // Added createdAt field
+  updatedAt?: string; // Added updatedAt field
   tagId?: number; // Use tagId (optional if a transaction might not have a tag)
-  accountId: number | null;
+  account: Account; // Replacing accountId with account object
   counterParty?: string; // Added from backend model
-  note?: string; // Add optional note field
   parentId?: number | null; // Optional parent ID for subtransactions
   subTransactions?: Transaction[]; // Optional list of subtransactions
   uniqueKey: string;
   notes?: string | null; // Add notes field
-  excludeFromAccounting?: boolean; // Add excludeFromAccounting field
-  // Add other fields if needed, e.g., createdAt, updatedAt
+  excludeFromAccounting: boolean; // Changed from optional to required
+  // Add other fields if needed
 }
 
 // Define the Tag type based on the Java model
