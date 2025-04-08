@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiHome, FiList, FiCreditCard } from 'react-icons/fi';
+import { FiHome, FiList } from 'react-icons/fi';
 import { Tab } from '../types'; // Assuming Tab type is in types.ts
 
 interface BottomNavProps {
@@ -10,7 +10,6 @@ interface BottomNavProps {
 const tabIcons: Record<Tab, React.ReactElement> = {
   Home: <FiHome size={32} />,
   Transactions: <FiList size={32} />,
-  Accounts: <FiCreditCard size={32} />,
   // Consider the icons from the image if you want to match exactly
   // Home: <SomeIconForFirstTab />
   // Transactions: <LuIndianRupee size={24} /> // Example: Rupee Icon
@@ -20,7 +19,7 @@ const tabIcons: Record<Tab, React.ReactElement> = {
 
 function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
   return (
-    <nav className="border-t border-border bg-background sticky bottom-0 pb-2">
+    <nav className="border-t border-border bg-background fixed w-full bottom-0 h-16">
       <div className="flex justify-around">
         {(Object.keys(tabIcons) as Tab[]).map((tab) => (
           <button

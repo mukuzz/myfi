@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-
 // Define the Tab type if it's broadly used, or keep it local to where it's needed (e.g., App or BottomNav)
-export type Tab = 'Home' | 'Transactions' | 'Accounts';
+export type Tab = 'Home' | 'Transactions';
 
 // Updated Transaction interface based on Java model
 export interface Transaction {

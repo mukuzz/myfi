@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Tab } from './types'; // Import Tab type
 import Home from './components/Home';
 import Transactions from './components/Transactions';
-import Accounts from './components/Accounts';
+import AccountsCard from './components/AccountsCard';
 import BottomNav from './components/BottomNav';
 import { useIsMobile } from './hooks/useIsMobile'; // Import the hook
 import RefreshBar from './components/RefreshBar'; // Import the unified component
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('Transactions'); // Default to Transactions
+  const [activeTab, setActiveTab] = useState<Tab>('Home'); // Default to Transactions
   const isMobile = useIsMobile();
 
   const renderMobileContent = () => {
@@ -17,15 +17,11 @@ function App() {
         return <Home />;
       case 'Transactions':
         return <Transactions />;
-      case 'Accounts':
-        return <Accounts />;
-      default:
-        return <Home />; // Default to Home or handle appropriately
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background relative">
       {isMobile ? (
         <>
           {/* Mobile: Main Content Area */}
@@ -40,7 +36,7 @@ function App() {
       ) : (
         <>
           {/* Desktop: Main Content Area */}
-          <main className="flex-grow overflow-y-auto flex flex-row space-x-4">
+          <main className="flex-grow overflow-y-auto flex flex-row">
             <div className="flex-1 overflow-y-auto"><Home /></div>
             <div className="flex-1 overflow-y-auto max-w-[400px]"><Transactions /></div>
           </main>
