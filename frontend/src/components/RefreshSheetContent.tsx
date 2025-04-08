@@ -125,7 +125,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
   };
 
   return (
-    <div className="p-6 pt-8 flex-grow flex flex-col h-full">
+    <div className="p-6 pt-8 flex-grow flex flex-col h-full justify-center items-center">
       <div className="flex justify-between items-center mb-4 flex-shrink-0">
         <h2 className="text-xl font-semibold">Account Refresh</h2>
         {/* Optional: Add a close button if needed, though handle works */}
