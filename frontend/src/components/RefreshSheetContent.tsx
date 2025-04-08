@@ -160,7 +160,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
         )}
          {status === 'success' && (
            <div className="bg-success/10 text-success border border-success/30 rounded-md p-3 mb-4 text-sm w-full text-center">
-             Refresh process initiated successfully. Transactions will appear soon.
+             Refresh completed successfully. Transactions will appear soon.
            </div>
          )}
          {status === 'idle' && errorMessage && ( // For messages like "no accounts found"
@@ -168,7 +168,6 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
                {errorMessage}
             </div>
          )}
-
 
         <p className="text-sm text-muted-foreground mb-6 text-center px-4">
            Click the button below to securely fetch the latest transactions for accounts where you've saved credentials.

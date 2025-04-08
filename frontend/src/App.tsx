@@ -21,11 +21,11 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background relative">
+    <div className="flex flex-col h-screen bg-background fixed bottom-0 w-full">
       {isMobile ? (
         <>
           {/* Mobile: Main Content Area */}
-          <main className="flex-grow overflow-y-auto flex flex-col">
+          <main className="flex-grow overflow-y-auto flex flex-col h-full">
             {renderMobileContent()}
           </main>
           {/* Mobile: Refresh Bar (now includes sheet logic) */}
@@ -36,7 +36,7 @@ function App() {
       ) : (
         <>
           {/* Desktop: Main Content Area */}
-          <main className="flex-grow overflow-y-auto flex flex-row">
+          <main className="flex-grow overflow-y-auto flex flex-row h-full">
             <div className="flex-1 overflow-y-auto"><Home /></div>
             <div className="flex-1 overflow-y-auto max-w-[400px]"><Transactions /></div>
           </main>
