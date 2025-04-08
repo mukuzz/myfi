@@ -1,7 +1,9 @@
 package com.myfi.service;
 
 import com.myfi.model.Account;
+import com.myfi.model.Account.AccountType;
 import com.myfi.repository.AccountRepository;
+import com.myfi.scraping.service.BankScrapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,13 +11,26 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.ArrayList;
 
 @Service
 public class AccountService {
 
     @Autowired
     private AccountRepository accountRepository;
+
+    private final List<BankScrapper> bankScrapers;
+
+    @Autowired
+    public AccountService(AccountRepository accountRepository, List<BankScrapper> bankScrapers) {
+        this.accountRepository = accountRepository;
+        this.bankScrapers = bankScrapers;
+    }
 
     @Transactional(readOnly = true)
     public List<Account> getAllAccounts() {
@@ -71,5 +86,25 @@ public class AccountService {
                     accountRepository.delete(account);
                     return true;
                 }).orElse(false);
+    }
+
+    public Map<String, List<String>> getSupportedAccounts() {
+        Map<String, List<String>> supportedAccountsMap = EnumSet.allOf(AccountType.class).stream()
+                .collect(Collectors.toMap(
+                        AccountType::name,
+                        type -> new ArrayList<>()
+                ));
+
+        if (bankScrapers != null) {
+            for (BankScrapper scraper : bankScrapers) {
+                String bankName = scraper.getBankName();
+                Set<AccountType> supportedTypes = scraper.getSupportedAccountTypes();
+                for (AccountType type : supportedTypes) {
+                    supportedAccountsMap.get(type.name()).add(bankName);
+                }
+            }
+        }
+
+        return supportedAccountsMap;
     }
 } 

@@ -24,7 +24,6 @@ public class TagController {
             tags = tagService.getTopLevelTags();
         } else {
             tags = tagService.getAllTags();
-            // TODO: Consider implementing hierarchical fetching/DTOs if needed for frontend
         }
         return ResponseEntity.ok(tags);
     }

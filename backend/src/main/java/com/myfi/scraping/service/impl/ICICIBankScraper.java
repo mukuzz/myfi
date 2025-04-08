@@ -5,8 +5,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.EnumSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.options.LoadState;
@@ -15,10 +18,12 @@ import com.myfi.model.Transaction;
 import com.myfi.scraping.model.AccountCredentials;
 import com.myfi.scraping.service.BankScrapper;
 import com.myfi.service.TransactionService;
+import com.myfi.model.Account.AccountType;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Component
 public class ICICIBankScraper extends BankScrapper {
 
     @Autowired
@@ -173,6 +178,12 @@ public class ICICIBankScraper extends BankScrapper {
 
     @Override
     public String getBankName() {
-        return "ICICI Bank";
+        return "ICICI";
+    }
+
+    @Override
+    public Set<AccountType> getSupportedAccountTypes() {
+        // ICICI scraper implements both bank and (partially) credit card scraping
+        return EnumSet.of(AccountType.SAVINGS, AccountType.CREDIT_CARD);
     }
 } 

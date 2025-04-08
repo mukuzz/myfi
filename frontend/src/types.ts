@@ -41,4 +41,15 @@ export interface Account {
   isActive: boolean;
   accountNumber: string;
   parentAccountId?: number | null; // Optional parent account ID
+}
+
+// Type for the scraping request payload
+export interface ScrapeRequest {
+  accountNumber: string;
+  username: string;
+  password: string;
+  accountId: number; // To link back scraped data
+  accountType: Account['type']; // May be useful for the scraper
+  accountName: string; // Added account name
+  // Add any other fields the scraper might need
 } 

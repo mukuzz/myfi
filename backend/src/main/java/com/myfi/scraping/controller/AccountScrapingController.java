@@ -8,6 +8,7 @@ import com.myfi.scraping.service.impl.HDFCBankScraper;
 import com.myfi.scraping.service.impl.ICICIBankScraper;
 import com.myfi.service.AccountService;
 import com.myfi.service.TransactionService;
+import com.myfi.service.SystemStatusService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,17 +20,24 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 
 @Slf4j
 @RestController
+@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST})
 @RequestMapping("/api/v1/scraping")
+@Validated
 public class AccountScrapingController {
 
     @Autowired
     private AccountService accountService;
     @Autowired
     private TransactionService transactionService;
+    @Autowired
+    private SystemStatusService systemStatusService;
     
     // Removed separate /scrape/bank and /scrape/credit-card endpoints
     // @PostMapping(value = "/scrape/bank", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -44,7 +52,9 @@ public class AccountScrapingController {
 
     // Single endpoint for scraping
     @PostMapping(value = "/scrape", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<Transaction>> scrapeAccounts(@RequestBody List<AccountCredentials> credentialsList) {
+    public ResponseEntity<List<Transaction>> scrapeAccounts(
+        @RequestBody @NotEmpty(message = "Credentials list cannot be empty") List<@Valid AccountCredentials> credentialsList
+    ) {
         return scrape(credentialsList);
     }
 
@@ -69,12 +79,12 @@ public class AccountScrapingController {
 
             try {
                 // Instantiate Scraper based on bank name
-                if (credentials.getBankName().equalsIgnoreCase("ICICI")) {
+                if (credentials.getAccountName().equalsIgnoreCase("ICICI")) {
                     bankScrapper = new ICICIBankScraper(transactionService);
-                } else if (credentials.getBankName().equalsIgnoreCase("HDFC")) {
+                } else if (credentials.getAccountName().equalsIgnoreCase("HDFC")) {
                     bankScrapper = new HDFCBankScraper(transactionService);
                 } else {
-                    log.error("Invalid bank name provided: {}", credentials.getBankName());
+                    log.error("Invalid bank name provided: {}", credentials.getAccountName());
                     hasErrors = true; 
                     continue;
                 }
@@ -123,11 +133,16 @@ public class AccountScrapingController {
 
         // Decide on the final response status based on whether any errors occurred
         if (hasErrors && allTransactions.isEmpty()) {
+            // Don't update time if it completely failed for all
             return ResponseEntity.internalServerError().body(Collections.emptyList());
-        } else if (hasErrors) {
-             return ResponseEntity.status(207).body(allTransactions); // Multi-Status
         } else {
-            return ResponseEntity.ok(allTransactions);
+            // Update timestamp on partial or full success before returning
+            systemStatusService.updateLastScrapeTime(); 
+            if (hasErrors) {
+                 return ResponseEntity.status(207).body(allTransactions); // Multi-Status
+            } else {
+                return ResponseEntity.ok(allTransactions);
+            }
         }
     }
 }

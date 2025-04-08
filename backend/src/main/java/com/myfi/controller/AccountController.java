@@ -1,6 +1,7 @@
 package com.myfi.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -56,5 +57,10 @@ public class AccountController {
         } else {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/supported")
+    public Map<String, List<String>> getSupportedAccounts() {
+        return accountService.getSupportedAccounts();
     }
 } 

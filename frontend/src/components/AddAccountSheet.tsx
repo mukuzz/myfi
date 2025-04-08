@@ -18,6 +18,9 @@ const accountTypes: Account['type'][] = [
   'CRYPTO',
 ];
 
+// Key prefix for local storage
+const NETBANKING_STORAGE_PREFIX = 'netbanking_';
+
 function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccountViewProps) {
   const [name, setName] = useState('');
   const [type, setType] = useState<Account['type']>(accountTypes[0]);
@@ -25,6 +28,8 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
   const [currency, setCurrency] = useState('INR');
   const [accountNumber, setAccountNumber] = useState('');
   const [parentAccountId, setParentAccountId] = useState<string>(''); // Store as string for select value, empty means 'None'
+  const [netbankingUsername, setNetbankingUsername] = useState('');
+  const [netbankingPassword, setNetbankingPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +46,7 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
 
     // Handle empty balance input as 0
     const balanceValue = balance.trim() === '' ? 0 : parseFloat(balance);
+    const trimmedAccountNumber = accountNumber.trim(); // Use trimmed version consistently
 
     if (isNaN(balanceValue)) {
         setError('Please enter a valid number for the balance.');
@@ -49,10 +55,33 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
     }
 
     // Basic check for account number - adjust validation as needed
-    if (!accountNumber.trim()) {
+    if (!trimmedAccountNumber) {
         setError('Please enter an account number.');
         setIsLoading(false);
         return;
+    }
+
+    // Basic check for netbanking details if provided
+    if ((netbankingUsername && !netbankingPassword) || (!netbankingUsername && netbankingPassword)) {
+      setError('Please provide both netbanking username and password, or leave both empty.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Save netbanking details to local storage if provided
+    if (netbankingUsername && netbankingPassword && trimmedAccountNumber) {
+      try {
+        const storageKey = `${NETBANKING_STORAGE_PREFIX}${trimmedAccountNumber}`;
+        const credentials = { username: netbankingUsername, password: netbankingPassword };
+        localStorage.setItem(storageKey, JSON.stringify(credentials));
+        console.log(`Netbanking credentials saved for account ${trimmedAccountNumber}`);
+      } catch (storageError) {
+        console.error("Failed to save netbanking credentials to local storage:", storageError);
+        // Decide if this should be a user-facing error or just logged
+        // setError('Failed to save netbanking credentials locally.');
+        // setIsLoading(false);
+        // return;
+      }
     }
 
     const accountData: Omit<Account, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -60,7 +89,7 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
       type,
       balance: balanceValue,
       currency,
-      accountNumber,
+      accountNumber: trimmedAccountNumber, // Send trimmed account number
       isActive: true, // Default to active
       parentAccountId: parentAccountId ? parseInt(parentAccountId, 10) : null, // Convert string ID to number or null
     };
@@ -74,6 +103,8 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
       setCurrency('INR');
       setAccountNumber('');
       setParentAccountId(''); // Reset parent account selection
+      setNetbankingUsername(''); // Reset netbanking fields
+      setNetbankingPassword(''); // Reset netbanking fields
       setError(null); // Clear any previous errors
       onAccountCreated(newAccount);
     } catch (err: any) {
@@ -178,6 +209,39 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
                 className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
                 placeholder="The complete account number"
               />
+            </div>
+
+            {/* Netbanking Username */}
+            <div>
+              <label htmlFor="netbankingUsername" className="block text-sm font-medium text-muted-foreground mb-1">
+                Netbanking Username (Optional)
+              </label>
+              <input
+                type="text"
+                id="netbankingUsername"
+                value={netbankingUsername}
+                onChange={(e) => setNetbankingUsername(e.target.value)}
+                className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
+                placeholder="Your online banking username"
+                autoComplete="off" // Prevent browser autofill for sensitive fields
+              />
+            </div>
+
+            {/* Netbanking Password */}
+            <div>
+              <label htmlFor="netbankingPassword" className="block text-sm font-medium text-muted-foreground mb-1">
+                Netbanking Password (Optional)
+              </label>
+              <input
+                type="password" // Use password type
+                id="netbankingPassword"
+                value={netbankingPassword}
+                onChange={(e) => setNetbankingPassword(e.target.value)}
+                className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
+                placeholder="Your online banking password"
+                autoComplete="new-password" // Hint to browser this is a new password field
+              />
+               <p className="text-xs text-muted-foreground mt-1">This information is stored only on your device.</p>
             </div>
 
             {/* Parent Account Selection */}

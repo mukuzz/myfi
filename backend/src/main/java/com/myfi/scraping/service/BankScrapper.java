@@ -1,6 +1,7 @@
 package com.myfi.scraping.service;
 
 import java.util.List;
+import java.util.Set;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
@@ -10,6 +11,7 @@ import com.microsoft.playwright.Playwright;
 import com.myfi.model.Account;
 import com.myfi.model.Transaction;
 import com.myfi.scraping.model.AccountCredentials;
+import com.myfi.model.Account.AccountType;
 
 public abstract class BankScrapper {
 
@@ -32,4 +34,5 @@ public abstract class BankScrapper {
     public abstract boolean login(AccountCredentials credentials);
     public abstract void logout();
     public abstract String getBankName();
+    public abstract Set<AccountType> getSupportedAccountTypes();
 }
