@@ -59,21 +59,35 @@ const AddTransaction: React.FC<AddTransactionProps> = ({
 
     const handleNumpadClick = (value: string) => {
         setError(null); // Clear error on new input
+
         if (amountString.includes('.') && value === '.') return; // Only one decimal point
+
+        let nextAmountString = '';
         if (amountString === '0' && value !== '.') {
-            setAmountString(value); // Replace leading zero unless it's a decimal
+            nextAmountString = value; // Replace leading zero unless it's a decimal
         } else {
-            // Limit decimal places (e.g., to 2)
-            const parts = amountString.split('.');
-            if (parts.length > 1 && parts[1].length >= 2 && value !== 'backspace') {
-                return; 
-            }
-            setAmountString(prev => prev + value);
+            nextAmountString = amountString + value;
         }
+
+        // Check decimal places
+        const parts = nextAmountString.split('.');
+        if (parts.length > 1 && parts[1].length > 2) {
+            return; // Prevent adding more than 2 decimal places
+        }
+
+        // Check max value
+        const potentialAmount = parseFloat(nextAmountString);
+        if (!isNaN(potentialAmount) && potentialAmount > 999999999) {
+            // setError("Amount cannot exceed 999,999,999."); // Optional: show error
+            return; // Prevent update if exceeding max value
+        }
+
+        setAmountString(nextAmountString); // Update state if all checks pass
     };
 
     const handleBackspace = () => {
         setError(null);
+        // Reset to '0' if deleting the last digit before the decimal or the only digit
         setAmountString(prev => prev.length > 1 ? prev.slice(0, -1) : '0');
     };
 
@@ -82,9 +96,8 @@ const AddTransaction: React.FC<AddTransactionProps> = ({
     };
 
     const formatDisplayAmount = () => {
-        const sign = transactionType === 'DEBIT' ? '-' : '+';
         // Basic formatting, consider using Intl.NumberFormat for better currency handling
-        return `${sign}₹${parseFloat(amountString).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`; 
+        return `${parseFloat(amountString).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`; 
     };
 
     const formatDate = (date: Date) => {
@@ -148,7 +161,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({
         >
             {/* Modal Content Area - Animate slide from bottom + expand using translate-y, scale, and origin-bottom */}
             <div 
-                className={`bg-background text-foreground rounded-lg shadow-2xl w-full max-w-sm overflow-hidden flex flex-col origin-bottom transition-all ${animationDuration} ease-in-out ${isVisible && !isAnimatingOut ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-[200px] scale-50'}`}
+                className={`bg-secondary text-foreground rounded-lg shadow-2xl w-full max-w-sm overflow-hidden flex flex-col origin-bottom transition-all ${animationDuration} ease-in-out ${isVisible && !isAnimatingOut ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-[200px] scale-50'}`}
                 onClick={(e) => e.stopPropagation()} // Prevent backdrop click when clicking inside modal
             > 
                 {/* Removed Close Button */}
@@ -156,22 +169,26 @@ const AddTransaction: React.FC<AddTransactionProps> = ({
                 {/* Top Input Area */} 
                 <div className="p-4 pt-6 flex-shrink-0"> {/* Adjust padding */}
                     {error && <p className="text-red-500 text-center mb-2 text-sm">{error}</p>}
-                    <div className="flex justify-between items-center mb-3 space-x-2">
+                    <div className="flex justify-between items-center mb-3">
                          <input
                             type="text"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Paid to?"
-                            className="flex-grow bg-transparent border border-dashed border-muted-foreground rounded px-2 py-1 text-sm placeholder-muted-foreground focus:outline-none focus:border-primary"
+                            className="w-auto min-w-0 bg-transparent border border-dashed border-muted-foreground rounded px-2 py-1 text-sm placeholder-muted-foreground focus:outline-none focus:border-primary mr-2"
                         />
                          {/* Basic Date Display - Consider a Date Picker Component */}
-                         <button className="border border-dashed border-muted-foreground rounded px-2 py-1 text-sm text-muted-foreground"> 
+                         <button className="border border-dashed border-muted-foreground rounded px-2 py-1 text-sm text-muted-foreground whitespace-nowrap"> 
                             {formatDate(transactionDate)}
                         </button>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className={`text-3xl font-semibold ${transactionType === 'DEBIT' ? 'text-red-500' : 'text-green-500'}`}> {/* Slightly smaller text */}
+                        <span className={`text-3xl font-semibold font-foreground flex items-center`}>
+                            <span className="text-foreground text-lg font-thin">{transactionType === 'DEBIT' ? '-' : '+'}</span>
+                            <span className='flex items-top'>
+                            <span className="text-foreground text-sm align-top">₹</span>
                             {formatDisplayAmount()}
+                            </span>
                         </span>
                         <button 
                             // onClick={() => setIsTagSelectorOpen(true)} // Open tag selector modal
@@ -185,30 +202,30 @@ const AddTransaction: React.FC<AddTransactionProps> = ({
 
                 {/* Numpad Area */} 
                 {/* Keep Numpad and Action buttons within the modal content */}
-                <div className="flex-shrink-0 p-2 border-t border-border"> {/* Add border */}
+                <div className="flex-shrink-0 p-3 border-t border-border"> {/* Add border */}
                      {/* Type Toggle (+/-) */}
-                     <div className="grid grid-cols-2 gap-2 mb-2">
+                     <div className="grid grid-cols-2 gap-3 mb-3">
                          <button 
                              onClick={transactionType === 'DEBIT' ? toggleTransactionType : undefined}
-                             className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center ${transactionType === 'CREDIT' ? 'bg-green-500/20 text-green-600' : 'bg-secondary hover:bg-muted'}`} // Adjust padding/size
+                             className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center transition-colors duration-100 ease-in-out ${transactionType === 'CREDIT' ? 'bg-foreground text-background' : 'bg-muted hover:bg-muted'}`} // Added transition
                          >
                              <FiPlus />
                          </button>
                          <button 
                              onClick={transactionType === 'CREDIT' ? toggleTransactionType : undefined}
-                             className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center ${transactionType === 'DEBIT' ? 'bg-red-500/90 text-white' : 'bg-secondary hover:bg-muted'}`} // Adjust padding/size
+                             className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center transition-colors duration-100 ease-in-out ${transactionType === 'DEBIT' ? 'bg-foreground text-background' : 'bg-muted hover:bg-muted'}`} // Added transition
                          >
                              <FiMinus />
                          </button>
                      </div>
 
                     {/* Numpad */} 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-3">
                         {numpadLayout.flat().map((key) => (
                             <button
                                 key={key}
                                 onClick={() => key === 'backspace' ? handleBackspace() : handleNumpadClick(key)}
-                                className="py-3 rounded-lg text-xl font-semibold bg-secondary hover:bg-muted flex items-center justify-center" // Adjust padding/size
+                                className="py-3 rounded-lg text-xl font-semibold bg-secondary hover:bg-muted flex items-center justify-center transition duration-100 ease-in-out transform active:scale-90 active:bg-muted" // Added transition-colors
                             >
                                 {key === 'backspace' ? <FiDelete /> : key}
                             </button>
@@ -216,17 +233,17 @@ const AddTransaction: React.FC<AddTransactionProps> = ({
                     </div>
 
                     {/* Action Buttons */} 
-                    <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className="grid grid-cols-2 gap-3 mt-3">
                          <button 
                             onClick={handleClose} // Use the new close handler
-                            className="py-2.5 rounded-lg bg-secondary hover:bg-muted text-foreground font-semibold"
+                            className="py-2.5 rounded-lg bg-secondary hover:bg-muted text-foreground font-semibold border border-input"
                             disabled={isSubmitting}
                         >
                             Cancel
                         </button>
                         <button 
                             onClick={handleSubmit} 
-                            className="py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-semibold disabled:opacity-50"
+                            className="py-2.5 rounded-lg bg-foreground text-background hover:bg-primary/90 font-semibold disabled:opacity-50"
                             disabled={isSubmitting || parseFloat(amountString) <= 0 || !description}
                         >
                             {isSubmitting ? 'Creating...' : 'Create'}
