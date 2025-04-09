@@ -11,7 +11,14 @@ import {
 } from 'react-icons/fi';
 import Card from './Card';
 
-function AccountsCard() {
+// Define props for the component
+interface AccountsDisplayCardProps {
+  title: string;
+  accountTypes: Account['type'][]; // Array of account types to display
+  emptyStateMessage: string;
+}
+
+function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: AccountsDisplayCardProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +29,9 @@ function AccountsCard() {
     try {
       setIsLoading(true);
       const data = await fetchAccounts();
-      setAccounts(data);
+      // Filter accounts based on the provided types
+      const filteredAccounts = data.filter(acc => accountTypes.includes(acc.type));
+      setAccounts(filteredAccounts);
       setError(null);
     } catch (err) {
       console.error('Error fetching accounts:', err);
@@ -30,7 +39,7 @@ function AccountsCard() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [accountTypes]);
 
   useEffect(() => {
     loadAccounts();
@@ -116,7 +125,7 @@ function AccountsCard() {
   return (
     <Card>
       <header className="top-0 z-10 bg-background pl-4 border-b border-border flex items-center justify-between">
-        <h1 className="text-xs font-bold">Accounts</h1>
+        <h1 className="text-xs font-bold">{title}</h1>
         <button onClick={openSheet} className="text-primary text-lg p-2">
           <FiPlus />
         </button>
@@ -170,7 +179,7 @@ function AccountsCard() {
         {!isLoading && !error && accounts.length === 0 && (
           <div className="text-center py-8 flex-shrink-0" style={{ width: '100%' }}>
             <FiCreditCard className="h-12 w-12 mb-4 mx-auto text-muted-foreground" />
-            <p className="text-muted-foreground">No accounts found</p>
+            <p className="text-muted-foreground">{emptyStateMessage}</p>
           </div>
         )}
       </div>
@@ -187,4 +196,4 @@ function AccountsCard() {
   );
 }
 
-export default AccountsCard; 
+export default AccountsDisplayCard; 
