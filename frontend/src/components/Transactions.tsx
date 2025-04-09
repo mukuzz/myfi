@@ -84,12 +84,12 @@ function Transactions() {
 
   return (
     <div className="pt-4 text-foreground flex flex-col h-full bg-background">
-      <div className="flex justify-between items-center mb-4 px-4">
-        <h1 className="text-3xl font-bold">Transactions</h1>
-        <div className="flex space-x-3">
-          <button className="text-muted-foreground hover:text-foreground"><FiFilter size={20} /></button>
+      <div className="flex justify-between items-start mb-4 px-2">
+        <h1 className="text-3xl font-bold pl-2">Transactions</h1>
+        <div className="flex">
+          <button className="text-muted-foreground hover:text-foreground p-2"><FiFilter size={20} /></button>
           <button 
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground p-2"
             onClick={openAddTxSheet}
           >
              <FiPlus size={24} />
