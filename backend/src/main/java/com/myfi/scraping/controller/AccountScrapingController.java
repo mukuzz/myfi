@@ -23,6 +23,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -45,6 +47,9 @@ public class AccountScrapingController {
     private TransactionService transactionService;
     @Autowired
     private SystemStatusService systemStatusService;
+
+    // Map to hold Semaphores for each bank type, limiting concurrency to 1 per type
+    private final ConcurrentHashMap<String, Semaphore> bankSemaphores = new ConcurrentHashMap<>();
 
     // Single endpoint for scraping
     @PostMapping(value = "/scrape", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -79,8 +84,14 @@ public class AccountScrapingController {
                 BankScrapper bankScrapper = null;
                 String determinedScrapeType = "UNKNOWN"; // For logging
                 boolean taskError = false; // Track error within this task
+                String bankName = account.getName().toUpperCase(); // Use uppercase for consistency in map keys
+                Semaphore bankSemaphore = bankSemaphores.computeIfAbsent(bankName, k -> new Semaphore(1)); // Get or create semaphore for this bank
 
                 try {
+                    log.info("Attempting to acquire permit for bank: {}", bankName);
+                    bankSemaphore.acquire(); // Wait for permit for this specific bank type
+                    log.info("Permit acquired for bank: {}. Proceeding with scraping for account: {}", bankName, accountNumberToScrape);
+
                     // Instantiate Scraper based on bank name
                     if (credentials.getAccountName().equalsIgnoreCase("ICICI")) {
                         bankScrapper = new ICICIBankScraper(transactionService);
@@ -115,11 +126,20 @@ public class AccountScrapingController {
                     
                     return res; // Return transactions scraped by this task
 
+                } catch (InterruptedException ie) {
+                     Thread.currentThread().interrupt();
+                     log.error("Semaphore acquisition interrupted for bank {} account {}: {}", bankName, accountNumberToScrape, ie.getMessage(), ie);
+                     taskError = true;
+                     return Collections.emptyList();
                 } catch (Exception e) {
                     log.error("Error during {} scraping for account number {}: {}", determinedScrapeType, accountNumberToScrape, e.getMessage(), e);
-                    taskError = true; 
+                    taskError = true;
                     return Collections.emptyList(); // Return empty on error
                 } finally {
+                     log.debug("Attempting to release permit for bank: {} (Account: {})", bankName, accountNumberToScrape);
+                    bankSemaphore.release(); // Release the permit for this bank type
+                    log.info("Permit released for bank: {}. (Account: {})", bankName, accountNumberToScrape);
+
                     if (bankScrapper != null) {
                         try {
                             bankScrapper.logout();
