@@ -154,11 +154,7 @@ function TotalBalanceCard() {
         </div>
       </div>
        {/* Bottom corner button placeholder */}
-       <div className="flex justify-end p-2 border-t border-border bg-muted/20">
-            <button className="text-muted-foreground p-1 rounded hover:bg-muted">
-                <FiBriefcase size={18} /> 
-            </button>
-       </div>
+       
     </Card>
   );
 }
