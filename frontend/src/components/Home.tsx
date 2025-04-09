@@ -1,6 +1,6 @@
-import AccountsCard from './AccountsCard';
 import SpendingSummary from './SpendingSummary';
 import TotalBalanceCard from './TotalBalanceCard';
+import AccountsDisplayCard from './AccountsDisplayCard';
 import { FiUser } from 'react-icons/fi';
 
 function Home() {
@@ -24,7 +24,16 @@ function Home() {
 
       {/* Column 2 */}
       <div className="lg:w-1/2 flex flex-col gap-4"> 
-        <AccountsCard />
+        <AccountsDisplayCard 
+          title="Bank Accounts"
+          accountTypes={['SAVINGS']}
+          emptyStateMessage="No savings accounts found"
+        />
+        <AccountsDisplayCard 
+          title="Credit Cards"
+          accountTypes={['CREDIT_CARD']}
+          emptyStateMessage="No credit cards found"
+        />
       </div>
 
     </div>

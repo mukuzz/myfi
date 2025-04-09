@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Tab } from './types'; // Import Tab type
 import Home from './components/Home';
 import Transactions from './components/Transactions';
-import AccountsCard from './components/AccountsCard';
 import BottomNav from './components/BottomNav';
 import { useIsMobile } from './hooks/useIsMobile'; // Import the hook
 import RefreshBar from './components/RefreshBar'; // Import the unified component

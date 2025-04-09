@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Account } from '../types';
 import { fetchAccounts } from '../services/apiService';
-import { FiMoreHorizontal, FiBriefcase, FiTrendingUp } from 'react-icons/fi'; // Using generic icons
+import { FiMoreHorizontal, FiBriefcase } from 'react-icons/fi'; // Using generic icons
 import { IconType } from 'react-icons';
 import Card from './Card';
 
