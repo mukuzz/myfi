@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Transaction, Tag } from '../types';
+import { Transaction, Tag, TagMap } from '../types';
 import { fetchTransactionsAndTags, updateTransactionTagApi } from '../services/apiService';
 
 export function useTransactionData() {
@@ -8,10 +8,10 @@ export function useTransactionData() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const tagMap = useMemo(() => {
-    const map = new Map<number, string>();
+  const tagMap: TagMap = useMemo(() => {
+    const map: TagMap = {}; // Use plain object for the desired type
     tags.forEach(tag => {
-      map.set(tag.id, tag.name);
+      map[tag.id] = tag; // Store the full tag object
     });
     return map;
   }, [tags]);

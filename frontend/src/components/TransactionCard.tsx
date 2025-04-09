@@ -1,19 +1,19 @@
 import React from 'react';
 import { FiTag, FiCreditCard } from 'react-icons/fi';
 import { LuIndianRupee } from 'react-icons/lu';
-import { Transaction } from '../types';
+import { Transaction, Tag, TagMap } from '../types';
 import { formatDate } from '../utils/dateUtils';
 import { getTagIcon } from '../utils/transactionUtils';
 
 interface TransactionCardProps {
   transaction: Transaction;
-  tagMap: Map<number, string>;
+  tagMap: TagMap;
   onTagClick?: (transaction: Transaction, event: React.MouseEvent) => void;
   onCardClick?: (transaction: Transaction) => void;
 }
 
 function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: TransactionCardProps) {
-  const currentTagName = transaction.tagId ? tagMap.get(transaction.tagId) : undefined;
+  const currentTagName = transaction.tagId ? tagMap[transaction.tagId]?.name : undefined;
   const currentTagIcon = currentTagName ? getTagIcon(currentTagName) : <FiTag className="text-muted-foreground" />;
 
   return (
