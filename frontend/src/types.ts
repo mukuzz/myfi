@@ -28,6 +28,9 @@ export interface Tag {
   parentTagId?: number | null; // Optional parent ID
 }
 
+// Type for the map of tag IDs to Tag objects
+export type TagMap = { [id: number]: Tag };
+
 // Define the Account type based on the Java model
 export interface Account {
   id: number;

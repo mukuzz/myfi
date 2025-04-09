@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FiSearch } from 'react-icons/fi';
-import { Tag, Transaction } from '../types';
+import { Tag, Transaction, TagMap } from '../types';
 import { getTagIcon } from '../utils/transactionUtils';
 import { buildTagHierarchy, HierarchicalTag } from '../utils/tagUtils';
 import TransactionCard from './TransactionCard';
@@ -8,7 +8,7 @@ import TransactionCard from './TransactionCard';
 interface TagSelectorProps {
   onSelectTag: (tagId: number | null) => void;
   availableTags: Tag[];
-  tagMap: Map<number, string>;
+  tagMap: TagMap;
   currentTagId?: number | null;
   transaction?: Transaction;
 }

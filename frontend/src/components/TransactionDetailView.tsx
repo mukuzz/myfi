@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiTag, FiCreditCard } from 'react-icons/fi'; // Example icons, Add FiSave
 import { TbArrowsCross } from 'react-icons/tb'; // Import the icon
-import { Transaction } from '../types';
+import { Transaction, Tag, TagMap } from '../types'; // Import TagMap
 import { getTagIcon } from '../utils/transactionUtils';
 import TransactionCard from './TransactionCard';
 import { updateTransaction } from '../services/apiService'; // Adjust the path as needed
@@ -32,7 +32,7 @@ const debounce = <F extends (...args: any[]) => any>(func: F, waitFor: number) =
 
 interface TransactionDetailViewProps {
     transaction: Transaction;
-    tagMap: Map<number, string>;
+    tagMap: TagMap; // Use the correct type
     // Placeholder functions for actions - implementation later
     onEdit?: (transaction: Transaction) => void;
     onDelete?: (transaction: Transaction) => void;
@@ -54,7 +54,8 @@ function TransactionDetailView({
     const [note, setNote] = useState(transaction.notes || ''); // Use 'notes' based on model change
     const [isSaving, setIsSaving] = useState(false); // Optional: for loading state
 
-    const currentTagName = transaction.tagId ? tagMap.get(transaction.tagId) : 'Untagged';
+    // Access tag name directly from the Tag object in the map
+    const currentTagName = transaction.tagId ? tagMap[transaction.tagId]?.name : 'Untagged';
     const TagIconComponent = currentTagName !== 'Untagged' && transaction.tagId
         ? getTagIcon(currentTagName)
         : <FiTag className="text-muted-foreground" />;

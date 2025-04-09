@@ -7,6 +7,7 @@ import { useTransactionData } from '../hooks/useTransactionData';
 import TransactionCard from './TransactionCard';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import TransactionDetailView from './TransactionDetailView';
+import AddTransaction from './AddTransaction';
 
 function Transactions() {
   const {
@@ -16,13 +17,16 @@ function Transactions() {
     loading,
     error,
     updateTransactionTag,
-    refetchData
+    refetchData,
+    // Assume createTransaction exists or will be added in the hook
+    // createTransaction 
   } = useTransactionData();
 
   const [isTagSelectorOpen, setIsTagSelectorOpen] = useState<boolean>(false);
   const [selectedTransactionForTag, setSelectedTransactionForTag] = useState<Transaction | null>(null);
   const [isDetailViewOpen, setIsDetailViewOpen] = useState<boolean>(false);
   const [selectedTransactionForDetail, setSelectedTransactionForDetail] = useState<Transaction | null>(null);
+  const [isAddTxSheetOpen, setIsAddTxSheetOpen] = useState<boolean>(false);
 
   const groupedTransactions = useMemo(() => {
     if (!transactions || transactions.length === 0) return {};
@@ -55,13 +59,41 @@ function Transactions() {
     setSelectedTransactionForDetail(null);
   };
 
+  const openAddTxSheet = () => {
+    setIsAddTxSheetOpen(true);
+  };
+
+  const closeAddTxSheet = () => {
+    setIsAddTxSheetOpen(false);
+    // Optionally refetch data after adding a transaction and closing the sheet
+    // refetchData(); 
+  };
+
+  const handleCreateTransaction = async (data: any /* Replace any with NewTransactionData type */) => {
+     console.log("Creating transaction with data:", data);
+     // try {
+     //   await createTransaction(data);
+     //   refetchData(); // Refetch data on success
+     //   closeAddTxSheet(); // Close sheet on success
+     // } catch (err) {
+     //   console.error("Failed to create transaction from component:", err);
+     //   // Handle error display in the AddTransaction component itself
+     //   throw err; // Re-throw to let the form know about the error
+     // }
+  };
+
   return (
     <div className="pt-4 text-foreground flex flex-col h-full bg-background">
       <div className="flex justify-between items-center mb-4 px-4">
         <h1 className="text-3xl font-bold">Transactions</h1>
         <div className="flex space-x-3">
           <button className="text-muted-foreground hover:text-foreground"><FiFilter size={20} /></button>
-          <button className="text-muted-foreground hover:text-foreground"><FiPlus size={24} /></button>
+          <button 
+            className="text-muted-foreground hover:text-foreground"
+            onClick={openAddTxSheet}
+          >
+             <FiPlus size={24} />
+          </button>
         </div>
       </div>
 
@@ -130,6 +162,15 @@ function Transactions() {
           />
         )}
       </DraggableBottomSheet>
+
+      {/* Add Transaction Bottom Sheet */}
+      {isAddTxSheetOpen && (
+        <AddTransaction 
+          onClose={closeAddTxSheet}
+          availableTags={tags}
+          tagMap={tagMap}
+        />
+      )}
 
     </div>
   );
