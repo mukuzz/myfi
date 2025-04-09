@@ -225,7 +225,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({
                             <button
                                 key={key}
                                 onClick={() => key === 'backspace' ? handleBackspace() : handleNumpadClick(key)}
-                                className="py-3 rounded-lg text-xl font-semibold bg-secondary hover:bg-muted flex items-center justify-center transition duration-100 ease-in-out transform active:scale-90 active:bg-muted" // Added transition-colors
+                                className="py-3 rounded-lg text-xl font-semibold bg-muted flex items-center justify-center transition duration-100 ease-in-out transform active:scale-90 active:bg-muted" // Added transition-colors
                             >
                                 {key === 'backspace' ? <FiDelete /> : key}
                             </button>
