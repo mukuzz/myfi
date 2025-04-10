@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { Tag, Transaction, TagMap } from '../types';
-import { getTagIcon } from '../utils/transactionUtils';
 import { buildTagHierarchy, HierarchicalTag } from '../utils/tagUtils';
-import TransactionCard from './TransactionCard';
+import TransactionWithNarration from './TransactionWithNarration';
 
 interface TagSelectorProps {
   onSelectTag: (tagId: number | null) => void;
@@ -61,17 +60,8 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
       </div>
 
       {transaction && (
-        <div className="rounded-xl shadow overflow-hidden bg-secondary p-1 mb-4 flex-shrink-0 mx-4">
-          <TransactionCard transaction={transaction} tagMap={tagMap} />
-          {transaction.description && (
-            <div className="bg-secondary p-2 mt-1">
-              <div className="flex justify-between items-start">
-                <p className="text-xs text-muted-foreground mr-2">
-                  <span className="font-medium text-secondary-foreground">Narration:</span> {transaction.description}
-                </p>
-              </div>
-            </div>
-          )}
+        <div className="mx-4">
+          <TransactionWithNarration transaction={transaction} tagMap={tagMap} />
         </div>
       )}
 
@@ -107,7 +97,6 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
             <div className="flex items-center space-x-2 overflow-x-auto whitespace-nowrap px-5 no-scrollbar pb-4">
               {parentTag.children && parentTag.children.map(childTag => {
                 const isSelected = selectedTagId === childTag.id;
-                const icon = getTagIcon(childTag.name);
                 return (
                   <button
                     key={childTag.id}

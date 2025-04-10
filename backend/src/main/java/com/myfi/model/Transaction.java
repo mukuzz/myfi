@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.util.DigestUtils;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
@@ -68,12 +68,11 @@ public class Transaction {
     @Column(name = "exclude_from_accounting", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean excludeFromAccounting;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
-    @JsonIgnore
-    private Transaction parent;
+    @Column(name = "parent_id")
+    private Long parentId;
 
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "parentId", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Transaction> subTransactions;
 
     @Column(nullable = false, length = 64)

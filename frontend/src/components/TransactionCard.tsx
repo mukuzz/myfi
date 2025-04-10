@@ -1,9 +1,8 @@
 import React from 'react';
 import { FiTag, FiCreditCard } from 'react-icons/fi';
 import { LuIndianRupee } from 'react-icons/lu';
-import { Transaction, Tag, TagMap } from '../types';
+import { Transaction, TagMap } from '../types';
 import { formatDate } from '../utils/dateUtils';
-import { getTagIcon } from '../utils/transactionUtils';
 
 interface TransactionCardProps {
   transaction: Transaction;
@@ -14,13 +13,12 @@ interface TransactionCardProps {
 
 function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: TransactionCardProps) {
   const currentTagName = transaction.tagId ? tagMap[transaction.tagId]?.name : undefined;
-  const currentTagIcon = currentTagName ? getTagIcon(currentTagName) : <FiTag className="text-muted-foreground" />;
 
   return (
     <div
       role={onCardClick ? "button" : undefined}
       tabIndex={onCardClick ? 0 : undefined}
-      className={`bg-secondary p-3 rounded-xl shadow flex-shrink-0 w-full text-left transition-colors ${onCardClick ? 'cursor-pointer' : 'cursor-default'} md:hover:bg-muted`}
+      className={`bg-secondary p-3 rounded-xl shadow flex-shrink-0 w-full text-left transition-colors ${onCardClick ? 'cursor-pointer md:hover:bg-muted' : 'cursor-default'}`}
       onClick={() => onCardClick && onCardClick(transaction)}
       onKeyDown={(e) => {
         if (onCardClick && (e.key === 'Enter' || e.key === ' ')) {
@@ -57,7 +55,6 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: Trans
           >
             {currentTagName ? (
               <>
-                {currentTagIcon}
                 <span>{currentTagName}</span>
               </>
             ) : (

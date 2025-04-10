@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiTag, FiCreditCard } from 'react-icons/fi'; // Example icons, Add FiSave
+import { FiCreditCard } from 'react-icons/fi'; // Example icons, Add FiSave
 import { TbArrowsCross } from 'react-icons/tb'; // Import the icon
-import { Transaction, Tag, TagMap } from '../types'; // Import TagMap
-import { getTagIcon } from '../utils/transactionUtils';
-import TransactionCard from './TransactionCard';
+import { BsDiagram3 } from 'react-icons/bs'; // Icon for splits
+import { HiOutlineDotsHorizontal } from 'react-icons/hi'; // Ellipsis Icon
+import { Transaction, TagMap } from '../types'; // Import TagMap
 import { updateTransaction } from '../services/apiService'; // Adjust the path as needed
+import TransactionWithNarration from './TransactionWithNarration'; // Import the new component
 
 // A simple debounce function (consider using lodash.debounce for production)
 const debounce = <F extends (...args: any[]) => any>(func: F, waitFor: number) => {
@@ -40,6 +41,7 @@ interface TransactionDetailViewProps {
     onTagClick?: (transaction: Transaction, event: React.MouseEvent) => void;
     // Optional: Add account details if needed
     // account?: Account; // Assuming an Account type exists
+    onManageSplit?: (transaction: Transaction) => void; // Prop to handle opening the split manager
 }
 
 function TransactionDetailView({
@@ -49,6 +51,7 @@ function TransactionDetailView({
     onDelete,
     onSplit,
     onTagClick,
+    onManageSplit, // Destructure the new prop
 }: TransactionDetailViewProps) {
     const [isExcluded, setIsExcluded] = useState(transaction.excludeFromAccounting || false);
     const [note, setNote] = useState(transaction.notes || ''); // Use 'notes' based on model change
@@ -56,9 +59,6 @@ function TransactionDetailView({
 
     // Access tag name directly from the Tag object in the map
     const currentTagName = transaction.tagId ? tagMap[transaction.tagId]?.name : 'Untagged';
-    const TagIconComponent = currentTagName !== 'Untagged' && transaction.tagId
-        ? getTagIcon(currentTagName)
-        : <FiTag className="text-muted-foreground" />;
 
     // Debounced function to save the note
     const debouncedSaveNote = useCallback(
@@ -124,10 +124,28 @@ function TransactionDetailView({
                 <h2 className="text-lg font-semibold text-foreground">Transaction Details</h2>
                 <div className="w-6 h-6"></div>
             </div>
-            {/* Header Section */}
-            <div className="mb-6">
-                <TransactionCard transaction={transaction} tagMap={tagMap} onTagClick={onTagClick} />
+
+            <div
+                className="bg-input flex items-center justify-between p-3 rounded-lg mb-4 text-foreground md:hover:bg-muted cursor-pointer"
+                onClick={onManageSplit ? () => onManageSplit(transaction) : undefined}
+            >
+                <div className="flex items-center">
+                    <BsDiagram3 className="mr-3 h-5 w-5 text-foreground" />
+                    <span className="text-sm font-medium uppercase">
+                        {transaction.parentId != null ? transaction.subTransactions && transaction.subTransactions.length > 0
+                            ? 'Transaction Split' // Parent transaction (has subTransactions)
+                            : 'Split from another transaction' // Child transaction (has parentId)
+                            : 'Split Transaction'
+                        }
+                    </span>
+                </div>
+                <HiOutlineDotsHorizontal className="h-5 w-5 text-muted-foreground" /> {/* Ellipsis Icon */}
             </div>
+
+            {/* Header Section */}
+            {transaction && (
+                <TransactionWithNarration transaction={transaction} tagMap={tagMap} onTagClick={onTagClick} />
+            )}
 
             {/* Account Chip Section */}
             {transaction.account && (
@@ -135,7 +153,7 @@ function TransactionDetailView({
                     Account
                     <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-secondary-foreground">
                         <FiCreditCard className="mr-2 h-4 w-4" />
-                        {transaction.account.id}
+                        {transaction.account.name}
                     </div>
                 </div>
             )}
