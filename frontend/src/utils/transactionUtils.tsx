@@ -1,5 +1,3 @@
-import React from 'react';
-import { FiCoffee, FiHome as FiHouse, FiMapPin, FiSearch } from 'react-icons/fi';
 import { Transaction } from '../types';
 import { formatMonthYear } from './dateUtils';
 
@@ -17,14 +15,3 @@ export const groupTransactionsByMonth = (transactions: Transaction[]): Record<st
     return acc;
   }, {} as Record<string, Transaction[]>);
 };
-
-// Map category string to icon component (customize as needed)
-export const getTagIcon = (tag?: string): React.ReactElement => {
-  switch (tag?.toLowerCase()) {
-    case 'food & drinks': return <FiCoffee className="inline mr-1" />;
-    case 'bill': return <FiHouse className="inline mr-1" />;
-    case 'swiggy': return <FiMapPin className="inline mr-1" />;
-    // Add more categories and icons
-    default: return <FiSearch className="inline mr-1" />;
-  }
-}; 

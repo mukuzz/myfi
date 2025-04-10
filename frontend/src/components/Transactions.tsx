@@ -8,6 +8,7 @@ import TransactionCard from './TransactionCard';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import TransactionDetailView from './TransactionDetailView';
 import AddTransaction from './AddTransaction';
+import SplitTransactionView from './SplitTransactionView';
 
 function Transactions() {
   const {
@@ -27,6 +28,8 @@ function Transactions() {
   const [isDetailViewOpen, setIsDetailViewOpen] = useState<boolean>(false);
   const [selectedTransactionForDetail, setSelectedTransactionForDetail] = useState<Transaction | null>(null);
   const [isAddTxSheetOpen, setIsAddTxSheetOpen] = useState<boolean>(false);
+  const [isSplitViewOpen, setIsSplitViewOpen] = useState<boolean>(false);
+  const [selectedTransactionForSplit, setSelectedTransactionForSplit] = useState<Transaction | null>(null);
 
   const groupedTransactions = useMemo(() => {
     if (!transactions || transactions.length === 0) return {};
@@ -57,6 +60,17 @@ function Transactions() {
   const closeDetailView = () => {
     setIsDetailViewOpen(false);
     setSelectedTransactionForDetail(null);
+  };
+
+  const openSplitView = (tx: Transaction) => {
+    closeDetailView();
+    setSelectedTransactionForSplit(tx);
+    setIsSplitViewOpen(true);
+  };
+
+  const closeSplitView = () => {
+    setIsSplitViewOpen(false);
+    setSelectedTransactionForSplit(null);
   };
 
   const openAddTxSheet = () => {
@@ -142,6 +156,18 @@ function Transactions() {
         )}
       </div>
 
+      {/* Detail View Bottom Sheet (New) */}
+      <DraggableBottomSheet isOpen={isDetailViewOpen} onClose={closeDetailView}>
+        {selectedTransactionForDetail && (
+          <TransactionDetailView 
+            transaction={selectedTransactionForDetail} 
+            tagMap={tagMap}
+            onTagClick={openTagSelector}
+            onManageSplit={openSplitView}
+          />
+        )}
+      </DraggableBottomSheet>
+
       <DraggableBottomSheet isOpen={isTagSelectorOpen} onClose={closeTagSelector}>
         <TagSelector 
           onSelectTag={handleUpdateTag}
@@ -152,17 +178,6 @@ function Transactions() {
         />
       </DraggableBottomSheet>
 
-      {/* Detail View Bottom Sheet (New) */}
-      <DraggableBottomSheet isOpen={isDetailViewOpen} onClose={closeDetailView}>
-        {selectedTransactionForDetail && (
-          <TransactionDetailView 
-            transaction={selectedTransactionForDetail} 
-            tagMap={tagMap}
-            onTagClick={openTagSelector}
-          />
-        )}
-      </DraggableBottomSheet>
-
       {/* Add Transaction Bottom Sheet */}
       {isAddTxSheetOpen && (
         <AddTransaction 
@@ -171,6 +186,18 @@ function Transactions() {
           tagMap={tagMap}
         />
       )}
+
+      {/* Split Transaction Bottom Sheet (New) */}
+      <DraggableBottomSheet isOpen={isSplitViewOpen} onClose={closeSplitView}>
+        {selectedTransactionForSplit && (
+          <SplitTransactionView
+            transaction={selectedTransactionForSplit} 
+            tagMap={tagMap}
+            onClose={closeSplitView}
+            refetchData={refetchData}
+          />
+        )}
+      </DraggableBottomSheet>
 
     </div>
   );

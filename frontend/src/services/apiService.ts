@@ -134,6 +134,52 @@ export const createAccount = async (accountData: Omit<Account, 'id' | 'createdAt
   return response.json();
 };
 
+/**
+ * Creates a new transaction on the server.
+ * @param transactionData The data for the new transaction.
+ * @returns The created transaction data from the server.
+ * @throws Error if the creation fails.
+ */
+export const createTransaction = async (transactionData: Partial<Omit<Transaction, 'id'>>): Promise<Transaction> => {
+  // Prepare the payload for the backend.
+  // Backend likely expects accountId, not the full account object during creation.
+  // Extract accountId if provided directly or from the account object.
+  const payload: any = { ...transactionData };
+  if (transactionData.account && transactionData.account.id) {
+    payload.accountId = transactionData.account.id;
+  }
+  // Remove the account object itself if it exists, as backend expects accountId
+  delete payload.account; 
+  // Remove other fields the backend might auto-generate and not expect
+  delete payload.subTransactions;
+  delete payload.createdAt;
+  delete payload.updatedAt;
+  // Add any other necessary transformations based on backend requirements
+
+  const response = await fetch(`${API_BASE_URL}/transactions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    // Send the transformed payload
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {
+      // Ignore if response body is not JSON or empty
+    }
+    console.error("Failed to create transaction:", errorMessage);
+    throw new Error(`Failed to create transaction: ${errorMessage}`);
+  }
+
+  return response.json();
+};
+
 // Trigger scraping process for given accounts
 export const triggerScraping = async (scrapeRequests: ScrapeRequest[]): Promise<void> => {
   // We expect a 202 Accepted or similar, no specific body needed for now
@@ -257,5 +303,68 @@ export async function updateTransactionTagApi(
   }
   console.log("Transaction tag updated successfully via API");
 }
+
+/**
+ * Calls the backend endpoint to split a transaction.
+ * @param parentId The ID of the transaction to split.
+ * @param amount1 The amount for the new sub-transaction.
+ * @param amount2 The amount the parent transaction should be updated to.
+ * @returns The updated parent transaction from the server.
+ * @throws Error if the split fails.
+ */
+export const splitTransactionApi = async (
+  parentId: number,
+  amount1: number,
+  amount2: number
+): Promise<Transaction> => {
+  const response = await fetch(`${API_BASE_URL}/transactions/${parentId}/split`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ amount1, amount2 }), // Send the amounts in the request body
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      // Try to parse backend error message
+      const errorBody = await response.json(); 
+      errorMessage = errorBody.message || errorBody.error || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {
+      // If body parsing fails, use the status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    console.error(`Failed to split transaction ${parentId}:`, errorMessage);
+    // Throw the specific message from backend if available
+    throw new Error(`Failed to split transaction: ${errorMessage}`);
+  }
+
+  return response.json(); // Return the updated parent transaction
+};
+
+/**
+ * Fetches a specific transaction by ID.
+ * @param id The ID of the transaction to fetch.
+ * @returns The transaction data.
+ * @throws Error if the fetch fails.
+ */
+export const fetchTransactionById = async (id: number): Promise<Transaction> => {
+  const response = await fetch(`${API_BASE_URL}/transactions/${id}`);
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {
+      // Ignore
+    }
+    console.error(`Failed to fetch transaction with ID ${id}:`, errorMessage);
+    throw new Error(`Failed to fetch transaction: ${errorMessage}`);
+  }
+
+  return response.json();
+};
 
 // Add other API functions here as needed (e.g., fetchTransactions, createTransaction, deleteTransaction) 
