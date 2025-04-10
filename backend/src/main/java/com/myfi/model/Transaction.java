@@ -72,7 +72,6 @@ public class Transaction {
     private Long parentId;
 
     @OneToMany(mappedBy = "parentId", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
     private List<Transaction> subTransactions;
 
     @Column(nullable = false, length = 64)
