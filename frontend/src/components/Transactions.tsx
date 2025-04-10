@@ -38,6 +38,7 @@ function Transactions() {
 
   const openTagSelector = (tx: Transaction, event: React.MouseEvent) => {
     event.stopPropagation();
+    closeDetailView();
     setSelectedTransactionForTag(tx);
     setIsTagSelectorOpen(true);
   };
