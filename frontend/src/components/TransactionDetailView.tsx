@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiCreditCard } from 'react-icons/fi'; // Example icons, Add FiSave
-import { TbArrowsCross } from 'react-icons/tb'; // Import the icon
 import { BsDiagram3 } from 'react-icons/bs'; // Icon for splits
 import { HiOutlineDotsHorizontal } from 'react-icons/hi'; // Ellipsis Icon
 import { Transaction, TagMap } from '../types'; // Import TagMap
 import { updateTransaction } from '../services/apiService'; // Adjust the path as needed
 import TransactionWithNarration from './TransactionWithNarration'; // Import the new component
+import { ReactComponent as ExcludedIcon } from '../assets/icons/ExcludedFromAccountingIcon.svg'; // Import the custom SVG
 
 // A simple debounce function (consider using lodash.debounce for production)
 const debounce = <F extends (...args: any[]) => any>(func: F, waitFor: number) => {
@@ -176,7 +176,7 @@ function TransactionDetailView({
             <div className="bg-muted p-4 rounded-lg mb-6">
                 <div className="flex items-center justify-between bg-card py-3 rounded-md">
                     <div className="flex items-center">
-                        <TbArrowsCross className="mr-3 h-5 w-5 text-foreground" />
+                        <ExcludedIcon className="mr-3 h-6 w-6 text-foreground" />
                         <span className="text-foreground font-medium">Exclude from Cash Flow</span>
                     </div>
                     {/* Simple Toggle Switch */}
