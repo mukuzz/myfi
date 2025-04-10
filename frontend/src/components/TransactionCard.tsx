@@ -3,6 +3,7 @@ import { FiTag, FiCreditCard } from 'react-icons/fi';
 import { LuIndianRupee } from 'react-icons/lu';
 import { Transaction, TagMap } from '../types';
 import { formatDate } from '../utils/dateUtils';
+import { ReactComponent as ExcludedIcon } from '../assets/icons/ExcludedFromAccountingIcon.svg';
 
 interface TransactionCardProps {
   transaction: Transaction;
@@ -61,6 +62,11 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: Trans
               <FiTag className="text-muted-foreground" />
             )}
           </button>
+          {transaction.excludeFromAccounting && (
+            <span className="text-muted-foreground flex items-center pointer-events-none" title="Excluded from accounting">
+              <ExcludedIcon className="h-6 w-6" />
+            </span>
+          )}
           {transaction.account && (
             <span className="text-primary flex items-center pointer-events-none" title={`Account ID: ${transaction.account.id}`}>
               <FiCreditCard size={24} />
