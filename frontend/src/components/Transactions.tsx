@@ -1,14 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { FiFilter, FiPlus, FiSearch } from 'react-icons/fi';
-import { Transaction } from '../types';
+import { Transaction, Account, TagMap, Tag } from '../types';
 import { groupTransactionsByMonth } from '../utils/transactionUtils';
 import TagSelector from './TagSelector';
 import { useTransactionData } from '../hooks/useTransactionData';
 import TransactionCard from './TransactionCard';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import TransactionDetailView from './TransactionDetailView';
-import AddTransaction from './AddTransaction';
+import AmountInputModal from './AmountInputModal';
 import SplitTransactionView from './SplitTransactionView';
+import { createTransaction } from '../services/apiService';
+
 
 function Transactions() {
   const {
@@ -19,8 +21,8 @@ function Transactions() {
     error,
     updateTransactionTag,
     refetchData,
-    // Assume createTransaction exists or will be added in the hook
-    // createTransaction 
+    // createTransaction, // Ensure this exists and handles a Transaction object
+    // accounts // Assume accounts are available from the hook, e.g., accounts[0]
   } = useTransactionData();
 
   const [isTagSelectorOpen, setIsTagSelectorOpen] = useState<boolean>(false);
@@ -30,6 +32,9 @@ function Transactions() {
   const [isAddTxSheetOpen, setIsAddTxSheetOpen] = useState<boolean>(false);
   const [isSplitViewOpen, setIsSplitViewOpen] = useState<boolean>(false);
   const [selectedTransactionForSplit, setSelectedTransactionForSplit] = useState<Transaction | null>(null);
+
+  // State to hold the transaction being added/edited
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
 
   const groupedTransactions = useMemo(() => {
     if (!transactions || transactions.length === 0) return {};
@@ -75,26 +80,48 @@ function Transactions() {
   };
 
   const openAddTxSheet = () => {
+    // Create a new dummy transaction object when adding
+    // IMPORTANT: Replace DUMMY_DEFAULT_ACCOUNT with a real account
+    const newTransaction: Transaction = {
+      id: -1, // Use a temporary ID like -1 for new transactions
+      amount: 0,
+      description: '',
+      type: 'DEBIT', // Default type
+      transactionDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(), // Set createdAt for new
+      excludeFromAccounting: false, // Default value
+    };
+    setTransactionToEdit(newTransaction);
     setIsAddTxSheetOpen(true);
   };
 
   const closeAddTxSheet = () => {
     setIsAddTxSheetOpen(false);
-    // Optionally refetch data after adding a transaction and closing the sheet
-    // refetchData(); 
+    setTransactionToEdit(null); // Clear the transaction being edited
   };
 
-  const handleCreateTransaction = async (data: any /* Replace any with NewTransactionData type */) => {
-     console.log("Creating transaction with data:", data);
-     // try {
-     //   await createTransaction(data);
-     //   refetchData(); // Refetch data on success
-     //   closeAddTxSheet(); // Close sheet on success
-     // } catch (err) {
-     //   console.error("Failed to create transaction from component:", err);
-     //   // Handle error display in the AddTransaction component itself
-     //   throw err; // Re-throw to let the form know about the error
-     // }
+  // It now receives the full updated transaction object
+  const handleTransactionSubmit = async (transactionPayload: Transaction) => {
+    console.log("Submitting transaction:", transactionPayload);
+
+    try {
+      // Format the date using browser's timezone
+      const date = new Date(transactionPayload.transactionDate);
+      const formattedDate = date.toLocaleDateString();
+      const formattedTime = date.toLocaleTimeString();
+      transactionPayload.description = `CASH/${transactionPayload.type}/${formattedDate} ${formattedTime}`;
+      console.log("Calling createTransaction with data:", transactionPayload);
+      await createTransaction(transactionPayload); // API service expects accountId in payload
+      console.log("Transaction created successfully for:", transactionPayload.description);
+
+      await refetchData(); // Refetch data on success
+      // The AmountInputModal should close itself upon successful submission resolve.
+
+    } catch (err) {
+      console.error("Failed to submit transaction from Transactions component:", err);
+      // Re-throw the error so the AmountInputModal can catch it and display an error message
+      throw err;
+    }
   };
 
   return (
@@ -103,11 +130,11 @@ function Transactions() {
         <h1 className="text-3xl font-bold pl-2">Transactions</h1>
         <div className="flex">
           <button className="text-muted-foreground hover:text-foreground p-2"><FiFilter size={20} /></button>
-          <button 
+          <button
             className="text-muted-foreground hover:text-foreground p-2"
-            onClick={openAddTxSheet}
+            onClick={openAddTxSheet} // Calls the function to create dummy tx
           >
-             <FiPlus size={24} />
+            <FiPlus size={24} />
           </button>
         </div>
       </div>
@@ -138,13 +165,13 @@ function Transactions() {
                   </div>
                   <ul className="space-y-2 px-2">
                     {txs.map(tx => (
-                      <li 
-                        key={tx.id} 
+                      <li
+                        key={tx.id}
                         className="rounded-lg"
                       >
-                        <TransactionCard 
-                          transaction={tx} 
-                          tagMap={tagMap} 
+                        <TransactionCard
+                          transaction={tx}
+                          tagMap={tagMap}
                           onCardClick={openDetailView}
                           onTagClick={openTagSelector}
                         />
@@ -157,11 +184,20 @@ function Transactions() {
         )}
       </div>
 
-      {/* Detail View Bottom Sheet (New) */}
+      {isAddTxSheetOpen && transactionToEdit && (
+        <AmountInputModal
+          onClose={closeAddTxSheet}
+          transaction={transactionToEdit}
+          availableTags={tags}
+          tagMap={tagMap}
+          onSubmitTransaction={handleTransactionSubmit}
+        />
+      )}
+
       <DraggableBottomSheet isOpen={isDetailViewOpen} onClose={closeDetailView}>
         {selectedTransactionForDetail && (
-          <TransactionDetailView 
-            transaction={selectedTransactionForDetail} 
+          <TransactionDetailView
+            transaction={selectedTransactionForDetail}
             tagMap={tagMap}
             onTagClick={openTagSelector}
             onManageSplit={openSplitView}
@@ -170,7 +206,7 @@ function Transactions() {
       </DraggableBottomSheet>
 
       <DraggableBottomSheet isOpen={isTagSelectorOpen} onClose={closeTagSelector}>
-        <TagSelector 
+        <TagSelector
           onSelectTag={handleUpdateTag}
           availableTags={tags}
           tagMap={tagMap}
@@ -179,20 +215,10 @@ function Transactions() {
         />
       </DraggableBottomSheet>
 
-      {/* Add Transaction Bottom Sheet */}
-      {isAddTxSheetOpen && (
-        <AddTransaction 
-          onClose={closeAddTxSheet}
-          availableTags={tags}
-          tagMap={tagMap}
-        />
-      )}
-
-      {/* Split Transaction Bottom Sheet (New) */}
       <DraggableBottomSheet isOpen={isSplitViewOpen} onClose={closeSplitView}>
         {selectedTransactionForSplit && (
           <SplitTransactionView
-            transaction={selectedTransactionForSplit} 
+            transaction={selectedTransactionForSplit}
             tagMap={tagMap}
             onClose={closeSplitView}
             refetchData={refetchData}

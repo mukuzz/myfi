@@ -126,12 +126,12 @@ function TransactionDetailView({
             </div>
 
             <div
-                className="bg-input flex items-center justify-between p-3 rounded-lg mb-4 text-foreground md:hover:bg-muted cursor-pointer"
+                className="bg-input flex items-center justify-center p-3 rounded-lg mb-4 text-foreground md:hover:bg-muted cursor-pointer"
                 onClick={onManageSplit ? () => onManageSplit(transaction) : undefined}
             >
                 <div className="flex items-center">
                     <BsDiagram3 className="mr-3 h-5 w-5 text-foreground" />
-                    <span className="text-sm font-medium uppercase">
+                    <span className="text-xs font-medium uppercase">
                         {transaction.parentId != null ? transaction.subTransactions && transaction.subTransactions.length > 0
                             ? 'Transaction Split' // Parent transaction (has subTransactions)
                             : 'Split from another transaction' // Child transaction (has parentId)
@@ -139,7 +139,6 @@ function TransactionDetailView({
                         }
                     </span>
                 </div>
-                <HiOutlineDotsHorizontal className="h-5 w-5 text-muted-foreground" /> {/* Ellipsis Icon */}
             </div>
 
             {/* Header Section */}

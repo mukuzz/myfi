@@ -21,8 +21,7 @@ const SpendingSummary: React.FC = () => {
         const formatter = new Intl.NumberFormat('en-IN', {
             style: 'currency',
             currency: 'INR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
+            maximumFractionDigits: 0,
         });
         // Format, then manually replace '₹ ' with '₹' if present at the start
         const formatted = formatter.format(Math.abs(amount)).replace(/^₹\s/, '₹');
@@ -156,7 +155,7 @@ const SpendingSummary: React.FC = () => {
             {/* Content Area with Padding */}
             <div className="p-4 space-y-4 flex-grow overflow-y-auto bg-secondary">
                 {/* Date */}
-                <div className="text-sm font-semibold text-muted-foreground">
+                <div className="text-xs font-semibold text-muted-foreground">
                     {monthYear}
                 </div>
 
@@ -184,14 +183,14 @@ const SpendingSummary: React.FC = () => {
                                     ></div>
                                     {/* Category Name Text (on top) */}
                                     <span 
-                                        className="relative text-sm font-medium text-card-foreground block truncate px-2 py-1" // Added relative, z-index, padding, block, truncate
+                                        className="relative font-medium text-card-foreground block truncate px-2 py-1" // Added relative, z-index, padding, block, truncate
                                         style={{ zIndex: 2 }}
                                     >
                                         {item.name}
                                     </span>
                                 </div>
                                 {/* Amount Text */}
-                                <span className="text-sm font-semibold text-card-foreground whitespace-nowrap"> {/* Added whitespace-nowrap */}
+                                <span className="font-medium text-card-foreground whitespace-nowrap"> {/* Added whitespace-nowrap */}
                                     {formatCurrency(item.amount)}
                                 </span>
                             </div>

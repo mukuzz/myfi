@@ -11,11 +11,11 @@ export interface Transaction {
   createdAt: string; // Added createdAt field
   updatedAt?: string; // Added updatedAt field
   tagId?: number; // Use tagId (optional if a transaction might not have a tag)
-  account: Account; // Replacing accountId with account object
+  account?: Account | null; // Replacing accountId with account object
   counterParty?: string; // Added from backend model
   parentId?: number | null; // Optional parent ID for subtransactions
   subTransactions?: Transaction[]; // Optional list of subtransactions
-  uniqueKey: string;
+  uniqueKey?: string | null;
   notes?: string | null; // Add notes field
   excludeFromAccounting: boolean; // Changed from optional to required
   // Add other fields if needed

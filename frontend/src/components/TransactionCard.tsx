@@ -56,6 +56,7 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: Trans
           >
             {currentTagName ? (
               <>
+                <FiTag size={14} className="text-muted-foreground" />
                 <span>{currentTagName}</span>
               </>
             ) : (

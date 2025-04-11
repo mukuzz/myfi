@@ -142,19 +142,6 @@ export const createAccount = async (accountData: Omit<Account, 'id' | 'createdAt
  */
 export const createTransaction = async (transactionData: Partial<Omit<Transaction, 'id'>>): Promise<Transaction> => {
   // Prepare the payload for the backend.
-  // Backend likely expects accountId, not the full account object during creation.
-  // Extract accountId if provided directly or from the account object.
-  const payload: any = { ...transactionData };
-  if (transactionData.account && transactionData.account.id) {
-    payload.accountId = transactionData.account.id;
-  }
-  // Remove the account object itself if it exists, as backend expects accountId
-  delete payload.account; 
-  // Remove other fields the backend might auto-generate and not expect
-  delete payload.subTransactions;
-  delete payload.createdAt;
-  delete payload.updatedAt;
-  // Add any other necessary transformations based on backend requirements
 
   const response = await fetch(`${API_BASE_URL}/transactions`, {
     method: 'POST',
@@ -162,7 +149,7 @@ export const createTransaction = async (transactionData: Partial<Omit<Transactio
       'Content-Type': 'application/json',
     },
     // Send the transformed payload
-    body: JSON.stringify(payload),
+    body: JSON.stringify(transactionData),
   });
 
   if (!response.ok) {

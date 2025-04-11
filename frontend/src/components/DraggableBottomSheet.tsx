@@ -4,6 +4,7 @@ interface DraggableBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  zIndex?: number; // Optional z-index prop with default value
   // Optional: Add props for customizing height, initial snap point, etc. later
 }
 
@@ -13,6 +14,7 @@ function DraggableBottomSheet({
   isOpen,
   onClose,
   children,
+  zIndex = 40, // Default z-index is 40
 }: DraggableBottomSheetProps) {
   const [currentTranslateY, setCurrentTranslateY] = useState(0); // Tracks drag offset
   const isDragging = useRef(false);
@@ -178,9 +180,9 @@ function DraggableBottomSheet({
 
   return (
     <div
-      className={`fixed inset-0 bg-black z-40 
+      className={`fixed inset-0 bg-black
         ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
-      style={{ opacity: 100 }} // Start with opacity 0
+      style={{ opacity: 100, zIndex: zIndex }} // Apply z-index to background
       // Close on overlay click (optional, could be a prop)
       onClick={onClose} 
       ref={modalBackgroundRef}
@@ -194,9 +196,12 @@ function DraggableBottomSheet({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         // Add touch-action to prevent browser interference when dragging the sheet
-        style={{ touchAction: isDragging.current ? 'none' : 'auto' }}
+        style={{ 
+          touchAction: isDragging.current ? 'none' : 'auto',
+          zIndex: zIndex + 10 // Make the sheet 10 higher than the background
+        }}
         className={`fixed bottom-0 left-0 right-0 bg-background w-full max-w-lg mx-auto shadow-xl h-[95vh] flex flex-col rounded-t-xl
-                   transition-transform duration-300 ease-in-out z-50
+                   transition-transform duration-300 ease-in-out
                    ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
         // Inline transform applied during drag
       >

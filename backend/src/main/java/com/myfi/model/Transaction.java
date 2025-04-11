@@ -56,7 +56,7 @@ public class Transaction {
     private String counterParty;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account", nullable = false)
+    @JoinColumn(name = "account", nullable = true)
     private Account account;
 
     @Column(name = "tag_id")
@@ -83,9 +83,10 @@ public class Transaction {
     }
 
     public void generateUniqueKey() {
-        if (amount == null || description == null || type == null || transactionDate == null || account == null || account.getId() == null) {
+        if (amount == null || description == null || type == null || transactionDate == null) {
             throw new IllegalStateException("Cannot generate unique key: one or more required fields are null.");
         }
+        String accountData = account == null || account.getId() == null ? "cash" : account.getId().toString();
         String formattedDate = transactionDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         String formattedAmount = amount.stripTrailingZeros().toPlainString();
         
@@ -94,7 +95,7 @@ public class Transaction {
             description, 
             type.name(), 
             formattedDate,
-            account.getId().toString()
+            accountData
         );
         this.uniqueKey = DigestUtils.md5DigestAsHex(keyData.getBytes());
     }

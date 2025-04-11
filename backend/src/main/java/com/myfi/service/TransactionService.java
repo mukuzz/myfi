@@ -42,10 +42,6 @@ public class TransactionService {
             transaction.getType() == null || transaction.getTransactionDate() == null) {
             throw new IllegalArgumentException("Mandatory transaction fields (amount, description, type, transactionDate) must be provided.");
         }
-        // AccountId is mandatory
-        if (transaction.getAccount() == null || transaction.getAccount().getId() == null) {
-            throw new IllegalArgumentException("AccountId must be provided for a transaction.");
-        }
 
         // Generate the unique key before checking/saving
         try {
