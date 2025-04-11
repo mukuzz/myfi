@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FiCreditCard } from 'react-icons/fi';
 import { LuPackageOpen } from 'react-icons/lu'; // Icon for split into following
-import { Transaction, TagMap } from '../types';
+import { Transaction, TagMap, Tag } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { splitTransactionApi, fetchTransactionById } from '../services/apiService';
 import TransactionCard from './TransactionCard';
@@ -76,7 +76,7 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
     };
 
     // Function to handle the submission from the AddTransaction modal (in split mode)
-    const handleSplitAmountSubmit = async (splitAmount1: number) => {
+    const handleSplitAmountSubmit = async (updatedTransaction: Transaction) => {
         if (!displayTransaction || !displayTransaction.id || displayTransaction.parentId) {
             console.error("Invalid state for splitting.");
             setSplitError("Cannot split this transaction.");
@@ -88,6 +88,7 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
         setSplitError(null); // Clear previous split errors before new attempt
         // We don't close the modal here - wait for API result
 
+        const splitAmount1 = updatedTransaction.amount;
         const originalAmount = displayTransaction.amount;
         // Ensure splitAmount2 calculation handles potential floating point issues if necessary
         const splitAmount2 = parseFloat((originalAmount - splitAmount1).toFixed(2));
@@ -256,17 +257,21 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
                 </div>
 
                 {/* Conditionally render the generic AmountInputModal for split input */}            
-                {/* {isSplitInputOpen && (
+                {isSplitInputOpen && (
                     <AmountInputModal 
-                        title="Enter Split Amount"
-                        onSubmitTransaction={handleSplitAmountSubmit} // Pass the handler containing API logic
+                        transaction={{
+                            ...displayTransaction,
+                        }}
+                        onSubmitTransaction={handleSplitAmountSubmit}
                         onClose={() => {
                             setIsSplitInputOpen(false);
                             setSplitError(null); // Clear API errors when modal is closed manually
-                        }} 
-                        // Optionally pass initialAmountString or contextDisplay if needed
+                        }}
+                        tagMap={tagMap}
+                        availableTags={Object.values(tagMap || {})} // Pass tags from tagMap
+                        mode="split" // Set mode to split to hide transaction type selector
                     />
-                )} */}
+                )}
             </div>
         </>
     );

@@ -4,6 +4,7 @@ import { Transaction, Tag, TagMap } from '../types'; // Keep Transaction type
 import { formatCurrency, formatDate as formatDateUtil } from '../utils/formatters';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import TagSelector from './TagSelector';
+import TransactionCard from './TransactionCard'; // Import TransactionCard component
 
 
 // Helper function to format date as "Day, Mon. D 'YY" (if needed, similar to AddTransaction)
@@ -40,6 +41,7 @@ interface AmountInputModalProps {
     onSubmitTransaction: (updatedTransaction: Transaction) => Promise<void>;
     tagMap: TagMap; // Add tagMap prop
     availableTags: Tag[]; // Add availableTags prop
+    mode?: 'create' | 'split'; // Change from 'normal' to 'create'
 }
 
 const AmountInputModal: React.FC<AmountInputModalProps> = ({
@@ -48,10 +50,11 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
     onSubmitTransaction,
     tagMap, // Add tagMap parameter
     availableTags, // Add availableTags parameter
+    mode = 'create', // Change default from 'normal' to 'create'
 }) => {
     // --- State ---
     // Initialize state based on the passed transaction object
-    const [amountString, setAmountString] = useState(transaction.amount > 0 ? String(transaction.amount) : '0');
+    const [amountString, setAmountString] = useState(mode === 'split' ? '0' : transaction.amount > 0 ? String(transaction.amount) : '0');
     const [description, setDescription] = useState(transaction.description || '');
     // Ensure transactionDate is parsed correctly
     const initialDate = useMemo(() => {
@@ -180,13 +183,23 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
     return (
         <>
             <div
-                className={`fixed inset-0 flex items-end justify-center z-50 transition-opacity ${animationDuration} ease-in ${isVisible && !isAnimatingOut ? 'bg-black/50 opacity-100 backdrop-blur-sm' : 'bg-black/0 opacity-0'} px-4 pb-10`}
+                className={`fixed inset-0 flex flex-col items-center justify-end z-50 transition-opacity ${animationDuration} ease-in ${isVisible && !isAnimatingOut ? 'bg-black/50 opacity-100 backdrop-blur-sm' : 'bg-black/0 opacity-0'} px-4 pb-10`}
                 onClick={handleClose}
             >
+                {/* Show TransactionCard at the top when in split mode */}
+                {mode === 'split' && (
+                    <div className="pb-10 w-full max-w-sm px-4">
+                        <TransactionCard
+                            transaction={transaction}
+                            tagMap={tagMap}
+                        />
+                    </div>
+                )}
                 <div
                     className={`bg-secondary text-foreground rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col origin-bottom transition-all ${animationDuration} ease-in-out ${isVisible && !isAnimatingOut ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-[200px] scale-50'}`}
                     onClick={(e) => e.stopPropagation()}
                 >
+                    
                     {/* Top Input Area */}
                     <div className="p-4 pt-6 flex-shrink-0">
                         {error && <p className="text-red-500 text-center mb-2 text-sm">{error}</p>}
@@ -233,23 +246,25 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
 
                     {/* Numpad Area */}
                     <div className="flex-shrink-0 p-3 border-t border-border">
-                        {/* Type Toggle Buttons (+/-) */}
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                            <button
-                                onClick={transactionType === 'DEBIT' ? toggleTransactionType : undefined}
-                                disabled={transactionType === 'CREDIT' || isSubmitting}
-                                className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center transition-colors duration-100 ease-in-out ${transactionType === 'CREDIT' ? 'bg-green-600 text-white' : 'bg-muted'} disabled:opacity-50`}
-                            >
-                                <FiPlus />
-                            </button>
-                            <button
-                                onClick={transactionType === 'CREDIT' ? toggleTransactionType : undefined}
-                                disabled={transactionType === 'DEBIT' || isSubmitting}
-                                className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center transition-colors duration-100 ease-in-out ${transactionType === 'DEBIT' ? 'bg-red-600 text-white' : 'bg-muted'} disabled:opacity-50`}
-                            >
-                                <FiMinus />
-                            </button>
-                        </div>
+                        {/* Type Toggle Buttons (+/-) - Only show in create mode */}
+                        {mode === 'create' && (
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                <button
+                                    onClick={transactionType === 'DEBIT' ? toggleTransactionType : undefined}
+                                    disabled={transactionType === 'CREDIT' || isSubmitting}
+                                    className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center transition-colors duration-100 ease-in-out ${transactionType === 'CREDIT' ? 'bg-green-600 text-white' : 'bg-muted'} disabled:opacity-50`}
+                                >
+                                    <FiPlus />
+                                </button>
+                                <button
+                                    onClick={transactionType === 'CREDIT' ? toggleTransactionType : undefined}
+                                    disabled={transactionType === 'DEBIT' || isSubmitting}
+                                    className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center transition-colors duration-100 ease-in-out ${transactionType === 'DEBIT' ? 'bg-red-600 text-white' : 'bg-muted'} disabled:opacity-50`}
+                                >
+                                    <FiMinus />
+                                </button>
+                            </div>
+                        )}
 
                         {/* Numpad */}
                         <div className="grid grid-cols-3 gap-3">
