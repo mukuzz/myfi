@@ -238,14 +238,14 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
                             <button
                                 onClick={transactionType === 'DEBIT' ? toggleTransactionType : undefined}
                                 disabled={transactionType === 'CREDIT' || isSubmitting}
-                                className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center transition-colors duration-100 ease-in-out ${transactionType === 'CREDIT' ? 'bg-green-600 text-white' : 'bg-muted hover:bg-muted/80'} disabled:opacity-50`}
+                                className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center transition-colors duration-100 ease-in-out ${transactionType === 'CREDIT' ? 'bg-green-600 text-white' : 'bg-muted'} disabled:opacity-50`}
                             >
                                 <FiPlus />
                             </button>
                             <button
                                 onClick={transactionType === 'CREDIT' ? toggleTransactionType : undefined}
                                 disabled={transactionType === 'DEBIT' || isSubmitting}
-                                className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center transition-colors duration-100 ease-in-out ${transactionType === 'DEBIT' ? 'bg-red-600 text-white' : 'bg-muted hover:bg-muted/80'} disabled:opacity-50`}
+                                className={`py-3 rounded-lg text-xl font-semibold flex items-center justify-center transition-colors duration-100 ease-in-out ${transactionType === 'DEBIT' ? 'bg-red-600 text-white' : 'bg-muted'} disabled:opacity-50`}
                             >
                                 <FiMinus />
                             </button>

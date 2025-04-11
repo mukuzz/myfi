@@ -126,7 +126,7 @@ function TransactionDetailView({
             </div>
 
             <div
-                className="bg-input flex items-center justify-center p-3 rounded-lg mb-4 text-foreground md:hover:bg-muted cursor-pointer"
+                className="bg-input flex items-center justify-center p-3 rounded-lg mb-4 text-foreground cursor-pointer"
                 onClick={onManageSplit ? () => onManageSplit(transaction) : undefined}
             >
                 <div className="flex items-center">

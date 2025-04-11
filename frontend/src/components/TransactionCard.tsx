@@ -19,7 +19,7 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: Trans
     <div
       role={onCardClick ? "button" : undefined}
       tabIndex={onCardClick ? 0 : undefined}
-      className={`bg-secondary p-3 rounded-xl shadow flex-shrink-0 w-full text-left transition-colors ${onCardClick ? 'cursor-pointer md:hover:bg-muted' : 'cursor-default'}`}
+      className={`bg-secondary p-3 rounded-xl shadow flex-shrink-0 w-full text-left transition-colors ${onCardClick ? 'cursor-pointer' : 'cursor-default'}`}
       onClick={() => onCardClick && onCardClick(transaction)}
       onKeyDown={(e) => {
         if (onCardClick && (e.key === 'Enter' || e.key === ' ')) {
@@ -52,7 +52,7 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: Trans
             onClick={(e) => onTagClick && onTagClick(transaction, e)}
             disabled={!onTagClick}
             className={`text-sm text-secondary-foreground px-2 py-1.5 rounded-lg flex items-center space-x-1 bg-input 
-                      ${onTagClick ? 'cursor-pointer hover:bg-border transition-colors' : 'cursor-default'}`}
+                      ${onTagClick ? 'cursor-pointer transition-colors' : 'cursor-default'}`}
           >
             {currentTagName ? (
               <>

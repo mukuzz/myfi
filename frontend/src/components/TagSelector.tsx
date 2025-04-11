@@ -104,7 +104,7 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
                     className={`px-3 py-2 rounded-full text-xs transition-colors duration-150 flex items-center space-x-1.5 flex-shrink-0
                       ${isSelected
                         ? 'bg-secondary-foreground text-primary-foreground'
-                        : 'bg-input text-secondary-foreground hover:bg-border'}
+                        : 'bg-input text-secondary-foreground'}
                     `}
                   >
                     {/* {icon && <span className="w-4 h-4">{icon}</span>} */}
@@ -119,7 +119,7 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
                 className={`px-2.5 py-1.5 rounded-full text-xs transition-colors duration-150 flex items-center space-x-1.5 flex-shrink-0
                   ${selectedTagId === parentTag.id
                     ? 'bg-secondary-foreground text-primary-foreground'
-                    : 'bg-input text-secondary-foreground hover:bg-border'}
+                    : 'bg-input text-secondary-foreground'}
                 `}
               >
                 <span>Others</span>
