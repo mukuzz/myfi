@@ -1,0 +1,47 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Tech Stack for MyFi Project
+
+This document outlines the main technologies, frameworks, and libraries used in the MyFi project.
+
+## Backend (`@backend/`)
+
+- **Language:** Java 17
+- **Framework:** Spring Boot (`@backend/pom.xml`)
+  - Spring Web
+  - Spring Data JPA
+  - Spring Validation
+- **Build Tool:** Maven
+- **Database:** SQLite (`@myfi.db`)
+  - JDBC Driver: `org.xerial:sqlite-jdbc`
+  - ORM: Hibernate (`org.hibernate.orm:hibernate-community-dialects`)
+- **Utilities:**
+  - Lombok (`org.projectlombok:lombok`)
+- **Web Scraping:** Playwright (`com.microsoft.playwright:playwright`)
+- **API Documentation:** Springdoc OpenAPI / Swagger UI (`org.springdoc:springdoc-openapi-starter-webmvc-ui`)
+- **Configuration:** `@backend/.env`
+
+## Frontend (`@frontend/`)
+
+- **Framework:** React (`@frontend/package.json`)
+  - Likely initialized with Create React App (`react-scripts`)
+- **Language:** TypeScript (`@frontend/tsconfig.json`)
+- **Styling:** Tailwind CSS (`@frontend/tailwind.config.js`)
+- **Icons:** React Icons (`react-icons`)
+- **Testing:** React Testing Library (`@testing-library/*`)
+- **Package Manager:** npm / Node.js
+- **Configuration:** `@frontend/.env`
+
+## Database
+
+- **Type:** SQLite
+- **File:** `@myfi.db`
+
+## Other
+
+- **Version Control:** Git (`@.gitignore`)
+- **Editor Config:** VS Code (`@.vscode/`)
+- **Project Info:** `@Readme.md` 
