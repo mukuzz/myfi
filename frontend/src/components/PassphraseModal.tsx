@@ -119,8 +119,8 @@ const PassphraseModal: React.FC<PassphraseModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-5">
+    <div className="fixed inset-0 rounded-t-xl bg-black/50 flex items-center justify-center z-50 p-2">
+      <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-4">
         <div className="flex items-center justify-center mb-4">
           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
             <FiShield className="h-6 w-6" />
@@ -214,7 +214,7 @@ const PassphraseModal: React.FC<PassphraseModalProps> = ({
               ) : (
                 <>
                   <FiSave className="mr-2 h-4 w-4" />
-                  {existingPassphrase ? 'Unlock' : 'Save Passphrase'}
+                  {existingPassphrase ? 'Unlock' : 'Create'}
                 </>
               )}
             </button>
