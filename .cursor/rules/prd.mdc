@@ -1,0 +1,112 @@
+---
+description: the product requirements document
+globs: 
+alwaysApply: false
+---
+# Product Requirements Document: MyFi Expense Manager
+
+## 1. Overview
+
+*   **Project Name:** MyFi
+*   **Purpose:** A personal expense management application designed to help users track their finances efficiently.
+*   **Core Functionality:** MyFi automatically aggregates transaction data by scraping users' linked bank websites, providing a unified view of financial activity.
+*   **Deployment:** Self-hosted application distributed via Docker.
+
+## 2. Goals
+
+*   **Automated Transaction Aggregation:** Eliminate manual data entry by automatically fetching transactions from linked bank accounts.
+*   **Unified Financial View:** Provide users with a single interface to view transactions from multiple sources.
+*   **Simplified Expense Tracking:** Enable users to tag and analyze their spending patterns.
+*   **Data Privacy and Security:** Ensure user credentials and financial data are handled securely.
+*   **User Control:** Allow users to manage linked accounts and transaction data.
+
+## 3. Target Audience
+
+*   Tech-savvy individuals seeking an automated, self-hosted solution for personal expense tracking.
+*   Users comfortable with securely linking their bank accounts via web scraping technology for data aggregation and understand the implications and potential brittleness of this approach.
+*   Users capable of managing a self-hosted Docker application.
+
+## 4. Features
+
+### 4.1. Core Features
+
+*   **Bank Account Linking:**
+    *   Interface to add bank/financial institution details (URL, potentially institution type).
+    *   Secure mechanism to capture user login credentials. Credentials will be stored **locally on the user's device/environment** using symmetric encryption. The encryption key must be provided by the user when the application needs to access the credentials for scraping.
+    *   Support for initiating scraping sessions for linked accounts, prompting for the encryption key as needed.
+*   **Transaction Scraping (Backend - Playwright):**
+    *   Automated, potentially scheduled, scraping of transaction data from linked bank websites.
+    *   Robust parsing logic to extract key transaction details (Date, Description/Payee, Amount).
+    *   Secure handling and storage of scraped data in the application database (`myfi.db`).
+    *   Basic error handling for scraping failures (e.g., login issues, website changes).
+*   **Transaction Management:**
+    *   Display aggregated transactions in a clear, sortable list or table format (Frontend - React).
+    *   Filtering transactions (by date range, account, potentially tag).
+    *   Basic search functionality within transactions.
+    *   Ability to assign tags to transactions (from a predefined or user-defined list).
+    *   Manual transaction entry and editing for accounts not linked or for corrections.
+    *   Support to split a transaction into multiple sub transactions to provide greater visibility.
+    *   Ability to exclude a transaction from accounting.
+    *   Ability to add note to a transaction.
+
+### 4.2. Supporting Features
+
+*   **Categorization:**
+    *   Default set of common expense tags.
+    *   An LLM based automated system to assign tags based on tag assign history
+*   **Settings:**
+    *   Manage linked bank accounts (add, remove, view status).
+*   **API (Backend - Spring Boot):**
+    *   RESTful API endpoints for frontend communication (fetching transactions, managing tags, managing accounts).
+    *   API documentation (Swagger UI).
+
+### 4.3. Potential Future Features
+
+*   **Dashboard/Reporting:** Visual summaries of spending by tag, time period, etc.
+*   **Advanced Scraping:** Handling Multi-Factor Authentication (MFA), more resilient scraping logic.
+*   **Budgeting Tools:** Setting spending goals per tag.
+*   **Data Export:** Allowing users to export their transaction data.
+*   **Investment Tracking:** Extending beyond simple expense tracking.
+
+## 5. User Stories
+
+*   As a new user, I want to register for an account securely so I can start using the application.
+*   As a registered user, I want to log in securely to access my financial data.
+*   As a user, I want to add my bank account details (login URL, credentials) so the application can scrape my transactions.
+*   As a user, I want the application to automatically fetch new transactions from my linked accounts periodically.
+*   As a user, I want to see a combined list of all my transactions from my linked accounts, sorted by date.
+*   As a user, I want to filter my transactions by date range or specific account to review specific periods or sources.
+*   As a user, I want to assign tags (e.g., "Groceries", "Utilities", "Entertainment") to my transactions to understand my spending.
+*   As a user, I expect my bank login credentials to be stored securely **on my local system**, encrypted with a key I provide, and never transmitted elsewhere.
+*   As a user (or admin), I want to be aware if the application encounters persistent errors while trying to scrape an account.
+
+## 6. Non-Functional Requirements
+
+*   **Deployment:**
+    *   The application will be packaged and distributed as Docker images for self-hosting.
+    *   Clear instructions for Docker deployment and configuration will be provided.
+*   **Security:**
+    *   All sensitive data (especially bank credentials) must be handled securely.
+    *   **Credential Storage:** Bank credentials **must not** be stored server-side or in any central database. They will be stored encrypted **locally** (e.g., in the user's browser local storage or a configuration file within the Docker volume) using strong symmetric encryption (e.g., AES-256).
+    *   The **symmetric encryption key** will **not** be stored alongside the encrypted credentials. It must be provided by the user on demand (e.g., at application startup or before a scraping session) and held only in memory temporarily.
+    *   Implement security best practices for web applications (OWASP Top 10).
+*   **Reliability:**
+    *   The scraping mechanism should be as robust as possible, but failures are expected due to website changes. Implement graceful error handling and potentially user notifications for persistent failures.
+*   **Performance:**
+    *   The frontend application should remain responsive when displaying potentially large lists of transactions.
+    *   Backend API calls should be efficient.
+    *   Scraping processes should run efficiently without excessive resource consumption.
+*   **Usability:**
+    *   The user interface should be clean, intuitive, and easy to navigate.
+*   **Maintainability:**
+    *   Code should adhere to the established coding patterns and standards (`coding-pattern-preferences.mdc`).
+    *   Follow principles of clean code and modular design.
+*   **Data Integrity:** Ensure accurate parsing and storage of transaction data.
+
+## 7. Technical Considerations & Risks
+
+*   **Web Scraping Brittleness:** This is the **highest risk**. Bank websites change frequently, which *will* break scraping logic. Requires ongoing maintenance and potentially complex adaptation for different bank UIs.
+*   **Handling Logins/MFA:** Securely managing credentials is critical. Automating logins, especially with MFA (Captchas, SMS codes, Authenticator apps), is technically challenging and often unreliable with tools like Playwright alone.
+*   **Legality/Terms of Service:** Scraping bank websites may violate their Terms of Service. Users should be made aware of potential risks.
+*   **Security Risks:** While storing credentials locally mitigates risks associated with centralized breaches, it introduces new risks related to the security of the user's own device/environment and the management/protection of the user-provided encryption key. Compromise of the user's environment or key could lead to credential exposure.
+*   **Scalability:** SQLite is suitable for single-user or low-concurrency scenarios, consistent with a self-hosted model.
