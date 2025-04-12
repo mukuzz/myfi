@@ -5,6 +5,7 @@ import AddAccountView from './AddAccountSheet';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import CustomToast from './CustomToast';
 import AccountCard from './AccountCard';
+import AccountDetailsModal from './AccountDetailsModal';
 import { copyToClipboard } from '../utils/clipboard';
 import {
   FiCreditCard, FiAlertTriangle, FiPlus
@@ -23,8 +24,10 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  
   const loadAccounts = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -69,6 +72,16 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
   const handleAccountCreated = (newAccount: Account) => {
     loadAccounts();
     closeSheet();
+  };
+
+  const handleAccountClick = (account: Account) => {
+    setSelectedAccount(account);
+    setIsDetailsSheetOpen(true);
+  };
+
+  const closeDetailsSheet = () => {
+    setIsDetailsSheetOpen(false);
+    setSelectedAccount(null);
   };
 
   const getAccountTypeLabel = (type: Account['type']) => {
@@ -149,6 +162,7 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
                 formatCurrency={formatCurrency}
                 getAccountTypeLabel={getAccountTypeLabel}
                 handleCopyAccountNumber={handleCopyAccountNumber}
+                onCardClick={handleAccountClick}
               />
             </div>
 
@@ -168,6 +182,7 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
                       formatCurrency={formatCurrency}
                       getAccountTypeLabel={getAccountTypeLabel}
                       handleCopyAccountNumber={handleCopyAccountNumber}
+                      onCardClick={handleAccountClick}
                     />
                   </div>
                 ))}
@@ -184,11 +199,24 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
         )}
       </div>
 
+      {/* Add Account Bottom Sheet */}
       <DraggableBottomSheet isOpen={isSheetOpen} onClose={closeSheet}>
         <AddAccountView
           onAccountCreated={handleAccountCreated}
           availableParentAccounts={groupedAccounts}
         />
+      </DraggableBottomSheet>
+
+      {/* Account Details Bottom Sheet */}
+      <DraggableBottomSheet isOpen={isDetailsSheetOpen} onClose={closeDetailsSheet}>
+        {selectedAccount && (
+          <AccountDetailsModal
+            account={selectedAccount}
+            onClose={closeDetailsSheet}
+            formatCurrency={formatCurrency}
+            getAccountTypeLabel={getAccountTypeLabel}
+          />
+        )}
       </DraggableBottomSheet>
 
       <CustomToast message={toastMessage} isVisible={!!toastMessage} />

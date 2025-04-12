@@ -8,6 +8,7 @@ interface AccountCardProps {
   formatCurrency: (amount: number, currency: string) => string;
   getAccountTypeLabel: (type: Account['type']) => string;
   handleCopyAccountNumber: (accountNumber: string) => Promise<void>;
+  onCardClick: (account: Account) => void;
 }
 
 const AccountCard: React.FC<AccountCardProps> = ({ 
@@ -15,10 +16,14 @@ const AccountCard: React.FC<AccountCardProps> = ({
   getBankLogo,
   formatCurrency,
   getAccountTypeLabel,
-  handleCopyAccountNumber
+  handleCopyAccountNumber,
+  onCardClick
 }) => {
   return (
-    <div className="p-4 bg-secondary"> 
+    <div 
+      className="p-4 bg-secondary cursor-pointer hover:bg-secondary/90 transition-colors" 
+      onClick={() => onCardClick(account)}
+    > 
       {/* Top row: Logo/Balance */}
       <div className="flex justify-between items-center">
         {getBankLogo(account.name)}
@@ -43,7 +48,10 @@ const AccountCard: React.FC<AccountCardProps> = ({
         <div className="flex items-center space-x-2">
           <p className="text-foreground text-sm">{account.accountNumber}</p> 
           <button
-            onClick={() => handleCopyAccountNumber(account.accountNumber)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopyAccountNumber(account.accountNumber);
+            }}
             className="text-muted-foreground hover:text-primary focus:outline-none"
             title="Copy account number"
           >

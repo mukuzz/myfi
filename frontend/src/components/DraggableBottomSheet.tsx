@@ -211,7 +211,7 @@ function DraggableBottomSheet({
             data-drag-handle="true" // Identifier for the handle
             className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-6 pt-3 flex justify-center cursor-grab touch-none z-10"
         >
-            <div className="w-10 h-1.5 bg-muted rounded-full pointer-events-none"></div> {/* Prevent pointer events on inner div */}
+            <div className="w-10 h-1.5 bg-input rounded-full pointer-events-none"></div> {/* Prevent pointer events on inner div */}
         </div>
 
         {/* Content Area */}
