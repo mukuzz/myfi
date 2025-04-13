@@ -38,11 +38,11 @@ public class HDFCBankScraper extends BankScrapper {
         String accountNumber = account.getAccountNumber();
         log.info("Starting savings account scraping for HDFC account number: {}", accountNumber);
 
-        // Go to Home Page
-        getPage().waitForSelector("#web");
-        getPage().click("#web");
-        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
-        getPage().waitForLoadState(LoadState.NETWORKIDLE);
+        // // Go to Home Page
+        // getPage().waitForSelector("#web");
+        // getPage().click("#web");
+        // getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+        // getPage().waitForLoadState(LoadState.NETWORKIDLE);
 
         // Hover over the webSave element
         getPage().waitForSelector("#webSave");
