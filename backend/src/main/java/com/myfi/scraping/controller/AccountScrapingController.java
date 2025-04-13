@@ -2,7 +2,6 @@ package com.myfi.scraping.controller;
 
 import com.myfi.model.Account;
 import com.myfi.scraping.model.AccountCredentials;
-import com.myfi.model.Transaction;
 import com.myfi.scraping.service.BankScrapper;
 import com.myfi.scraping.service.impl.HDFCBankScraper;
 import com.myfi.scraping.service.impl.ICICIBankScraper;
@@ -13,7 +12,6 @@ import com.myfi.service.SystemStatusService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -53,29 +51,28 @@ public class AccountScrapingController {
 
     // Single endpoint for scraping
     @PostMapping(value = "/scrape", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<Transaction>> scrapeAccounts(
+    public ResponseEntity<Void> scrapeAccounts(
         @RequestBody @NotEmpty(message = "Credentials list cannot be empty") List<@Valid AccountCredentials> credentialsList
     ) {
         return scrape(credentialsList);
     }
 
-    private ResponseEntity<List<Transaction>> scrape(List<AccountCredentials> credentialsList) {
-        List<Transaction> allTransactions = Collections.synchronizedList(new ArrayList<>());
+    private ResponseEntity<Void> scrape(List<AccountCredentials> credentialsList) {
         AtomicBoolean hasErrors = new AtomicBoolean(false);
         int poolSize = Math.min(credentialsList.size(), 4); // Limit pool size to 4 or less if fewer credentials
         ExecutorService executor = Executors.newFixedThreadPool(poolSize > 0 ? poolSize : 1); // Ensure pool size is at least 1
-        List<Future<List<Transaction>>> futures = new ArrayList<>();
+        List<Future<Void>> futures = new ArrayList<>();
 
         log.info("Starting parallel scraping for {} accounts with pool size {}", credentialsList.size(), poolSize);
 
         for (AccountCredentials credentials : credentialsList) {
-            Callable<List<Transaction>> task = () -> {
+            Callable<Void> task = () -> {
                 Optional<Account> optionalAccount = accountService.getAccountByAccountNumber(credentials.getAccountNumber());
 
                 if (optionalAccount.isEmpty()) {
                     log.warn("Account not found for account number: {}", credentials.getAccountNumber());
                     hasErrors.set(true); // Mark error as account wasn't found
-                    return Collections.emptyList(); // Return empty list for this task
+                    return null; // Return null for this task
                 }
 
                 Account account = optionalAccount.get();
@@ -100,41 +97,39 @@ public class AccountScrapingController {
                     } else {
                         log.error("Invalid bank name provided: {}", credentials.getAccountName());
                         taskError = true;
-                        return Collections.emptyList(); // Cannot proceed without a scraper
+                        return null; // Cannot proceed without a scraper
                     }
 
                     log.info("Attempting login for account number: {}", accountNumberToScrape);
                     bankScrapper.login(credentials);
 
-                    List<Transaction> res = Collections.emptyList();
-
                     // Determine scraping action based on AccountType
                     if (accountType == Account.AccountType.SAVINGS) {
                         determinedScrapeType = "BANK";
                         log.info("Scraping BANK transactions for account number: {} (Type: {})", accountNumberToScrape, accountType);
-                        res = bankScrapper.scrapeBankTransactions(account);
-                        log.info("BANK scraping successful for account number: {}. Found {} transactions.", accountNumberToScrape, res.size());
+                        bankScrapper.scrapeBankTransactions(account);
+                        log.info("BANK scraping successful for account number: {}", accountNumberToScrape);
                     } else if (accountType == Account.AccountType.CREDIT_CARD) {
                         determinedScrapeType = "CREDIT_CARD";
                         log.info("Scraping CREDIT CARD transactions for account number: {} (Type: {})", accountNumberToScrape, accountType);
-                        res = bankScrapper.scrapeCreditCardTransactions(account);
-                        log.info("CREDIT CARD scraping successful for account number: {}. Found {} transactions.", accountNumberToScrape, res.size());
+                        bankScrapper.scrapeCreditCardTransactions(account);
+                        log.info("CREDIT CARD scraping successful for account number: {}", accountNumberToScrape);
                     } else {
                         log.warn("Unsupported account type ({}) for scraping account number: {}. Skipping.", accountType, accountNumberToScrape);
                         // Skipping is not an error in itself
                     }
                     
-                    return res; // Return transactions scraped by this task
+                    return null; // Return null as we don't need to return any data
 
                 } catch (InterruptedException ie) {
                      Thread.currentThread().interrupt();
                      log.error("Semaphore acquisition interrupted for bank {} account {}: {}", bankName, accountNumberToScrape, ie.getMessage(), ie);
                      taskError = true;
-                     return Collections.emptyList();
+                     return null;
                 } catch (Exception e) {
                     log.error("Error during {} scraping for account number {}: {}", determinedScrapeType, accountNumberToScrape, e.getMessage(), e);
                     taskError = true;
-                    return Collections.emptyList(); // Return empty on error
+                    return null; // Return null on error
                 } finally {
                      log.debug("Attempting to release permit for bank: {} (Account: {})", bankName, accountNumberToScrape);
                     bankSemaphore.release(); // Release the permit for this bank type
@@ -156,15 +151,12 @@ public class AccountScrapingController {
             futures.add(executor.submit(task));
         }
 
-        // Wait for all tasks to complete and collect results
-        for (Future<List<Transaction>> future : futures) {
+        // Wait for all tasks to complete
+        for (Future<Void> future : futures) {
             try {
-                List<Transaction> result = future.get(); // This waits for the task to complete
-                if (result != null) {
-                     allTransactions.addAll(result);
-                }
-                 // If a task threw an exception caught by Callable, it returns empty list + sets hasErrors.
-                 // If future.get() throws ExecutionException, it means an uncaught exception occurred in the task.
+                future.get(); // This waits for the task to complete
+                // If a task threw an exception caught by Callable, it returns null + sets hasErrors.
+                // If future.get() throws ExecutionException, it means an uncaught exception occurred in the task.
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.error("Scraping task interrupted: {}", e.getMessage(), e);
@@ -198,24 +190,18 @@ public class AccountScrapingController {
              hasErrors.set(true); // Interruption during shutdown might indicate issues
         }
 
-        log.info("Parallel scraping finished. Total transactions retrieved: {}. Errors occurred: {}", allTransactions.size(), hasErrors.get());
+        log.info("Parallel scraping finished. Errors occurred: {}", hasErrors.get());
 
         // Decide on the final response status based on whether any errors occurred
-        if (hasErrors.get() && allTransactions.isEmpty()) {
+        if (hasErrors.get()) {
             // Don't update time if it completely failed for all
             log.warn("Scraping failed for all accounts.");
-            return ResponseEntity.internalServerError().body(Collections.emptyList());
+            return ResponseEntity.internalServerError().build();
         } else {
-            // Update timestamp on partial or full success before returning
+            // Update timestamp on success before returning
             systemStatusService.updateLastScrapeTime(); 
-            if (hasErrors.get()) {
-                 log.warn("Scraping completed with some errors.");
-                 // Return 207 Multi-Status indicating partial success
-                 return ResponseEntity.status(207).body(new ArrayList<>(allTransactions)); // Return a mutable copy
-            } else {
-                 log.info("Scraping completed successfully for all provided accounts.");
-                 return ResponseEntity.ok(new ArrayList<>(allTransactions)); // Return a mutable copy
-            }
+            log.info("Scraping completed successfully for all provided accounts.");
+            return ResponseEntity.ok().build(); // Return empty response with OK status
         }
     }
 }

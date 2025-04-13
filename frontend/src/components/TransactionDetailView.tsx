@@ -132,10 +132,10 @@ function TransactionDetailView({
                 <div className="flex items-center">
                     <BsDiagram3 className="mr-3 h-5 w-5 text-foreground" />
                     <span className="text-xs font-medium uppercase">
-                        {transaction.parentId != null ? transaction.subTransactions && transaction.subTransactions.length > 0
+                        {transaction.parentId === null ? transaction.subTransactions && transaction.subTransactions.length > 0
                             ? 'Transaction Split' // Parent transaction (has subTransactions)
-                            : 'Split from another transaction' // Child transaction (has parentId)
-                            : 'Split Transaction'
+                            : 'Split Transaction' // Child transaction (has parentId)
+                            : 'Split from another transaction'
                         }
                     </span>
                 </div>

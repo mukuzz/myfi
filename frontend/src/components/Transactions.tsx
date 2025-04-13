@@ -125,30 +125,32 @@ function Transactions() {
   };
 
   return (
-    <div className="pt-4 text-foreground flex flex-col h-full bg-background">
-      <div className="flex justify-between items-start mb-4 px-2">
-        <h1 className="text-3xl font-bold pl-2">Transactions</h1>
-        <div className="flex">
-          <button className="text-muted-foreground hover:text-foreground p-2"><FiFilter size={20} /></button>
-          <button
-            className="text-muted-foreground hover:text-foreground p-2"
-            onClick={openAddTxSheet} // Calls the function to create dummy tx
-          >
-            <FiPlus size={24} />
-          </button>
+    <div className="text-foreground flex flex-col h-full bg-muted">
+      <div className="bg-secondary pt-4 border-b border-border">
+        <div className="flex justify-between items-start mb-4 px-2">
+          <h1 className="text-3xl font-bold pl-2">Transactions</h1>
+          <div className="flex">
+            <button className="text-muted-foreground hover:text-foreground p-2"><FiFilter size={20} /></button>
+            <button
+              className="text-muted-foreground hover:text-foreground p-2"
+              onClick={openAddTxSheet} // Calls the function to create dummy tx
+            >
+              <FiPlus size={24} />
+            </button>
+          </div>
+        </div>
+
+        <div className="relative mb-4 px-4">
+          <FiSearch className="absolute left-6 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search transactions"
+            className="w-full bg-input border border-input rounded-lg pl-8 pr-4 py-1 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary"
+          />
         </div>
       </div>
 
-      <div className="relative mb-4 px-4">
-        <FiSearch className="absolute left-6 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Search transactions"
-          className="w-full bg-secondary border border-input rounded-lg pl-8 pr-4 py-1 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary"
-        />
-      </div>
-
-      <div className="flex-grow overflow-y-auto thin-scrollbar px-2 pb-4">
+      <div className="flex-grow overflow-y-auto thin-scrollbar px-2 py-2">
         {loading && <p className="text-center text-muted-foreground">Loading transactions...</p>}
         {error && <p className="text-center text-error">Error: {error}</p>}
         {!loading && !error && transactions.length === 0 && <p className="text-center text-muted-foreground">No transactions found.</p>}
@@ -164,17 +166,32 @@ function Transactions() {
                     <span className="text-xs text-muted-foreground">{txs.length} transaction{txs.length !== 1 ? 's' : ''}</span>
                   </div>
                   <ul className="space-y-2 px-2">
-                    {txs.map(tx => (
-                      <li
-                        key={tx.id}
-                        className="rounded-lg"
-                      >
-                        <TransactionCard
-                          transaction={tx}
-                          tagMap={tagMap}
-                          onCardClick={openDetailView}
-                          onTagClick={openTagSelector}
-                        />
+                    {txs.filter(tx => !tx.parentId).map(tx => (
+                      <li key={tx.id} className="rounded-lg">
+                        <div>
+                          <TransactionCard
+                            transaction={tx}
+                            tagMap={tagMap}
+                            onCardClick={openDetailView}
+                            onTagClick={openTagSelector}
+                          />
+                          {tx.subTransactions && tx.subTransactions.length > 0 && (
+                            <>
+                              {tx.subTransactions.map(childTx => (
+                                <>
+                                <div className="border-t-[8px] mx-3 border-dashed border-secondary space-y-2"></div>
+                                <TransactionCard
+                                  key={childTx.id}
+                                  transaction={childTx}
+                                  tagMap={tagMap}
+                                  onCardClick={openDetailView}
+                                  onTagClick={openTagSelector}
+                                />
+                                </>
+                              ))}
+                            </>
+                          )}
+                        </div>
                       </li>
                     ))}
                   </ul>

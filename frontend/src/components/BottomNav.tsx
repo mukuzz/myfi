@@ -14,7 +14,7 @@ const tabIcons: Record<Tab, React.ReactElement> = {
 
 function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
   return (
-    <nav className="border-t border-border bg-background w-full bottom-0 h-20">
+    <nav className="border-t border-border bg-secondary w-full bottom-0 h-20">
       <div className="flex justify-around">
         {(Object.keys(tabIcons) as Tab[]).map((tab) => (
           <button
