@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as apiService from '../../services/apiService';
+import { RootState } from '../store'; // Import RootState
 
 // Define the shape of the state
 interface SupportedAccountsState {
@@ -23,7 +24,7 @@ const initialState: SupportedAccountsState = {
 export const fetchSupportedAccounts = createAsyncThunk<
     Record<string, string[]>, // Return type
     void, // Argument type (none)
-    { rejectValue: string } // Thunk config
+    { state: RootState, rejectValue: string } // Thunk config with RootState
 >(
     'supportedAccounts/fetchSupportedAccounts',
     async (_, { rejectWithValue }) => {
@@ -34,6 +35,17 @@ export const fetchSupportedAccounts = createAsyncThunk<
             const message = error instanceof Error ? error.message : 'Failed to fetch supported account types';
             return rejectWithValue(message);
         }
+    },
+    {
+        condition: (_, { getState }) => {
+          const state = getState() as RootState;
+          const { status } = state.supportedAccounts;
+          // Prevent fetch if already loading or succeeded
+          if (status === 'loading' || status === 'succeeded') {
+            return false;
+          }
+          return true;
+        },
     }
 );
 

@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as apiService from '../../services/apiService';
 import { Tag } from '../../types';
+import { RootState } from '../store'; // Import RootState
 
 // Define the shape of the tags state
 interface TagsState {
@@ -20,7 +21,7 @@ const initialState: TagsState = {
 export const fetchTags = createAsyncThunk<
     Tag[], // Return type
     void, // Argument type (none)
-    { rejectValue: string } // Thunk config
+    { state: RootState, rejectValue: string } // Thunk config with RootState
 >(
     'tags/fetchTags',
     async (_, { rejectWithValue }) => {
@@ -32,6 +33,17 @@ export const fetchTags = createAsyncThunk<
             // Throw the rejected value for consistency with transaction slice
             throw rejectWithValue(message);
         }
+    },
+    {
+        condition: (_, { getState }) => {
+          const state = getState() as RootState;
+          const { status } = state.tags;
+          // Prevent fetch if already loading or succeeded
+          if (status === 'loading' || status === 'succeeded') {
+            return false;
+          }
+          return true;
+        },
     }
 );
 

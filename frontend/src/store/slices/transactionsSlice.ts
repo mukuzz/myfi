@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as apiService from '../../services/apiService';
 import { Transaction, Page } from '../../types';
 import { deleteAccount } from '../slices/accountsSlice'; // Import the action from accountsSlice
+import { RootState } from '../store'; // Import RootState
 
 // Define the shape of the transactions state
 interface TransactionsState {
@@ -74,7 +75,7 @@ interface DeleteTransactionArgs {
 export const fetchTransactions = createAsyncThunk<
     Page<Transaction>,
     FetchTransactionsArgs | void,
-    { rejectValue: string }
+    { state: RootState, rejectValue: string }
 >(
     'transactions/fetchTransactions',
     async (args, { rejectWithValue }): Promise<Page<Transaction>> => {
@@ -87,6 +88,18 @@ export const fetchTransactions = createAsyncThunk<
             const message = error instanceof Error ? error.message : 'Failed to fetch transactions';
             throw rejectWithValue(message);
         }
+    },
+    {
+        condition: (args, { getState }) => {
+            const state = getState() as RootState;
+            const { status } = state.transactions;
+            const isFetchingFirstPage = !args || args.page === undefined || args.page === 0;
+            // Prevent fetch if already loading/loadingMore or succeeded (for first page)
+            if (status === 'loading' || status === 'loadingMore' || (isFetchingFirstPage && status === 'succeeded')) {
+                return false;
+            }
+            return true;
+        },
     }
 );
 
@@ -94,7 +107,7 @@ export const fetchTransactions = createAsyncThunk<
 export const fetchCurrentMonthTransactions = createAsyncThunk<
     Transaction[],
     void,
-    { rejectValue: string }
+    { state: RootState, rejectValue: string }
 >(
     'transactions/fetchCurrentMonthTransactions',
     async (_, { rejectWithValue }): Promise<Transaction[]> => {
@@ -105,6 +118,17 @@ export const fetchCurrentMonthTransactions = createAsyncThunk<
             const message = error instanceof Error ? error.message : 'Failed to fetch current month transactions';
             throw rejectWithValue(message);
         }
+    },
+    {
+        condition: (_, { getState }) => {
+          const state = getState() as RootState;
+          const { currentMonthStatus } = state.transactions;
+          // Prevent fetch if already loading or succeeded
+          if (currentMonthStatus === 'loading' || currentMonthStatus === 'succeeded') {
+            return false;
+          }
+          return true;
+        },
     }
 );
 
