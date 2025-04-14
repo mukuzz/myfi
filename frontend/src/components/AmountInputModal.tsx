@@ -42,6 +42,7 @@ interface AmountInputModalProps {
     tagMap: TagMap; // Add tagMap prop
     availableTags: Tag[]; // Add availableTags prop
     mode?: 'create' | 'split'; // Change from 'normal' to 'create'
+    maxAmount?: number; // Add optional maxAmount for split mode
 }
 
 const AmountInputModal: React.FC<AmountInputModalProps> = ({
@@ -51,6 +52,7 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
     tagMap, // Add tagMap parameter
     availableTags, // Add availableTags parameter
     mode = 'create', // Change default from 'normal' to 'create'
+    maxAmount, // Add maxAmount parameter
 }) => {
     // --- State ---
     // Initialize state based on the passed transaction object
@@ -83,6 +85,20 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
         return 'TAG'; // Default if no tag selected
     }, [selectedTagId, tagMap]);
 
+    // Calculate remaining amount for display in split mode
+    const displayTransactionForSplitMode = useMemo(() => {
+        if (mode !== 'split' || maxAmount === undefined) {
+            return transaction; // Return original if not in split mode or no max amount
+        }
+        const enteredAmount = parseFloat(amountString);
+        const remainingAmount = isNaN(enteredAmount) ? maxAmount : maxAmount - enteredAmount;
+        // Return a copy of the transaction with the updated amount for display
+        return {
+            ...transaction,
+            amount: Math.max(0, remainingAmount) // Ensure amount doesn't go below zero for display
+        };
+    }, [mode, maxAmount, amountString, transaction]);
+
     // --- Effects ---
     useEffect(() => {
         const timer = setTimeout(() => setIsVisible(true), 10);
@@ -102,7 +118,15 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
         const parts = nextAmountString.split('.');
         if (parts.length > 1 && parts[1].length > 2) return;
         const potentialAmount = parseFloat(nextAmountString);
-        if (!isNaN(potentialAmount) && potentialAmount > 999999999) return;
+        if (!isNaN(potentialAmount)) {
+            if (potentialAmount > 999999999) return; // General large amount check
+            // Add check for maxAmount in split mode
+            if (mode === 'split' && maxAmount !== undefined && potentialAmount > maxAmount) {
+                // Optionally set an error or just prevent update
+                // setError(`Amount cannot exceed ${formatCurrency(maxAmount)}`);
+                return; // Prevent exceeding max amount
+            }
+        }
         setAmountString(nextAmountString);
     };
 
@@ -141,6 +165,12 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
 
         if (finalAmount <= 0) {
             setError("Amount must be greater than zero.");
+            return;
+        }
+
+        // Add validation for maxAmount in split mode
+        if (mode === 'split' && maxAmount !== undefined && finalAmount >= maxAmount) {
+             setError(`Split amount must be less than the remaining amount (${formatCurrency(maxAmount)}).`);
             return;
         }
 
@@ -190,7 +220,7 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
                 {mode === 'split' && (
                     <div className="pb-10 w-full max-w-sm px-4">
                         <TransactionCard
-                            transaction={transaction}
+                            transaction={displayTransactionForSplitMode}
                             tagMap={tagMap}
                         />
                     </div>
@@ -203,6 +233,13 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
                     {/* Top Input Area */}
                     <div className="p-4 pt-6 flex-shrink-0">
                         {error && <p className="text-red-500 text-center mb-2 text-sm">{error}</p>}
+
+                        {/* Show max amount hint in split mode */}
+                        {mode === 'split' && maxAmount !== undefined && (
+                            <p className="text-xs text-muted-foreground text-center mb-2">
+                                Splitting from {formatCurrency(maxAmount)}
+                            </p>
+                        )}
 
                         {/* Description & Date Input */}
                         <div className="flex justify-between items-center mb-3">

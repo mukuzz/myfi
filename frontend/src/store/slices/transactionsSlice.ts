@@ -59,6 +59,12 @@ interface UpdateTransactionTagArgs {
     originalTransaction: Omit<Transaction, 'id' | 'tagId'>;
 }
 
+interface SplitTransactionArgs {
+    transactionId: number;
+    amount1: number;
+    amount2: number;
+}
+
 // Async thunk for fetching ALL transactions
 export const fetchTransactions = createAsyncThunk<
     Page<Transaction>,
@@ -155,6 +161,24 @@ export const updateTransactionAsync = createAsyncThunk<
             return response;
         } catch (error: any) {
             const message = error instanceof Error ? error.message : 'Failed to update transaction';
+            throw rejectWithValue(message);
+        }
+    }
+);
+
+// Split Transaction
+export const splitTransaction = createAsyncThunk<
+    Transaction, // Returns the updated parent transaction
+    SplitTransactionArgs,
+    { rejectValue: string }
+>(
+    'transactions/splitTransaction',
+    async ({ transactionId, amount1, amount2 }, { rejectWithValue }) => {
+        try {
+            const response = await apiService.splitTransactionApi(transactionId, amount1, amount2);
+            return response; // Assuming API returns the updated parent transaction with subTransactions
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to split transaction';
             throw rejectWithValue(message);
         }
     }
@@ -265,6 +289,29 @@ const transactionsSlice = createSlice({
             .addCase(updateTransactionAsync.rejected, (state, action) => {
                 state.mutationStatus = 'failed';
                 state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to update transaction';
+            })
+            // --- Handlers for splitTransaction ---
+            .addCase(splitTransaction.pending, (state) => {
+                state.mutationStatus = 'loading';
+                state.mutationError = null;
+            })
+            .addCase(splitTransaction.fulfilled, (state, action: PayloadAction<Transaction>) => {
+                state.mutationStatus = 'succeeded';
+                // Find the original parent transaction and update it
+                const index = state.transactions.findIndex(tx => tx.id === action.payload.id);
+                if (index !== -1) {
+                    // Replace the old parent with the updated one (which now includes subTransactions)
+                    state.transactions[index] = action.payload;
+                }
+                 // Update in monthly transactions as well, if present
+                 const monthIndex = state.currentMonthTransactions.findIndex(tx => tx.id === action.payload.id);
+                 if (monthIndex !== -1) {
+                     state.currentMonthTransactions[monthIndex] = action.payload;
+                 }
+            })
+            .addCase(splitTransaction.rejected, (state, action) => {
+                state.mutationStatus = 'failed';
+                state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to split transaction';
             });
     },
 });

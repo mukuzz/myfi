@@ -189,10 +189,6 @@ function Transactions() {
         }
     };
 
-    const handleSplitRefetch = () => {
-        dispatch(fetchTransactions({ page: 0 })); 
-    };
-
     let lastRenderedMonthYear: string | null = null;
 
     return (
@@ -318,7 +314,6 @@ function Transactions() {
                         transaction={selectedTransactionForSplit}
                         tagMap={tagMap}
                         onClose={closeSplitView}
-                        refetchData={handleSplitRefetch}
                     />
                 )}
             </DraggableBottomSheet>
