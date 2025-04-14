@@ -35,6 +35,25 @@ export const fetchAccounts = createAsyncThunk<
     }
 );
 
+// Async thunk for creating an account
+export const createAccount = createAsyncThunk<
+    Account, // Return type: the newly created account
+    Omit<Account, 'id' | 'createdAt' | 'updatedAt'>, // Argument type: data for new account
+    { rejectValue: string } // Thunk config
+>(
+    'accounts/createAccount',
+    async (accountData, { rejectWithValue }) => {
+        try {
+            // Use the imported apiService function
+            const newAccount = await apiService.createAccount(accountData);
+            return newAccount;
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to create account';
+            return rejectWithValue(message);
+        }
+    }
+);
+
 // Create the accounts slice
 const accountsSlice = createSlice({
     name: 'accounts',

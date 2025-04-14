@@ -1,26 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiDelete, FiSearch, FiPlus, FiMinus, FiTag } from 'react-icons/fi'; // Added FiTag
+import { FiDelete, FiPlus, FiMinus, FiTag } from 'react-icons/fi'; // Added FiTag
 import { Transaction, Tag, TagMap } from '../types'; // Keep Transaction type
 import { formatCurrency, formatDate as formatDateUtil } from '../utils/formatters';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import TagSelector from './TagSelector';
 import TransactionCard from './TransactionCard'; // Import TransactionCard component
 
-
-// Helper function to format date as "Day, Mon. D 'YY" (if needed, similar to AddTransaction)
-const formatHeaderDate = (dateString: string): string => {
-    if (!dateString) return '';
-    try {
-        const date = new Date(dateString);
-        const options: Intl.DateTimeFormatOptions = {
-            weekday: 'short', month: 'short', day: 'numeric', year: '2-digit',
-        };
-        return new Intl.DateTimeFormat('en-US', options).format(date).replace(/,/g, '');
-    } catch (e) {
-        console.error("Error formatting header date:", e);
-        return 'Invalid Date';
-    }
-};
 
 // Format date for display in input area
 const formatDateForDisplay = (date: Date) => {
@@ -193,7 +178,6 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
             handleClose(); // Close modal on success
         } catch (err: any) {
             console.error("Failed to submit transaction:", err);
-            const message = typeof err === 'string' ? err : (err as Error).message;
             setError("Failed to submit transaction. Please try again.");
         } finally {
             setIsSubmitting(false);

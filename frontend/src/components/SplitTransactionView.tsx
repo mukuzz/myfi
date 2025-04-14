@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FiCreditCard } from 'react-icons/fi';
 import { LuPackageOpen } from 'react-icons/lu'; // Icon for split into following
 import { Transaction, TagMap } from '../types';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatCurrency } from '../utils/formatters';
 import { useAppDispatch, useAppSelector } from '../store/hooks'; // Import Redux hooks
 import { splitTransaction, resetMutationStatus } from '../store/slices/transactionsSlice'; // Import Redux action
 import TransactionCard from './TransactionCard';

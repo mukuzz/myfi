@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Account } from '../types';
 import { 
-  FiLock, FiEye, FiEyeOff, FiSave, FiTrash2, 
+  FiEye, FiEyeOff, FiSave, FiTrash2, 
   FiAlertCircle, FiCheckCircle 
 } from 'react-icons/fi';
 import { encryptCredentials } from '../utils/cryptoUtils';

@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Account } from '../types';
-import { fetchAccounts } from '../services/apiService';
+import { useEffect, useMemo } from 'react';
 import { FiMoreHorizontal, FiBriefcase } from 'react-icons/fi'; // Using generic icons
 import { IconType } from 'react-icons';
 import Card from './Card';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchAccounts as fetchAccountsRedux } from '../store/slices/accountsSlice';
 
 // Mock data for sparkline - replace with actual data fetching/generation
 const sparklineData = [5, 10, 5, 20, 8, 15]; 
@@ -22,26 +22,14 @@ const bankLogos: Record<string, BankInfo> = {
 };
 
 function TotalBalanceCard() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const { accounts, status, error } = useAppSelector(state => state.accounts);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        const data = await fetchAccounts();
-        setAccounts(data);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching accounts:', err);
-        setError('Failed to load balance.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, []);
+    if (status === 'idle') {
+      dispatch(fetchAccountsRedux());
+    }
+  }, [status, dispatch]);
 
   const { totalBalance, aggregatedBalances } = useMemo(() => {
     const parentAccounts = accounts.filter(acc => acc.parentAccountId === null || acc.parentAccountId === undefined);
@@ -118,12 +106,12 @@ function TotalBalanceCard() {
     );
   }
 
-  if (isLoading) {
+  if (status === 'loading' || status === 'idle') {
     return <div className="p-4 text-center text-muted-foreground">Loading Total Balance...</div>;
   }
 
-  if (error) {
-    return <div className="p-4 text-center text-error">{error}</div>;
+  if (status === 'failed') {
+    return <div className="p-4 text-center text-error">{error || 'Failed to load balance.'}</div>;
   }
 
   return (

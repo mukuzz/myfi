@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiCreditCard } from 'react-icons/fi'; // Example icons, Add FiSave
 import { BsDiagram3 } from 'react-icons/bs'; // Icon for splits
-import { HiOutlineDotsHorizontal } from 'react-icons/hi'; // Ellipsis Icon
 import { Transaction, TagMap } from '../types'; // Import TagMap
 import TransactionWithNarration from './TransactionWithNarration'; // Import the new component
 import { ReactComponent as ExcludedIcon } from '../assets/icons/ExcludedFromAccountingIcon.svg'; // Import the custom SVG
@@ -51,9 +50,6 @@ interface TransactionDetailViewProps {
 function TransactionDetailView({
     transaction,
     tagMap,
-    onEdit,
-    onDelete,
-    onSplit,
     onTagClick,
     onManageSplit, // Destructure the new prop
 }: TransactionDetailViewProps) {
@@ -63,9 +59,6 @@ function TransactionDetailView({
 
     // Get the dispatch function
     const dispatch = useDispatch<AppDispatch>();
-
-    // Access tag name directly from the Tag object in the map
-    const currentTagName = transaction.tagId ? tagMap[transaction.tagId]?.name : 'Untagged';
 
     // Debounced function to save the note using Redux action
     const debouncedSaveNote = useCallback(

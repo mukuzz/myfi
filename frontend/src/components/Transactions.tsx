@@ -4,12 +4,11 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import {
     fetchTransactions,
     createTransaction,
-    updateTransactionTag,
-    resetMutationStatus
+    updateTransactionTag
 } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
 import { fetchAccounts } from '../store/slices/accountsSlice';
-import { Transaction, TagMap, Tag, Account } from '../types';
+import { Transaction, TagMap } from '../types';
 import TagSelector from './TagSelector';
 import TransactionCard from './TransactionCard';
 import DraggableBottomSheet from './DraggableBottomSheet';
@@ -30,9 +29,7 @@ function Transactions() {
         status: transactionStatus,
         error: transactionError,
         currentPage,
-        hasMore,
-        mutationStatus,
-        mutationError
+        hasMore
     } = useAppSelector((state) => state.transactions);
     const { tags, status: tagsStatus, error: tagsError } = useAppSelector((state) => state.tags);
     const { accounts, status: accountsStatus, error: accountsError } = useAppSelector((state) => state.accounts);
