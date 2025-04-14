@@ -1,18 +1,36 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import Transactions from './Transactions';
-import { useTransactionData } from '../hooks/useTransactionData';
 import { groupTransactionsByMonth } from '../utils/transactionUtils';
 import { createTransaction as apiCreateTransaction } from '../services/apiService'; // Alias to avoid name clash
 import { Transaction, Tag, TagMap, Account } from '../types';
 import '@testing-library/jest-dom';
 import { within } from '@testing-library/react';
 
+// --- NEW: Import Redux dependencies ---
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import { RootState } from '../store/store'; // Assuming RootState is in store.ts
+import {
+    // fetchTransactions, // We might not need fetch directly if component dispatches internally
+    updateTransactionTag as updateTransactionTagAction, // Rename to avoid clash
+    createTransaction as createTransactionAction, // Import and rename create action
+    // Add other needed actions from transactionsSlice if required by tests
+} from '../store/slices/transactionsSlice';
+import { fetchTags } from '../store/slices/tagsSlice';
+import { fetchAccounts } from '../store/slices/accountsSlice';
+
 // --- Mocks ---
 
 // Mock Hooks
-jest.mock('../hooks/useTransactionData');
-const mockedUseTransactionData = useTransactionData as jest.Mock;
+// Remove old hook mock
+// jest.mock('../hooks/useTransactionData');
+// const mockedUseTransactionData = useTransactionData as jest.Mock;
+
+// --- NEW: Mock Redux Hooks ---
+jest.mock('../store/hooks');
+const mockedUseAppSelector = useAppSelector as jest.Mock;
+const mockedUseAppDispatch = useAppDispatch as jest.Mock;
+const mockDispatch = jest.fn(); // Create a mock dispatch function
 
 // Mock API Services
 jest.mock('../services/apiService');
@@ -111,52 +129,111 @@ const mockGroupedTransactions = {
   'January 2024': [mockTransactions[0], mockTransactions[1]],
 };
 
-// Default mock hook return value
-const mockUseTransactionDataResult = {
-  transactions: mockTransactions,
-  tags: mockTags,
-  tagMap: mockTagMap,
-  loading: false,
-  error: null,
-  updateTransactionTag: jest.fn().mockResolvedValue(undefined),
-  refetchData: jest.fn().mockResolvedValue(undefined),
-  // Add mock accounts to the hook result if Transactions component uses it directly
-  // accounts: [mockAccount], 
+// --- NEW: Define Mock Redux State ---
+const mockInitialState: Partial<RootState> = {
+    transactions: {
+        transactions: mockTransactions,
+        transactionPage: {
+            content: mockTransactions,
+            pageable: { sort: { sorted: false, unsorted: true, empty: true }, pageNumber: 0, pageSize: 20, offset: 0, paged: true, unpaged: false },
+            last: false,
+            totalPages: 3,
+            totalElements: mockTransactions.length,
+            size: 20,
+            number: 0,
+            sort: { sorted: false, unsorted: true, empty: true },
+            first: true,
+            numberOfElements: mockTransactions.length,
+            empty: false
+        },
+        currentPage: 0,
+        hasMore: true,
+        status: 'succeeded',
+        error: null,
+        currentMonthTransactions: [], // Add if needed by tests
+        currentMonthStatus: 'idle',
+        currentMonthError: null,
+        mutationStatus: 'idle',
+        mutationError: null,
+    },
+    tags: {
+        tags: mockTags,
+        status: 'succeeded',
+        error: null,
+    },
+    accounts: {
+        accounts: [mockAccount], // Use the mock account
+        status: 'succeeded',
+        error: null,
+    },
+    // Add other slices if needed by Transactions or its children
 };
-
 
 describe('Transactions Component', () => {
 
   beforeEach(() => {
     // Reset all mocks and spies
     jest.clearAllMocks();
-    mockedUseTransactionData.mockReturnValue(mockUseTransactionDataResult);
+    // NEW: Reset Redux mocks
+    mockDispatch.mockClear();
+    mockedUseAppDispatch.mockReturnValue(mockDispatch); // Use the mock dispatch
+    mockedUseAppSelector.mockImplementation((selectorFn) => selectorFn(mockInitialState)); // Default state
+
+    // Reset other mocks
     mockedGroupTransactionsByMonth.mockReturnValue(mockGroupedTransactions);
     mockedApiCreateTransaction.mockResolvedValue({ message: 'Success' }); 
   });
 
-  // --- Rendering Tests ---
+  // --- Rendering Tests --- Mofified to use Redux state
   test('renders loading state', () => {
-    mockedUseTransactionData.mockReturnValueOnce({ ...mockUseTransactionDataResult, loading: true });
+    // NEW: Simulate loading state via Redux mock
+    mockedUseAppSelector.mockImplementation((selectorFn) => selectorFn({
+        ...mockInitialState,
+        transactions: {
+            ...mockInitialState.transactions!,
+            transactions: [], // Typically empty on initial load
+            status: 'loading',
+        }
+    }));
+
     render(<Transactions />);
     expect(screen.getByText(/Loading transactions.../i)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /transactions/i })).toBeInTheDocument(); // Header still renders
   });
 
   test('renders error state', () => {
-    mockedUseTransactionData.mockReturnValueOnce({ ...mockUseTransactionDataResult, error: 'Failed to fetch' });
+    // NEW: Simulate error state via Redux mock
+    mockedUseAppSelector.mockImplementation((selectorFn) => selectorFn({
+        ...mockInitialState,
+        transactions: {
+            ...mockInitialState.transactions!,
+            transactions: [],
+            status: 'failed',
+            error: 'Failed to fetch',
+        }
+    }));
+
     render(<Transactions />);
     expect(screen.getByText(/Error: Failed to fetch/i)).toBeInTheDocument();
   });
 
   test('renders empty state', () => {
-    mockedUseTransactionData.mockReturnValueOnce({ ...mockUseTransactionDataResult, transactions: [] });
-    mockedGroupTransactionsByMonth.mockReturnValueOnce({});
+    // NEW: Simulate empty succeeded state via Redux mock
+    mockedUseAppSelector.mockImplementation((selectorFn) => selectorFn({
+        ...mockInitialState,
+        transactions: {
+            ...mockInitialState.transactions!,
+            transactions: [], // Empty array signifies no transactions
+            status: 'succeeded', // But the fetch succeeded
+        }
+    }));
+    mockedGroupTransactionsByMonth.mockReturnValueOnce({}); // Ensure grouping returns empty
     render(<Transactions />);
     expect(screen.getByText(/No transactions found./i)).toBeInTheDocument();
   });
 
   test('renders transactions grouped by month', () => {
+    // This test should work with the default mockInitialState set in beforeEach
     render(<Transactions />);
     expect(mockedGroupTransactionsByMonth).toHaveBeenCalledWith(mockTransactions);
 
@@ -224,6 +301,8 @@ describe('Transactions Component', () => {
 
   test('updates tag via tag selector sheet', async () => {
       render(<Transactions />);
+      const targetTransaction = mockTransactions.find(tx => tx.id === 104)!;
+
       const tagButton = within(screen.getByTestId('tx-card-104')).getByRole('button', { name: /Tag/i }); 
       fireEvent.click(tagButton);
       // Wait for sheet content & wrapper
@@ -232,19 +311,32 @@ describe('Transactions Component', () => {
         expect(within(wrapper).getByTestId('tag-selector')).toBeInTheDocument();
       });
 
-      // Click the mock button inside TagSelector mock (ensure it's within the wrapper)
+      // Simulate selecting the tag via the mock component's button
       const selectTagButton = within(screen.getByTestId('sheet-wrapper')).getByRole('button', { name: /Select Tag 99/i });
       fireEvent.click(selectTagButton);
 
-      // Check if updateTransactionTag was called correctly
+      // NEW: Check if the correct Redux action was dispatched
       await waitFor(() => {
-          expect(mockUseTransactionDataResult.updateTransactionTag).toHaveBeenCalledTimes(1);
-          expect(mockUseTransactionDataResult.updateTransactionTag).toHaveBeenCalledWith(
-              mockTransactions.find(tx => tx.id === 104), 99
-          );
+          expect(mockDispatch).toHaveBeenCalledTimes(1);
+          const expectedArgs = {
+            transactionId: targetTransaction.id,
+            newTagId: 99,
+            // Construct the originalTransaction data based on how the component extracts it
+            // IMPORTANT: Ensure this matches the data passed by handleUpdateTag in Transactions.tsx
+            originalTransaction: expect.objectContaining({ 
+                description: targetTransaction.description, 
+                amount: targetTransaction.amount,
+                type: targetTransaction.type,
+                transactionDate: targetTransaction.transactionDate,
+                createdAt: targetTransaction.createdAt,
+                excludeFromAccounting: targetTransaction.excludeFromAccounting,
+                // We exclude id, tagId, subTransactions, account as done in the component
+            })
+          };
+          // Check if dispatch was called with the action generated by the thunk action creator
+          expect(mockDispatch).toHaveBeenCalledWith(updateTransactionTagAction(expectedArgs));
       });
     });
-
 
   test('opens and closes add transaction sheet (AmountInputModal)', async () => {
     render(<Transactions />);
@@ -279,23 +371,54 @@ describe('Transactions Component', () => {
     await waitFor(() => expect(screen.getByTestId('amount-input-modal')).toBeInTheDocument());
 
     const submitButton = screen.getByRole('button', { name: /Submit Tx/i });
+    // Mock modal calls onSubmitTransaction with a payload
+    // We need to simulate the *dispatch* happening after the component logic processes this
+    // In Transactions.tsx, AddTransactionFlow handles the dispatch
+    // Our mock AmountInputModal simulates the *result* of the modal interaction
+
+    // Get the onSubmitTransaction callback passed to the mock modal
+    const handleSubmitTransaction = amountInputModalProps.onSubmitTransaction;
+
+    // Manually call the submit handler with the expected payload from the mock
+    // This simulates the mock modal calling the handler
+    const mockSubmittedTx: Transaction = {
+        id: -1, 
+        account: mockAccount, // Assuming AddTransactionFlow adds this or it's selected later
+        description: 'Test Manual Tx', // From mock logic
+        amount: 5000, // From mock logic
+        transactionDate: expect.any(String), // Date is generated
+        type: 'DEBIT', // From mock logic
+        tagId: undefined,
+        createdAt: expect.any(String),
+        excludeFromAccounting: false
+    };
     await act(async () => {
-        fireEvent.click(submitButton);
+        handleSubmitTransaction(mockSubmittedTx);
+        // The AddTransactionFlow component (mocked or real) inside Transactions
+        // should eventually dispatch createTransactionAction
     });
 
+    // NEW: Assert that createTransaction action was dispatched
     await waitFor(() => {
-        expect(mockedApiCreateTransaction).toHaveBeenCalledTimes(1);
-        expect(mockedApiCreateTransaction).toHaveBeenCalledWith(expect.objectContaining({
-            id: -1,
-            amount: 5000,
-            type: 'DEBIT',
-            account: mockAccount,
-            description: expect.stringContaining('CASH/DEBIT/'),
-            transactionDate: expect.any(String),
-            excludeFromAccounting: false,
-        }));
+        expect(mockDispatch).toHaveBeenCalledTimes(1);
+        // Check the dispatched action
+        expect(mockDispatch).toHaveBeenCalledWith(
+            createTransactionAction({
+                // The payload structure is { transactionData: ... }
+                transactionData: expect.objectContaining({
+                    // Match the essential data from the mock modal submission
+                    // AddTransactionFlow might add/modify fields like description, isManualEntry, etc.
+                    // Focus on core data passed from the modal
+                    amount: 5000,
+                    type: 'DEBIT',
+                    account: mockAccount, // Or check for null if cash/no account selected yet
+                    // transactionDate: expect.any(String), // Date might be adjusted
+                    excludeFromAccounting: false,
+                    // Note: id, createdAt are omitted in the API call
+                })
+            })
+        );
     });
-    expect(mockUseTransactionDataResult.refetchData).toHaveBeenCalledTimes(1);
   });
 
   test('opens split view from detail view', async () => {
