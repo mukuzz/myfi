@@ -79,53 +79,22 @@ function DraggableBottomSheet({
     };
   }, [isOpen]);
 
-  // Helper to find the nearest scrollable parent within the sheet
-  const findScrollableParent = (element: HTMLElement | null): HTMLElement | null => {
-    if (!element || element === modalRef.current) {
-      return null;
-    }
-    const style = window.getComputedStyle(element);
-    if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
-      return element;
-    }
-    return findScrollableParent(element.parentElement);
-  };
-
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    // Check if the event target is the drag handle itself or within it
+    // Only allow dragging if the event target is the drag handle itself or within it
     const handleElement = e.currentTarget.querySelector('[data-drag-handle="true"]');
     const isDragHandle = handleElement?.contains(e.target as Node);
 
-    let shouldStartDragging = false;
-
-    if (isDragHandle) {
-      shouldStartDragging = true;
-    } else {
-      // If not the handle, check scroll position of content
-      const scrollableParent = findScrollableParent(e.target as HTMLElement);
-      if (scrollableParent) {
-        // Only allow dragging content if scrolled to the top
-        if (scrollableParent.scrollTop === 0) {
-          shouldStartDragging = true;
-        }
-        // If scrollableParent.scrollTop > 0, do nothing, allow native scroll
-      } else {
-        // If no scrollable parent found within content, allow dragging
-        shouldStartDragging = true;
-      }
-    }
-
-    if (shouldStartDragging && modalRef.current) {
+    if (isDragHandle && modalRef.current) {
       isDragging.current = true;
       dragStartY.current = e.clientY;
       modalRef.current.style.transition = 'none'; // Disable transition during drag
       // Capture pointer on the element that received the event (the modal div)
+      // Use e.currentTarget which is the modal div itself where the listener is attached
       e.currentTarget.setPointerCapture(e.pointerId);
     }
-    // If shouldStartDragging is false, we don't capture the pointer or set state,
-    // allowing native scrolling of the inner content.
+    // If not the drag handle, do nothing. Native behavior (like text selection) is allowed.
 
-  }, []); // No dependencies needed for this logic
+  }, []); // No dependencies needed
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging.current || !modalRef.current) return;
@@ -205,7 +174,7 @@ function DraggableBottomSheet({
         className={`fixed bottom-0 left-0 right-0 bg-background w-full max-w-lg mx-auto shadow-xl h-[95vh] flex flex-col rounded-t-xl
                    transition-transform duration-300 ease-in-out
                    ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
-      // Inline transform applied during drag
+        // Inline transform applied during drag
       >
         {/* Drag Handle Area - Now includes title */}
         <div

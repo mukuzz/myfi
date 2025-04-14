@@ -52,7 +52,7 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
   };
 
   return (
-    <div className="overflow-y-auto">
+    <div className="flex flex-col h-full">
 
       {transaction && (
         <div className="mx-4">

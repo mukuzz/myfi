@@ -102,12 +102,10 @@ function Transactions() {
     const handleUpdateTag = async (newTagId: number | null) => {
         if (!selectedTransactionForTag) return;
         
-        const { id, tagId, subTransactions, account, ...originalData } = selectedTransactionForTag;
-        
         dispatch(updateTransactionTag({
             transactionId: selectedTransactionForTag.id,
             newTagId,
-            originalTransaction: originalData
+            originalTransaction: selectedTransactionForTag
         })).then(() => {
         }).catch((error) => {
             console.error("Failed to update tag via Redux:", error);

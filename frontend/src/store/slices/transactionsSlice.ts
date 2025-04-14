@@ -347,12 +347,11 @@ const transactionsSlice = createSlice({
                                 list[parentIndex].subTransactions![subIndex] = updatedTx;
                             }
                         }
-                    } else {
-                        // It's a top-level transaction
-                        const index = list.findIndex(tx => tx.id === updatedTx.id);
-                        if (index !== -1) {
-                            list[index] = updatedTx;
-                        }
+                    } 
+                    // Update the top-level transaction as well
+                    const index = list.findIndex(tx => tx.id === updatedTx.id);
+                    if (index !== -1) {
+                        list[index] = updatedTx;
                     }
                 };
 
@@ -386,13 +385,14 @@ const transactionsSlice = createSlice({
                                 list[parentIndex].subTransactions![subIndex] = updatedTx;
                             }
                         }
-                    } else {
-                        // It's a top-level transaction
-                        const index = list.findIndex(tx => tx.id === updatedTx.id);
-                        if (index !== -1) {
-                            list[index] = updatedTx;
-                        }
+                    } 
+                    
+                    // Update the top-level transaction as well
+                    const index = list.findIndex(tx => tx.id === updatedTx.id);
+                    if (index !== -1) {
+                        list[index] = updatedTx;
                     }
+                    
                 };
 
                 updateTransactionInList(state.transactions);
@@ -410,23 +410,32 @@ const transactionsSlice = createSlice({
             .addCase(splitTransaction.fulfilled, (state, action) => {
                 // Action payload is the updated parent transaction
                 const updatedParent = action.payload;
-                // Find and update the parent in the list
-                const parentIndex = state.transactions.findIndex(tx => tx.id === updatedParent.id);
-                if (parentIndex !== -1) {
-                    // Replace the parent transaction with the updated one (which might have subTransactions)
-                    // The API currently returns the updated parent, not the new child.
-                    // We rely on the next fetch/view update to show the child.
-                    // TODO: Consider if the API should return both parent and child for immediate update.
-                    state.transactions[parentIndex] = updatedParent;
-                } else {
-                    // Handle case where parent wasn't in the list (should not happen ideally)
-                    state.transactions.push(updatedParent); 
-                }
-                // Update in current month list as well
-                const monthParentIndex = state.currentMonthTransactions.findIndex(tx => tx.id === updatedParent.id);
-                if (monthParentIndex !== -1) {
-                    state.currentMonthTransactions[monthParentIndex] = updatedParent;
-                }
+
+                // Helper function to update transactions list
+                const updateListWithSplit = (list: Transaction[]) => {
+                    const parentIndex = list.findIndex(tx => tx.id === updatedParent.id);
+                    if (parentIndex !== -1) {
+                        // Replace the parent transaction
+                        list[parentIndex] = updatedParent;
+                        // Add sub-transactions right after the parent if they exist
+                        if (updatedParent.subTransactions && updatedParent.subTransactions.length > 0) {
+                            list.splice(parentIndex + 1, 0, ...updatedParent.subTransactions);
+                        }
+                    } else {
+                        // Handle case where parent wasn't in the list (should not happen ideally)
+                        // Add parent and then sub-transactions
+                        list.push(updatedParent);
+                        if (updatedParent.subTransactions && updatedParent.subTransactions.length > 0) {
+                            list.push(...updatedParent.subTransactions);
+                        }
+                    }
+                    return list; // Return the modified list
+                };
+
+                // Update both main and current month lists
+                state.transactions = updateListWithSplit(state.transactions);
+                state.currentMonthTransactions = updateListWithSplit(state.currentMonthTransactions);
+
                 state.mutationStatus = 'succeeded';
                 state.mutationError = null;
             })
