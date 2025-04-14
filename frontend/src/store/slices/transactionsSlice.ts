@@ -66,6 +66,10 @@ interface SplitTransactionArgs {
     amount2: number;
 }
 
+interface DeleteTransactionArgs {
+    transactionId: number;
+}
+
 // Async thunk for fetching ALL transactions
 export const fetchTransactions = createAsyncThunk<
     Page<Transaction>,
@@ -185,6 +189,24 @@ export const splitTransaction = createAsyncThunk<
     }
 );
 
+// Delete Transaction
+export const deleteTransactionAsync = createAsyncThunk<
+    number, // Return the ID of the deleted transaction
+    DeleteTransactionArgs,
+    { rejectValue: string }
+>(
+    'transactions/deleteTransactionAsync',
+    async ({ transactionId }, { rejectWithValue }) => {
+        try {
+            await apiService.deleteTransaction(transactionId);
+            return transactionId; // Return the ID on success
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to delete transaction';
+            throw rejectWithValue(message);
+        }
+    }
+);
+
 // Create the transactions slice
 const transactionsSlice = createSlice({
     name: 'transactions',
@@ -243,13 +265,25 @@ const transactionsSlice = createSlice({
             .addCase(createTransaction.fulfilled, (state, action: PayloadAction<Transaction>) => {
                 state.mutationStatus = 'succeeded';
                 state.transactions.unshift(action.payload);
+                // Add the new transaction to currentMonthTransactions if it belongs to the current month
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                
+                const txDate = new Date(action.payload.transactionDate);
+                const txMonth = txDate.getMonth();
+                const txYear = txDate.getFullYear();
+                
+                if (txMonth === currentMonth && txYear === currentYear) {
+                    state.currentMonthTransactions.unshift(action.payload);
+                }
                 if (state.transactionPage) {
                     state.transactionPage.totalElements += 1;
                 }
             })
             .addCase(createTransaction.rejected, (state, action) => {
                 state.mutationStatus = 'failed';
-                state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to create transaction';
+                state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Unknown error creating transaction';
             })
             // --- Handlers for updateTransactionTag ---
             .addCase(updateTransactionTag.pending, (state) => {
@@ -289,7 +323,7 @@ const transactionsSlice = createSlice({
             })
             .addCase(updateTransactionTag.rejected, (state, action) => {
                 state.mutationStatus = 'failed';
-                state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to update tag';
+                state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Unknown error splitting transaction';
             })
             // --- Handlers for updateTransactionAsync ---
             .addCase(updateTransactionAsync.pending, (state) => {
@@ -349,6 +383,26 @@ const transactionsSlice = createSlice({
             .addCase(splitTransaction.rejected, (state, action) => {
                 state.mutationStatus = 'failed';
                 state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to split transaction';
+            })
+            // --- Handlers for deleteTransactionAsync ---
+            .addCase(deleteTransactionAsync.pending, (state) => {
+                state.mutationStatus = 'loading';
+                state.mutationError = null;
+            })
+            .addCase(deleteTransactionAsync.fulfilled, (state, action: PayloadAction<number>) => {
+                state.mutationStatus = 'succeeded';
+                const deletedId = action.payload;
+                // Remove from both lists
+                state.transactions = state.transactions.filter(t => t.id !== deletedId);
+                state.currentMonthTransactions = state.currentMonthTransactions.filter(t => t.id !== deletedId);
+                // Adjust total elements if page data exists
+                if (state.transactionPage) {
+                    state.transactionPage.totalElements -= 1;
+                }
+            })
+            .addCase(deleteTransactionAsync.rejected, (state, action) => {
+                state.mutationStatus = 'failed';
+                state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Unknown error deleting transaction';
             })
             // --- Handler for when an account is deleted ---
             .addCase(deleteAccount.fulfilled, (state, action: PayloadAction<string>) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiCreditCard } from 'react-icons/fi'; // Example icons, Add FiSave
+import { FiCreditCard, FiTrash2 } from 'react-icons/fi'; // Example icons, Add FiSave and FiTrash2
 import { BsDiagram3 } from 'react-icons/bs'; // Icon for splits
 import { Transaction, TagMap } from '../types'; // Import TagMap
 import TransactionWithNarration from './TransactionWithNarration'; // Import the new component
@@ -8,7 +8,7 @@ import { ReactComponent as ExcludedIcon } from '../assets/icons/ExcludedFromAcco
 // Import Redux hooks and actions
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../store/store'; // Correct path based on search
-import { updateTransactionAsync } from '../store/slices/transactionsSlice';
+import { updateTransactionAsync, deleteTransactionAsync } from '../store/slices/transactionsSlice';
 
 // A simple debounce function (consider using lodash.debounce for production)
 const debounce = <F extends (...args: any[]) => any>(func: F, waitFor: number) => {
@@ -39,7 +39,7 @@ interface TransactionDetailViewProps {
     tagMap: TagMap; // Use the correct type
     // Placeholder functions for actions - implementation later
     onEdit?: (transaction: Transaction) => void;
-    onDelete?: (transaction: Transaction) => void;
+    onClose?: () => void; // Add prop to close the detail view after deletion
     onSplit?: (transaction: Transaction) => void;
     onTagClick?: (transaction: Transaction, event: React.MouseEvent) => void;
     // Optional: Add account details if needed
@@ -52,6 +52,7 @@ function TransactionDetailView({
     tagMap,
     onTagClick,
     onManageSplit, // Destructure the new prop
+    onClose, // Destructure onClose prop
 }: TransactionDetailViewProps) {
     const [isExcluded, setIsExcluded] = useState(transaction.excludeFromAccounting || false);
     const [note, setNote] = useState(transaction.notes || ''); // Use 'notes' based on model change
@@ -99,6 +100,29 @@ function TransactionDetailView({
             // Optional: revert the UI state if the server update fails
             setIsExcluded(!newExcludedValue);
             // TODO: Add user feedback for save failure
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!transaction?.id) {
+            console.error('Cannot delete transaction: transaction ID is missing');
+            return;
+        }
+
+        // Basic confirmation
+        if (window.confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
+            setIsSaving(true); // Reuse saving state for delete operation
+            try {
+                console.log('Dispatching deleteTransactionAsync for transaction ID:', transaction.id);
+                await dispatch(deleteTransactionAsync({ transactionId: transaction.id })).unwrap();
+                console.log('Transaction delete dispatched successfully');
+                onClose?.(); // Close the detail view after successful deletion
+            } catch (error) {
+                console.error('Failed to dispatch transaction delete:', error);
+                // TODO: Add user feedback for delete failure
+            } finally {
+                setIsSaving(false);
+            }
         }
     };
 
@@ -197,6 +221,17 @@ function TransactionDetailView({
                 </p>
             </div>
 
+            {/* Delete Button - Conditionally Rendered */} 
+            {transaction.account === null && (
+                <button
+                    onClick={handleDelete}
+                    disabled={isSaving} // Disable button while saving/deleting
+                    className="mt-auto bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium rounded-lg text-sm px-5 py-2.5 text-center mb-2 flex items-center justify-center disabled:opacity-50 border border-red-500"
+                >
+                    <FiTrash2 className="mr-2 h-4 w-4" />
+                    Delete Transaction
+                </button>
+            )}
         </div>
     );
 }

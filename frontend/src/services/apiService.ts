@@ -378,6 +378,32 @@ export const fetchTransactionById = async (id: number): Promise<Transaction> => 
 };
 
 /**
+ * Deletes a transaction by its ID.
+ * @param id The ID of the transaction to delete.
+ * @throws Error if the delete operation fails.
+ */
+export const deleteTransaction = async (id: number): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/transactions/${id}`, {
+        method: 'DELETE',
+    });
+
+    if (!response.ok) {
+        // Attempt to read error message from response body
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+            const errorBody = await response.json();
+            errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+        } catch (e) {
+            // Ignore if response body is not JSON or empty
+        }
+        console.error(`Failed to delete transaction with ID ${id}:`, errorMessage);
+        throw new Error(`Failed to delete transaction: ${errorMessage}`);
+    }
+
+    // No content expected on successful delete
+};
+
+/**
  * Deletes an account on the server.
  * @param id The ID of the account to delete.
  * @returns Promise that resolves when the deletion is successful.

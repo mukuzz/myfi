@@ -291,6 +291,7 @@ function Transactions() {
                         tagMap={tagMap}
                         onTagClick={openTagSelector}
                         onManageSplit={openSplitView}
+                        onClose={closeDetailView}
                     />
                 )}
             </DraggableBottomSheet>
