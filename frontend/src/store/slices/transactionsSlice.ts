@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as apiService from '../../services/apiService';
 import { Transaction, Page } from '../../types';
+import { deleteAccount } from '../slices/accountsSlice'; // Import the action from accountsSlice
 
 // Define the shape of the transactions state
 interface TransactionsState {
@@ -312,6 +313,20 @@ const transactionsSlice = createSlice({
             .addCase(splitTransaction.rejected, (state, action) => {
                 state.mutationStatus = 'failed';
                 state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to split transaction';
+            })
+            // --- Handler for when an account is deleted ---
+            .addCase(deleteAccount.fulfilled, (state, action: PayloadAction<string>) => {
+                const deletedAccountId = action.payload; // ID of the deleted account (string)
+                // Remove transactions associated with the deleted account
+                state.transactions = state.transactions.filter(
+                    (tx) => tx.account?.id.toString() !== deletedAccountId
+                );
+                // Also update current month transactions if they exist
+                state.currentMonthTransactions = state.currentMonthTransactions.filter(
+                    (tx) => tx.account?.id.toString() !== deletedAccountId
+                );
+                // Optional: Update pagination info if necessary, though removing from the main list might be sufficient
+                // Recalculating totalElements could be complex here
             });
     },
 });

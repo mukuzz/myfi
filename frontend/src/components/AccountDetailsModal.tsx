@@ -6,6 +6,8 @@ import {
 } from 'react-icons/fi';
 import { encryptCredentials } from '../utils/cryptoUtils';
 import PassphraseModal from './PassphraseModal';
+import { useAppDispatch } from '../store/hooks';
+import { deleteAccount as deleteAccountAction } from '../store/slices/accountsSlice';
 
 const NETBANKING_STORAGE_PREFIX = 'myfi_credential_';
 const PASSPHRASE_SET_KEY = 'myfi_passphrase_set';
@@ -23,8 +25,10 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
   account,
   onClose,
   formatCurrency,
-  getAccountTypeLabel
+  getAccountTypeLabel,
 }) => {
+  const dispatch = useAppDispatch();
+
   // States for form fields and UI
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -32,6 +36,8 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   
   // Passphrase states
   const [isPassphraseModalOpen, setIsPassphraseModalOpen] = useState<boolean>(false);
@@ -133,6 +139,25 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
       setPassword('');
       setSaveStatus('idle');
       setErrorMessage(null);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteError(null);
+    const confirmationMessage = `Are you sure you want to delete the account "${account.name}"? This action cannot be undone and will also delete all associated transactions.`;
+
+    if (window.confirm(confirmationMessage)) {
+      setIsDeleting(true);
+      try {
+        await dispatch(deleteAccountAction(account.id.toString())).unwrap();
+        onClose();
+        console.log(`Account ${account.id} deleted successfully via modal.`);
+      } catch (error: any) {
+        console.error('Failed to delete account:', error);
+        const message = error?.message || 'Failed to delete account. Please try again.';
+        setDeleteError(message);
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -264,6 +289,32 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
             </button>
           </div>
         </form>
+      </div>
+      
+      {/* Delete Account Section */}
+      <div className="mt-6 pt-4 border-t">
+        <h3 className="text-lg font-medium mb-2 text-error">Danger Zone</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Deleting this account will permanently remove it along with all associated transactions. This action cannot be undone.
+        </p>
+        {deleteError && (
+          <div className="mb-4 p-3 text-sm bg-error/10 border border-error/30 rounded-md text-error">
+            {deleteError}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={handleDeleteAccount}
+          disabled={isDeleting}
+          className="w-full py-2 px-4 border border-error text-error rounded-md hover:bg-error/10 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isDeleting ? (
+            <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full mr-2"></div>
+          ) : (
+            <FiTrash2 className="mr-2 h-4 w-4" />
+          )}
+          Delete Account
+        </button>
       </div>
       
       {/* Passphrase Modal */}

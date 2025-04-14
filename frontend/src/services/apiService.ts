@@ -377,4 +377,32 @@ export const fetchTransactionById = async (id: number): Promise<Transaction> => 
   return response.json();
 };
 
+/**
+ * Deletes an account on the server.
+ * @param id The ID of the account to delete.
+ * @returns Promise that resolves when the deletion is successful.
+ * @throws Error if the deletion fails.
+ */
+export const deleteAccount = async (id: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/accounts/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      // Try to parse backend error message if available
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || errorBody.error || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {
+      // Ignore if response body is not JSON or empty
+    }
+    console.error(`Failed to delete account with ID ${id}:`, errorMessage);
+    throw new Error(`Failed to delete account: ${errorMessage}`);
+  }
+
+  // No content expected on successful DELETE, so just return void
+  return;
+};
+
 // Add other API functions here as needed (e.g., fetchTransactions, createTransaction, deleteTransaction) 

@@ -54,6 +54,25 @@ export const createAccount = createAsyncThunk<
     }
 );
 
+// Async thunk for deleting an account
+export const deleteAccount = createAsyncThunk<
+    string, // Return type: the ID of the deleted account for the reducer
+    string, // Argument type: the ID of the account to delete
+    { rejectValue: string } // Thunk config
+>(
+    'accounts/deleteAccount',
+    async (accountId, { rejectWithValue }) => {
+        try {
+            // Use the imported apiService function
+            await apiService.deleteAccount(accountId);
+            return accountId; // Return the ID on success
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to delete account';
+            return rejectWithValue(message);
+        }
+    }
+);
+
 // Create the accounts slice
 const accountsSlice = createSlice({
     name: 'accounts',
@@ -73,7 +92,36 @@ const accountsSlice = createSlice({
             })
             .addCase(fetchAccounts.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Unknown error';
+                state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to fetch accounts';
+            })
+            // Create Account Cases
+            .addCase(createAccount.pending, (state) => {
+                // Optionally set a specific status like 'creating' or use 'loading'
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(createAccount.fulfilled, (state, action: PayloadAction<Account>) => {
+                state.status = 'succeeded';
+                state.accounts.push(action.payload); // Add the new account to the list
+            })
+            .addCase(createAccount.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to create account';
+            })
+            // Delete Account Cases
+            .addCase(deleteAccount.pending, (state) => {
+                // Optionally set a specific status like 'deleting' or use 'loading'
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(deleteAccount.fulfilled, (state, action: PayloadAction<string>) => {
+                state.status = 'succeeded';
+                // Filter out the deleted account using the returned ID
+                state.accounts = state.accounts.filter(account => account.id.toString() !== action.payload);
+            })
+            .addCase(deleteAccount.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to delete account';
             });
     },
 });
