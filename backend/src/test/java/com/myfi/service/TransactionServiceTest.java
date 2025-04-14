@@ -238,7 +238,7 @@ class TransactionServiceTest {
         assertEquals(5L, updated.getTagId());
         assertEquals("New CounterParty", updated.getCounterParty());
         assertEquals("Updated notes.", updated.getNotes());
-        assertTrue(updated.isExcludeFromAccounting());
+        assertTrue(updated.getExcludeFromAccounting());
         assertNotNull(updated.getUpdatedAt());
         assertNotNull(updated.getUniqueKey()); // Ensure key is regenerated
 
@@ -340,7 +340,7 @@ class TransactionServiceTest {
         originalParent.setTagId(transaction1.getTagId());
         originalParent.setCounterParty(transaction1.getCounterParty());
         originalParent.setNotes(transaction1.getNotes());
-        originalParent.setExcludeFromAccounting(transaction1.isExcludeFromAccounting());
+        originalParent.setExcludeFromAccounting(transaction1.getExcludeFromAccounting());
         originalParent.generateUniqueKey(); // Generate key based on 100.00
 
         when(transactionRepository.findById(1L)).thenReturn(Optional.of(originalParent));

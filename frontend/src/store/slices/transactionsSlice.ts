@@ -134,10 +134,10 @@ export const updateTransactionTag = createAsyncThunk<
             // Option 1: Use dedicated API endpoint if it exists and only needs tagId
             // await apiService.updateTransactionTagApi(transactionId, newTagId);
             // Option 2: Use general update endpoint, sending the tagId
-            // Convert null to undefined for the tagId property
+            // Convert null to -1 for the tagId property to signal untagging
             const updatedFields = { 
                 ...originalTransaction, 
-                tagId: newTagId === null ? undefined : newTagId 
+                tagId: newTagId === null ? -1 : newTagId 
             };
             const response = await apiService.updateTransaction(transactionId, updatedFields);
             // Assuming updateTransaction returns the updated transaction
@@ -258,14 +258,34 @@ const transactionsSlice = createSlice({
             })
             .addCase(updateTransactionTag.fulfilled, (state, action: PayloadAction<Transaction>) => {
                 state.mutationStatus = 'succeeded';
-                const index = state.transactions.findIndex(tx => tx.id === action.payload.id);
-                if (index !== -1) {
-                    state.transactions[index] = action.payload;
-                }
-                const monthIndex = state.currentMonthTransactions.findIndex(tx => tx.id === action.payload.id);
-                if (monthIndex !== -1) {
-                    state.currentMonthTransactions[monthIndex] = action.payload;
-                }
+                const updatedTx = action.payload;
+
+                // Helper function to update a transaction within a list (top-level or sub-transaction)
+                const updateTransactionInList = (list: Transaction[]) => {
+                    // Check if it's a sub-transaction by looking for parentId
+                    if (updatedTx.parentId) {
+                        // It's a sub-transaction, find the parent and update the sub-transaction within it
+                        const parentIndex = list.findIndex(tx => tx.id === updatedTx.parentId);
+                        if (parentIndex !== -1 && list[parentIndex].subTransactions) {
+                            const subIndex = list[parentIndex].subTransactions!.findIndex(subTx => subTx.id === updatedTx.id);
+                            if (subIndex !== -1) {
+                                list[parentIndex].subTransactions![subIndex] = updatedTx;
+                            }
+                        }
+                    } else {
+                        // It's a top-level transaction
+                        const index = list.findIndex(tx => tx.id === updatedTx.id);
+                        if (index !== -1) {
+                            list[index] = updatedTx;
+                        }
+                    }
+                };
+
+                // Update in the main transactions list
+                updateTransactionInList(state.transactions);
+
+                // Update in the current month transactions list
+                updateTransactionInList(state.currentMonthTransactions);
             })
             .addCase(updateTransactionTag.rejected, (state, action) => {
                 state.mutationStatus = 'failed';
@@ -278,14 +298,30 @@ const transactionsSlice = createSlice({
             })
             .addCase(updateTransactionAsync.fulfilled, (state, action: PayloadAction<Transaction>) => {
                 state.mutationStatus = 'succeeded';
-                const index = state.transactions.findIndex(tx => tx.id === action.payload.id);
-                if (index !== -1) {
-                    state.transactions[index] = action.payload;
-                }
-                const monthIndex = state.currentMonthTransactions.findIndex(tx => tx.id === action.payload.id);
-                if (monthIndex !== -1) {
-                    state.currentMonthTransactions[monthIndex] = action.payload;
-                }
+                const updatedTx = action.payload;
+
+                // Reusing the same helper function logic as in updateTransactionTag
+                const updateTransactionInList = (list: Transaction[]) => {
+                    if (updatedTx.parentId) {
+                        // It's a sub-transaction
+                        const parentIndex = list.findIndex(tx => tx.id === updatedTx.parentId);
+                        if (parentIndex !== -1 && list[parentIndex].subTransactions) {
+                            const subIndex = list[parentIndex].subTransactions!.findIndex(subTx => subTx.id === updatedTx.id);
+                            if (subIndex !== -1) {
+                                list[parentIndex].subTransactions![subIndex] = updatedTx;
+                            }
+                        }
+                    } else {
+                        // It's a top-level transaction
+                        const index = list.findIndex(tx => tx.id === updatedTx.id);
+                        if (index !== -1) {
+                            list[index] = updatedTx;
+                        }
+                    }
+                };
+
+                updateTransactionInList(state.transactions);
+                updateTransactionInList(state.currentMonthTransactions);
             })
             .addCase(updateTransactionAsync.rejected, (state, action) => {
                 state.mutationStatus = 'failed';

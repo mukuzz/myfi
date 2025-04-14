@@ -65,7 +65,7 @@ public class Transaction {
     private String notes;
 
     @Column(name = "exclude_from_accounting", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private boolean excludeFromAccounting;
+    private Boolean excludeFromAccounting;
 
     @Column(name = "parent_id")
     private Long parentId;

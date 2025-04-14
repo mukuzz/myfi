@@ -90,10 +90,16 @@ public class TransactionService {
                     if (transactionDetails.getTransactionDate() != null) {
                         existingTransaction.setTransactionDate(transactionDetails.getTransactionDate());
                     }
-                    // Handle tagId potentially being null to untag
-                    if (transactionDetails.getTagId() != null || transactionDetails.getTagId() == null) { // Allow setting tagId to null
-                        existingTransaction.setTagId(transactionDetails.getTagId());
+                    // Update tagId if provided
+                    Long newTagId = transactionDetails.getTagId();
+                    if (newTagId != null) { // Check if tagId was included in the request at all
+                        if (newTagId == -1L) { // -1 signals to remove the tag
+                            existingTransaction.setTagId(null);
+                        } else { // Otherwise, it's a valid ID to set
+                            existingTransaction.setTagId(newTagId);
+                        }
                     }
+                    
                     if (transactionDetails.getAccount() != null) {
                         existingTransaction.setAccount(transactionDetails.getAccount()); // Consider fetching Account by ID if only ID is passed
                     }
@@ -103,8 +109,10 @@ public class TransactionService {
                     if (transactionDetails.getNotes() != null) {
                         existingTransaction.setNotes(transactionDetails.getNotes());
                     }
-                    if (transactionDetails.isExcludeFromAccounting() != existingTransaction.isExcludeFromAccounting()) { // Check for actual change
-                        existingTransaction.setExcludeFromAccounting(transactionDetails.isExcludeFromAccounting());
+                    // Check if the Boolean value is provided and different from the existing one
+                    if (transactionDetails.getExcludeFromAccounting() != null && 
+                        !transactionDetails.getExcludeFromAccounting().equals(existingTransaction.getExcludeFromAccounting())) { 
+                        existingTransaction.setExcludeFromAccounting(transactionDetails.getExcludeFromAccounting());
                     }
 
                     // Always update the timestamp
@@ -203,7 +211,8 @@ public class TransactionService {
         newSubTransaction.setTagId(parent.getTagId()); // Inherit tagId
         newSubTransaction.setCounterParty(parent.getCounterParty()); // Inherit counterParty
         newSubTransaction.setNotes(parent.getNotes()); // Inherit notes
-        newSubTransaction.setExcludeFromAccounting(parent.isExcludeFromAccounting()); // Inherit exclude flag
+        // Use the getter for Boolean type
+        newSubTransaction.setExcludeFromAccounting(parent.getExcludeFromAccounting()); 
         newSubTransaction.setCreatedAt(LocalDateTime.now());
         // Generate unique key BEFORE saving
         try {
