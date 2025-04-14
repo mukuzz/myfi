@@ -197,18 +197,9 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
     return (
         <>
             <div
-                className={`fixed inset-0 flex flex-col items-center justify-end z-50 transition-opacity ${animationDuration} ease-in ${isVisible && !isAnimatingOut ? 'bg-black/50 opacity-100 backdrop-blur-sm' : 'bg-black/0 opacity-0'} px-4 pb-10`}
+                className={`fixed ${mode === 'split' ? 'rounded-t-xl' : ''} inset-0 flex flex-col items-center justify-end z-50 transition-opacity ${animationDuration} ease-in ${isVisible && !isAnimatingOut ? 'bg-black/50 opacity-100 backdrop-blur-sm' : 'bg-black/0 opacity-0'} px-4 pb-10`}
                 onClick={handleClose}
             >
-                {/* Show TransactionCard at the top when in split mode */}
-                {mode === 'split' && (
-                    <div className="pb-10 w-full max-w-sm px-4">
-                        <TransactionCard
-                            transaction={displayTransactionForSplitMode}
-                            tagMap={tagMap}
-                        />
-                    </div>
-                )}
                 <div
                     className={`bg-secondary text-foreground rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col origin-bottom transition-all ${animationDuration} ease-in-out ${isVisible && !isAnimatingOut ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-[200px] scale-50'}`}
                     onClick={(e) => e.stopPropagation()}
@@ -327,6 +318,7 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
                 isOpen={isTagSelectorOpen} 
                 onClose={closeTagSelector}
                 zIndex={70}
+                title="Tag Transaction"
             >
                 <TagSelector
                     onSelectTag={handleSelectTag}

@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { FiFilter, FiPlus, FiSearch } from 'react-icons/fi';
+import { FiFilter, FiSearch } from 'react-icons/fi';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import {
     fetchTransactions,
-    createTransaction,
     updateTransactionTag
 } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
@@ -13,8 +12,8 @@ import TagSelector from './TagSelector';
 import TransactionCard from './TransactionCard';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import TransactionDetailView from './TransactionDetailView';
-import AmountInputModal from './AmountInputModal';
 import SplitTransactionView from './SplitTransactionView';
+import AddTransactionFlow from './AddTransactionFlow';
 
 const getMonthYear = (dateString: string): string => {
     const date = new Date(dateString);
@@ -42,10 +41,8 @@ function Transactions() {
     const [selectedTransactionForTag, setSelectedTransactionForTag] = useState<Transaction | null>(null);
     const [isDetailViewOpen, setIsDetailViewOpen] = useState<boolean>(false);
     const [selectedTransactionForDetail, setSelectedTransactionForDetail] = useState<Transaction | null>(null);
-    const [isAddTxSheetOpen, setIsAddTxSheetOpen] = useState<boolean>(false);
     const [isSplitViewOpen, setIsSplitViewOpen] = useState<boolean>(false);
     const [selectedTransactionForSplit, setSelectedTransactionForSplit] = useState<Transaction | null>(null);
-    const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -138,69 +135,20 @@ function Transactions() {
         setSelectedTransactionForSplit(null);
     };
 
-    const openAddTxSheet = () => {
-        if (accountsStatus !== 'succeeded' || accounts.length === 0) {
-            console.error("Cannot add transaction: No accounts found or loaded.");
-            return; 
-        }
-        const newTransaction: Transaction = {
-            id: 0,
-            amount: 0,
-            description: '',
-            type: 'DEBIT', 
-            transactionDate: new Date().toISOString(),
-            createdAt: new Date().toISOString(), 
-            excludeFromAccounting: false,
-            account: accounts[0],
-        };
-        setTransactionToEdit(newTransaction);
-        setIsAddTxSheetOpen(true);
-    };
-
-    const closeAddTxSheet = () => {
-        setIsAddTxSheetOpen(false);
-        setTransactionToEdit(null);
-    };
-
-    const handleTransactionSubmit = async (transactionPayload: Transaction) => {
-        console.log("Submitting transaction via Redux:", transactionPayload);
-        const accountId = transactionPayload.account?.id || accounts[0]?.id;
-        if (!accountId) {
-            console.error("Account ID missing for transaction creation.");
-            throw new Error("Account ID is required to create a transaction.");
-        }
-
-        const { id, createdAt, updatedAt, account, subTransactions, ...createData } = transactionPayload;
-        const payloadForThunk: Partial<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'account' | 'subTransactions'>> & { accountId: number } = {
-            ...createData,
-            accountId: accountId,
-            description: createData.description || `CASH/${createData.type}/${new Date(createData.transactionDate).toLocaleDateString()} ${new Date(createData.transactionDate).toLocaleTimeString()}`
-        };
-
-        try {
-            await dispatch(createTransaction({ transactionData: payloadForThunk })).unwrap();
-            console.log("Transaction created successfully via Redux.");
-        } catch (err) {
-            console.error("Failed to submit transaction via Redux:", err);
-            throw err;
-        }
-    };
-
     let lastRenderedMonthYear: string | null = null;
 
     return (
-        <div className="text-foreground flex flex-col h-full bg-muted">
+        <div className="text-foreground flex flex-col h-full bg-background">
             <div className="bg-secondary pt-4 border-b border-border">
                 <div className="flex justify-between items-start mb-4 px-2">
                     <h1 className="text-3xl font-bold pl-2">Transactions</h1>
                     <div className="flex">
                         <button className="text-muted-foreground hover:text-foreground p-2"><FiFilter size={20} /></button>
-                        <button
-                            className="text-muted-foreground hover:text-foreground p-2"
-                            onClick={openAddTxSheet}
-                        >
-                            <FiPlus size={24} />
-                        </button>
+                        <AddTransactionFlow
+                            accounts={accounts}
+                            tags={tags}
+                            tagMap={tagMap}
+                        />
                     </div>
                 </div>
 
@@ -274,17 +222,7 @@ function Transactions() {
                 </div>
             </div>
 
-            {isAddTxSheetOpen && transactionToEdit && (
-                <AmountInputModal
-                    onClose={closeAddTxSheet}
-                    transaction={transactionToEdit}
-                    availableTags={tags}
-                    tagMap={tagMap}
-                    onSubmitTransaction={handleTransactionSubmit}
-                />
-            )}
-
-            <DraggableBottomSheet isOpen={isDetailViewOpen} onClose={closeDetailView}>
+            <DraggableBottomSheet isOpen={isDetailViewOpen} onClose={closeDetailView} title="Transaction Details">
                 {selectedTransactionForDetail && (
                     <TransactionDetailView
                         transaction={selectedTransactionForDetail}
@@ -296,7 +234,7 @@ function Transactions() {
                 )}
             </DraggableBottomSheet>
 
-            <DraggableBottomSheet isOpen={isTagSelectorOpen} onClose={closeTagSelector}>
+            <DraggableBottomSheet isOpen={isTagSelectorOpen} onClose={closeTagSelector} title="Tag Transaction">
                 <TagSelector
                     onSelectTag={handleUpdateTag}
                     availableTags={tags}
@@ -306,7 +244,7 @@ function Transactions() {
                 />
             </DraggableBottomSheet>
 
-            <DraggableBottomSheet isOpen={isSplitViewOpen} onClose={closeSplitView}>
+            <DraggableBottomSheet isOpen={isSplitViewOpen} onClose={closeSplitView} title="Split Details">
                 {selectedTransactionForSplit && (
                     <SplitTransactionView
                         transaction={selectedTransactionForSplit}

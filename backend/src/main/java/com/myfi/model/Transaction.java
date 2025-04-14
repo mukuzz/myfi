@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.springframework.util.DigestUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -64,7 +65,8 @@ public class Transaction {
     @Column(name = "notes")
     private String notes;
 
-    @Column(name = "exclude_from_accounting", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Column(name = "exclude_from_accounting", nullable = false)
+    @ColumnDefault("FALSE")
     private Boolean excludeFromAccounting;
 
     @Column(name = "parent_id")
@@ -76,22 +78,45 @@ public class Transaction {
     @Column(nullable = false, length = 64)
     private String uniqueKey;
 
+    @Column(name = "is_manual_entry", nullable = false)
+    @ColumnDefault("FALSE")
+    private Boolean isManualEntry;
+
     public enum TransactionType {
         CREDIT,
         DEBIT
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        if (excludeFromAccounting == null) {
+            excludeFromAccounting = false;
+        }
+        if (isManualEntry == null) {
+            isManualEntry = false;
+        }
+        if (this.uniqueKey == null) {
+             generateUniqueKey();
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public void generateUniqueKey() {
         if (amount == null || description == null || type == null || transactionDate == null) {
             throw new IllegalStateException("Cannot generate unique key: one or more required fields are null.");
         }
-        String accountData = account == null || account.getId() == null ? "cash" : account.getId().toString();
+        String accountData = account == null || account.getId() == null ? "manual" : account.getId().toString();
         String formattedDate = transactionDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         String formattedAmount = amount.stripTrailingZeros().toPlainString();
         
         String keyData = String.join("|", 
             formattedAmount,
-            description, 
+            description.trim(),
             type.name(), 
             formattedDate,
             accountData

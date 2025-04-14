@@ -254,13 +254,6 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
   return (
     // Increased height and padding for better layout
     <div className="p-6 pt-8 flex-grow flex flex-col h-[50vh] min-h-[400px]">
-        <div className="flex justify-between items-center mb-6 flex-shrink-0">
-            <h2 className="text-xl font-semibold">Account Refresh</h2>
-            {/* Optional: Add a close button */}
-             <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted">
-                 <FiXCircle size={20}/>
-             </button>
-        </div>
 
         <div className="flex-grow overflow-y-auto flex flex-col justify-center items-center">
             {/* Display Last Refresh Time - moved above the main content area */}

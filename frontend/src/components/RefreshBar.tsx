@@ -56,7 +56,7 @@ const RefreshBar: React.FC = () => { // No props needed now
       </div>
 
       {/* Refresh Bottom Sheet - Now rendered within RefreshBar */}
-      <DraggableBottomSheet isOpen={isRefreshSheetOpen} onClose={closeRefreshSheet}>
+      <DraggableBottomSheet isOpen={isRefreshSheetOpen} onClose={closeRefreshSheet} title="Refresh Accounts">
          <RefreshSheetContent 
             onClose={closeRefreshSheet} 
             lastRefreshTime={lastRefreshTime} // Pass the time down (still needed by content)

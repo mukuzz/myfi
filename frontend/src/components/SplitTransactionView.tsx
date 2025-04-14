@@ -158,17 +158,7 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
 
     return (
         <>
-            <div className="pt-0 flex flex-col h-full text-foreground bg-muted">
-                {/* Header like TransactionDetailView */}
-                <div className="flex justify-between items-center pt-6 mb-4 flex-shrink-0 px-4">
-                    <button onClick={onClose} className="text-foreground hover:text-muted-foreground" disabled={isSplitting}>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                    <h2 className="text-lg font-semibold text-foreground">Split Details</h2>
-                    <div className="w-6 h-6"></div> {/* Spacer */}
-                </div>
+            <div className="pt-0 flex flex-col h-full text-foreground">
 
                 {/* Original Transaction Summary Card */}
                 <div className="bg-secondary rounded-lg shadow p-4 mb-6 mx-4 flex-shrink-0">
@@ -195,7 +185,7 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
                 {/* "Split Into" Section Header */}
                 <div className="flex items-center justify-center text-xs uppercase text-muted-foreground mb-6 mx-4">
                     <LuPackageOpen className="mr-2 h-4 w-4" />
-                    Split into the following
+                    {combinedTransactions.length == 1 ? 'Transaction is not split' : 'Split into the following'}
                 </div>
 
                 {/* List and Button Wrapper */}
@@ -242,7 +232,7 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
                                 disabled={isSplitting} // Disable based on Redux mutation status
                                 className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isSplitting ? 'Processing Split...' : "Split Further"}
+                                {combinedTransactions.length == 1 ? 'Split Transaction' : isSplitting ? 'Processing Split...' : "Split Further"}
                             </button>
                          )}
                          {!canSplit && (

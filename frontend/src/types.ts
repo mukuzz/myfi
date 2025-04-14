@@ -18,6 +18,7 @@ export interface Transaction {
   uniqueKey?: string | null;
   notes?: string | null; // Add notes field
   excludeFromAccounting: boolean; // Changed from optional to required
+  isManualEntry?: boolean; // Added manual entry flag
   // Add other fields if needed
 }
 

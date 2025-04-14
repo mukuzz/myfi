@@ -52,12 +52,7 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
   };
 
   return (
-    <>
-      <div className="flex justify-between items-center pt-6 mb-4 flex-shrink-0 px-4">
-        <div className="w-6 h-6"></div>
-        <h2 className="text-lg font-semibold text-foreground">Tag transaction</h2>
-        <div className="w-6 h-6"></div>
-      </div>
+    <div className="overflow-y-auto">
 
       {transaction && (
         <div className="mx-4">
@@ -144,7 +139,7 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
           </label>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

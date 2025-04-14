@@ -117,10 +117,7 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
   };
 
   return (
-    <div className="p-6 pt-8 flex-grow flex flex-col h-full">
-      <div className="flex justify-between items-center mb-4 flex-shrink-0">
-        <h2 className="text-xl font-semibold">Add New Account</h2>
-      </div>
+    <div className="px-6 flex-grow flex flex-col h-full">
 
       <div className="flex-grow overflow-y-auto pb-6 pr-1">
         {supportedAccountsStatus === 'failed' && supportedAccountsError && (

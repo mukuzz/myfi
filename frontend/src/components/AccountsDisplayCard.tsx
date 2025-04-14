@@ -190,7 +190,7 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
       </div>
 
       {/* Add Account Bottom Sheet */}
-      <DraggableBottomSheet isOpen={isSheetOpen} onClose={closeSheet}>
+      <DraggableBottomSheet isOpen={isSheetOpen} onClose={closeSheet} title="Add New Account">
         <AddAccountView
           onAccountCreated={handleAccountCreated}
           availableParentAccounts={groupedAccounts}
@@ -198,7 +198,7 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
       </DraggableBottomSheet>
 
       {/* Account Details Bottom Sheet */}
-      <DraggableBottomSheet isOpen={isDetailsSheetOpen} onClose={closeDetailsSheet}>
+      <DraggableBottomSheet isOpen={isDetailsSheetOpen} onClose={closeDetailsSheet} title="Account Details">
         {selectedAccount && (
           <AccountDetailsModal
             account={selectedAccount}

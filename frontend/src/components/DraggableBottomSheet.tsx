@@ -5,6 +5,7 @@ interface DraggableBottomSheetProps {
   onClose: () => void;
   children: React.ReactNode;
   zIndex?: number; // Optional z-index prop with default value
+  title?: string; // Optional title for the bottom sheet
   // Optional: Add props for customizing height, initial snap point, etc. later
 }
 
@@ -15,6 +16,7 @@ function DraggableBottomSheet({
   onClose,
   children,
   zIndex = 40, // Default z-index is 40
+  title, // Destructure the new title prop
 }: DraggableBottomSheetProps) {
   const [currentTranslateY, setCurrentTranslateY] = useState(0); // Tracks drag offset
   const isDragging = useRef(false);
@@ -55,7 +57,7 @@ function DraggableBottomSheet({
       if (isOpen) {
         // Use requestAnimationFrame to ensure the transition applies correctly after initial render/display change
         requestAnimationFrame(() => {
-           backgroundElement.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+          backgroundElement.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
         });
       } else {
         backgroundElement.style.backgroundColor = 'rgba(0, 0, 0, 0)';
@@ -104,22 +106,22 @@ function DraggableBottomSheet({
       if (scrollableParent) {
         // Only allow dragging content if scrolled to the top
         if (scrollableParent.scrollTop === 0) {
-           shouldStartDragging = true;
+          shouldStartDragging = true;
         }
         // If scrollableParent.scrollTop > 0, do nothing, allow native scroll
       } else {
-         // If no scrollable parent found within content, allow dragging
-         shouldStartDragging = true;
+        // If no scrollable parent found within content, allow dragging
+        shouldStartDragging = true;
       }
     }
 
     if (shouldStartDragging && modalRef.current) {
-        isDragging.current = true;
-        dragStartY.current = e.clientY;
-        modalRef.current.style.transition = 'none'; // Disable transition during drag
-        // Capture pointer on the element that received the event (the modal div)
-        e.currentTarget.setPointerCapture(e.pointerId);
-    } 
+      isDragging.current = true;
+      dragStartY.current = e.clientY;
+      modalRef.current.style.transition = 'none'; // Disable transition during drag
+      // Capture pointer on the element that received the event (the modal div)
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
     // If shouldStartDragging is false, we don't capture the pointer or set state,
     // allowing native scrolling of the inner content.
 
@@ -142,7 +144,7 @@ function DraggableBottomSheet({
 
     isDragging.current = false;
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    
+
     // Decide whether to close or snap back based on drag distance
     if (currentTranslateY > DRAG_THRESHOLD) {
       // Animate smoothly down using inline styles
@@ -170,9 +172,9 @@ function DraggableBottomSheet({
         // Check if the modal still exists and is still open before clearing.
         // Avoids clearing styles if another interaction (like closing) happened quickly.
         if (modalElement && isOpen && modalElement.style.transform === 'translateY(0px)') {
-           modalElement.style.transform = '';
-           modalElement.style.transition = '';
-         }
+          modalElement.style.transform = '';
+          modalElement.style.transition = '';
+        }
       }, 300); // Match snap-back animation duration
     }
     // No need to reset touchAction here, handled by style attribute binding
@@ -184,7 +186,7 @@ function DraggableBottomSheet({
         ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
       style={{ opacity: 100, zIndex: zIndex }} // Apply z-index to background
       // Close on overlay click (optional, could be a prop)
-      onClick={onClose} 
+      onClick={onClose}
       ref={modalBackgroundRef}
     >
       <div
@@ -196,26 +198,29 @@ function DraggableBottomSheet({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         // Add touch-action to prevent browser interference when dragging the sheet
-        style={{ 
+        style={{
           touchAction: isDragging.current ? 'none' : 'auto',
           zIndex: zIndex + 10 // Make the sheet 10 higher than the background
         }}
         className={`fixed bottom-0 left-0 right-0 bg-background w-full max-w-lg mx-auto shadow-xl h-[95vh] flex flex-col rounded-t-xl
                    transition-transform duration-300 ease-in-out
                    ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
-        // Inline transform applied during drag
+      // Inline transform applied during drag
       >
-        {/* Drag Handle Area - Only visual now, but used for hit-testing in handlePointerDown */}
+        {/* Drag Handle Area - Now includes title */}
         <div
-            // Pointer handlers are removed from here
-            data-drag-handle="true" // Identifier for the handle
-            className="absolute top-0 transform w-full h-6 pt-3 flex justify-center cursor-grab touch-none z-10"
+          data-drag-handle="true" // Identifier for the handle
+          className="absolute top-0 left-0 right-0 w-full pt-3 flex flex-col items-center cursor-grab touch-none z-10" // Increased height for title
         >
-            <div className="w-10 h-1.5 bg-input rounded-full pointer-events-none"></div> {/* Prevent pointer events on inner div */}
+          <div className="transform w-full h-3.5 flex justify-center">
+            <div className="w-12 h-2 bg-input rounded-full pointer-events-none"></div> {/* Added margin-bottom */}
+          </div>
+
+          {title && <h2 className="text-lg font-semibold text-foreground pointer-events-none">{title}</h2>} {/* Display title if provided */}
         </div>
 
-        {/* Content Area */}
-        <div className="flex-grow overflow-hidden flex flex-col rounded-t-xl">
+        {/* Content Area - Added padding-top to avoid overlap with handle */}
+        <div className="flex-grow overflow-hidden flex flex-col rounded-t-xl pt-16">
           {children}
         </div>
       </div>

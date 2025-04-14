@@ -163,10 +163,6 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
 
   return (
     <div className="p-6 h-full flex flex-col overflow-y-auto">
-      {/* Header */}
-      <div className="pb-4 mb-4 border-b">
-        <h2 className="text-xl font-semibold">Account Details</h2>
-      </div>
       
       {/* Account Information */}
       <div className="pb-4 mb-4 border-b">

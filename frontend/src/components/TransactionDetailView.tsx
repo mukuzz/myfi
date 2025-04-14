@@ -141,13 +141,7 @@ function TransactionDetailView({
 
     // Basic structure - adjust styling and layout based on your image/design
     return (
-        <div className="p-4 pt-0 flex flex-col h-full text-foreground bg-background"> {/* Changed bg to background */}
-
-            <div className="flex justify-between items-center pt-6 mb-4 flex-shrink-0 px-4">
-                <div className="w-6 h-6"></div>
-                <h2 className="text-lg font-semibold text-foreground">Transaction Details</h2>
-                <div className="w-6 h-6"></div>
-            </div>
+        <div className="p-4 pt-0 flex flex-col h-full text-foreground bg-background overflow-y-auto"> {/* Changed bg to background */}
 
             <div
                 className="bg-input flex items-center justify-center p-3 rounded-lg mb-4 text-foreground cursor-pointer"
@@ -221,8 +215,8 @@ function TransactionDetailView({
                 </p>
             </div>
 
-            {/* Delete Button - Conditionally Rendered */} 
-            {transaction.account === null && (
+            {/* Delete Button - Conditionally Rendered */}
+            {transaction.isManualEntry && (
                 <button
                     onClick={handleDelete}
                     disabled={isSaving} // Disable button while saving/deleting
