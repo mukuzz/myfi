@@ -54,4 +54,34 @@ export interface ScrapeRequest {
   accountType: Account['type']; // May be useful for the scraper
   accountName: string; // Added account name
   // Add any other fields the scraper might need
+}
+
+// Generic Page type for paginated API responses
+export interface Page<T> {
+    content: T[];
+    pageable: {
+        pageNumber: number;
+        pageSize: number;
+        sort: {
+            sorted: boolean;
+            unsorted: boolean;
+            empty: boolean;
+        };
+        offset: number;
+        paged: boolean;
+        unpaged: boolean;
+    };
+    last: boolean;
+    totalPages: number;
+    totalElements: number;
+    size: number;
+    number: number; // Current page number (0-indexed)
+    sort: {
+        sorted: boolean;
+        unsorted: boolean;
+        empty: boolean;
+    };
+    first: boolean;
+    numberOfElements: number;
+    empty: boolean;
 } 

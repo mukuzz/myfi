@@ -1,4 +1,4 @@
-import { Transaction, Account, ScrapeRequest, Tag } from '../types';
+import { Transaction, Account, ScrapeRequest, Tag, Page } from '../types';
 
 // Use environment variable or default.
 // NOTE: For Vite projects, prefer `import.meta.env.VITE_API_URL`.
@@ -10,19 +10,6 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://192.168.1.5:8080/api/v1
 interface SupportedAccountInfo {
   type: Account['type'];
   name: string;
-}
-
-// Add Page interface here as well for the return type
-interface Page<T> {
-  content: T[];
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  number: number;
-  numberOfElements: number;
-  first: boolean;
-  last: boolean;
-  empty: boolean;
 }
 
 /**

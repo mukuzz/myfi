@@ -1,287 +1,330 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { FiFilter, FiPlus, FiSearch } from 'react-icons/fi';
-import { Transaction, Account, TagMap, Tag } from '../types';
-import { groupTransactionsByMonth } from '../utils/transactionUtils';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import {
+    fetchTransactions,
+    createTransaction,
+    updateTransactionTag,
+    resetMutationStatus
+} from '../store/slices/transactionsSlice';
+import { fetchTags } from '../store/slices/tagsSlice';
+import { fetchAccounts } from '../store/slices/accountsSlice';
+import { Transaction, TagMap, Tag, Account } from '../types';
 import TagSelector from './TagSelector';
-import { useTransactionData } from '../hooks/useTransactionData';
 import TransactionCard from './TransactionCard';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import TransactionDetailView from './TransactionDetailView';
 import AmountInputModal from './AmountInputModal';
 import SplitTransactionView from './SplitTransactionView';
-import { createTransaction } from '../services/apiService';
 
+const getMonthYear = (dateString: string): string => {
+    const date = new Date(dateString);
+    return `${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`;
+};
 
 function Transactions() {
-  const {
-    transactions,
-    tags,
-    tagMap,
-    loading,
-    error,
-    updateTransactionTag,
-    refetchData,
-    loadMoreTransactions,
-    hasMore,
-    loadingMore,
-    // createTransaction, // Ensure this exists and handles a Transaction object
-    // accounts // Assume accounts are available from the hook, e.g., accounts[0]
-  } = useTransactionData();
+    const dispatch = useAppDispatch();
 
-  const [isTagSelectorOpen, setIsTagSelectorOpen] = useState<boolean>(false);
-  const [selectedTransactionForTag, setSelectedTransactionForTag] = useState<Transaction | null>(null);
-  const [isDetailViewOpen, setIsDetailViewOpen] = useState<boolean>(false);
-  const [selectedTransactionForDetail, setSelectedTransactionForDetail] = useState<Transaction | null>(null);
-  const [isAddTxSheetOpen, setIsAddTxSheetOpen] = useState<boolean>(false);
-  const [isSplitViewOpen, setIsSplitViewOpen] = useState<boolean>(false);
-  const [selectedTransactionForSplit, setSelectedTransactionForSplit] = useState<Transaction | null>(null);
+    const {
+        transactions,
+        status: transactionStatus,
+        error: transactionError,
+        currentPage,
+        hasMore,
+        mutationStatus,
+        mutationError
+    } = useAppSelector((state) => state.transactions);
+    const { tags, status: tagsStatus, error: tagsError } = useAppSelector((state) => state.tags);
+    const { accounts, status: accountsStatus, error: accountsError } = useAppSelector((state) => state.accounts);
 
-  // State to hold the transaction being added/edited
-  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
+    const isLoadingInitial = transactionStatus === 'loading' && transactions.length === 0;
+    const isLoadingMore = transactionStatus === 'loadingMore';
+    const overallError = transactionError || tagsError || accountsError;
 
-  // Ref for the scrollable container
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [isTagSelectorOpen, setIsTagSelectorOpen] = useState<boolean>(false);
+    const [selectedTransactionForTag, setSelectedTransactionForTag] = useState<Transaction | null>(null);
+    const [isDetailViewOpen, setIsDetailViewOpen] = useState<boolean>(false);
+    const [selectedTransactionForDetail, setSelectedTransactionForDetail] = useState<Transaction | null>(null);
+    const [isAddTxSheetOpen, setIsAddTxSheetOpen] = useState<boolean>(false);
+    const [isSplitViewOpen, setIsSplitViewOpen] = useState<boolean>(false);
+    const [selectedTransactionForSplit, setSelectedTransactionForSplit] = useState<Transaction | null>(null);
+    const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
 
-  // Scroll event handler for infinite loading
-  const handleScroll = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (container && !loadingMore && hasMore && !loading) {
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      // Load more when the user is near the bottom (e.g., within 500px)
-      if (scrollHeight - scrollTop - clientHeight < 500) {
-        loadMoreTransactions();
-      }
-    }
-  }, [loadingMore, hasMore, loading, loadMoreTransactions]);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Effect to attach scroll listener
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
+    useEffect(() => {
+        if (transactionStatus === 'idle') {
+            dispatch(fetchTransactions());
+        }
+        if (tagsStatus === 'idle') {
+            dispatch(fetchTags());
+        }
+        if (accountsStatus === 'idle') {
+            dispatch(fetchAccounts());
+        }
+    }, [dispatch, transactionStatus, tagsStatus, accountsStatus]);
 
-      // Cleanup function to remove the event listener
-      return () => {
-        container.removeEventListener('scroll', handleScroll);
-      };
-    }
-  }, [handleScroll]); // Re-attach if handleScroll changes
+    const tagMap = useMemo((): TagMap => {
+        if (tagsStatus !== 'succeeded') return {};
+        const map: TagMap = {};
+        tags.forEach(tag => {
+            map[tag.id] = tag;
+        });
+        return map;
+    }, [tags, tagsStatus]);
 
-  const groupedTransactions = useMemo(() => {
-    if (!transactions || transactions.length === 0) return {};
-    return groupTransactionsByMonth(transactions);
-  }, [transactions]);
+    const handleScroll = useCallback(() => {
+        const container = scrollContainerRef.current;
+        if (container && transactionStatus !== 'loadingMore' && hasMore && transactionStatus !== 'loading') {
+            const { scrollTop, scrollHeight, clientHeight } = container;
+            if (scrollHeight - scrollTop - clientHeight < 500) {
+                dispatch(fetchTransactions({ page: currentPage + 1 }));
+            }
+        }
+    }, [transactionStatus, hasMore, currentPage, dispatch]);
 
-  const openTagSelector = (tx: Transaction, event: React.MouseEvent) => {
-    event.stopPropagation();
-    closeDetailView();
-    setSelectedTransactionForTag(tx);
-    setIsTagSelectorOpen(true);
-  };
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (container) {
+            container.addEventListener('scroll', handleScroll);
+            return () => {
+                container.removeEventListener('scroll', handleScroll);
+            };
+        }
+    }, [handleScroll]);
 
-  const closeTagSelector = () => {
-    setIsTagSelectorOpen(false);
-    setSelectedTransactionForTag(null);
-  };
-
-  const handleUpdateTag = async (newTagId: number | null) => {
-    if (!selectedTransactionForTag) return;
-    await updateTransactionTag(selectedTransactionForTag, newTagId);
-  };
-
-  const openDetailView = (tx: Transaction) => {
-    setSelectedTransactionForDetail(tx);
-    setIsDetailViewOpen(true);
-  };
-
-  const closeDetailView = () => {
-    setIsDetailViewOpen(false);
-    setSelectedTransactionForDetail(null);
-  };
-
-  const openSplitView = (tx: Transaction) => {
-    closeDetailView();
-    setSelectedTransactionForSplit(tx);
-    setIsSplitViewOpen(true);
-  };
-
-  const closeSplitView = () => {
-    setIsSplitViewOpen(false);
-    setSelectedTransactionForSplit(null);
-  };
-
-  const openAddTxSheet = () => {
-    // Create a new dummy transaction object when adding
-    // IMPORTANT: Replace DUMMY_DEFAULT_ACCOUNT with a real account
-    const newTransaction: Transaction = {
-      id: -1, // Use a temporary ID like -1 for new transactions
-      amount: 0,
-      description: '',
-      type: 'DEBIT', // Default type
-      transactionDate: new Date().toISOString(),
-      createdAt: new Date().toISOString(), // Set createdAt for new
-      excludeFromAccounting: false, // Default value
+    const openTagSelector = (tx: Transaction, event: React.MouseEvent) => {
+        event.stopPropagation();
+        closeDetailView();
+        setSelectedTransactionForTag(tx);
+        setIsTagSelectorOpen(true);
     };
-    setTransactionToEdit(newTransaction);
-    setIsAddTxSheetOpen(true);
-  };
 
-  const closeAddTxSheet = () => {
-    setIsAddTxSheetOpen(false);
-    setTransactionToEdit(null); // Clear the transaction being edited
-  };
+    const closeTagSelector = () => {
+        setIsTagSelectorOpen(false);
+        setSelectedTransactionForTag(null);
+    };
 
-  // It now receives the full updated transaction object
-  const handleTransactionSubmit = async (transactionPayload: Transaction) => {
-    console.log("Submitting transaction:", transactionPayload);
+    const handleUpdateTag = async (newTagId: number | null) => {
+        if (!selectedTransactionForTag) return;
+        
+        const { id, tagId, subTransactions, account, ...originalData } = selectedTransactionForTag;
+        
+        dispatch(updateTransactionTag({
+            transactionId: selectedTransactionForTag.id,
+            newTagId,
+            originalTransaction: originalData
+        })).then(() => {
+        }).catch((error) => {
+            console.error("Failed to update tag via Redux:", error);
+        });
+    };
 
-    try {
-      // Format the date using browser's timezone
-      const date = new Date(transactionPayload.transactionDate);
-      const formattedDate = date.toLocaleDateString();
-      const formattedTime = date.toLocaleTimeString();
-      transactionPayload.description = `CASH/${transactionPayload.type}/${formattedDate} ${formattedTime}`;
-      console.log("Calling createTransaction with data:", transactionPayload);
-      await createTransaction(transactionPayload); // API service expects accountId in payload
-      console.log("Transaction created successfully for:", transactionPayload.description);
+    const openDetailView = (tx: Transaction) => {
+        setSelectedTransactionForDetail(tx);
+        setIsDetailViewOpen(true);
+    };
 
-      await refetchData(); // Refetch data on success
-      // The AmountInputModal should close itself upon successful submission resolve.
+    const closeDetailView = () => {
+        setIsDetailViewOpen(false);
+        setSelectedTransactionForDetail(null);
+    };
 
-    } catch (err) {
-      console.error("Failed to submit transaction from Transactions component:", err);
-      // Re-throw the error so the AmountInputModal can catch it and display an error message
-      throw err;
-    }
-  };
+    const openSplitView = (tx: Transaction) => {
+        closeDetailView();
+        setSelectedTransactionForSplit(tx);
+        setIsSplitViewOpen(true);
+    };
 
-  return (
-    <div className="text-foreground flex flex-col h-full bg-muted">
-      <div className="bg-secondary pt-4 border-b border-border">
-        <div className="flex justify-between items-start mb-4 px-2">
-          <h1 className="text-3xl font-bold pl-2">Transactions</h1>
-          <div className="flex">
-            <button className="text-muted-foreground hover:text-foreground p-2"><FiFilter size={20} /></button>
-            <button
-              className="text-muted-foreground hover:text-foreground p-2"
-              onClick={openAddTxSheet} // Calls the function to create dummy tx
-            >
-              <FiPlus size={24} />
-            </button>
-          </div>
-        </div>
+    const closeSplitView = () => {
+        setIsSplitViewOpen(false);
+        setSelectedTransactionForSplit(null);
+    };
 
-        <div className="relative mb-4 px-4">
-          <FiSearch className="absolute left-6 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search transactions"
-            className="w-full bg-input border border-input rounded-lg pl-8 pr-4 py-1 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary"
-          />
-        </div>
-      </div>
+    const openAddTxSheet = () => {
+        if (accountsStatus !== 'succeeded' || accounts.length === 0) {
+            console.error("Cannot add transaction: No accounts found or loaded.");
+            return; 
+        }
+        const newTransaction: Transaction = {
+            id: 0,
+            amount: 0,
+            description: '',
+            type: 'DEBIT', 
+            transactionDate: new Date().toISOString(),
+            createdAt: new Date().toISOString(), 
+            excludeFromAccounting: false,
+            account: accounts[0],
+        };
+        setTransactionToEdit(newTransaction);
+        setIsAddTxSheetOpen(true);
+    };
 
-      <div ref={scrollContainerRef} className="flex-grow overflow-y-auto thin-scrollbar px-2 py-2">
-        {loading && transactions.length === 0 && <p className="text-center text-muted-foreground">Loading transactions...</p>}
-        {error && <p className="text-center text-error">Error: {error}</p>}
-        {!loading && !error && transactions.length === 0 && <p className="text-center text-muted-foreground">No transactions found.</p>}
+    const closeAddTxSheet = () => {
+        setIsAddTxSheetOpen(false);
+        setTransactionToEdit(null);
+    };
 
-        {transactions.length > 0 && (
-          <div className="space-y-4">
-            {Object.entries(groupedTransactions)
-              .sort(([dateA], [dateB]) => new Date(groupedTransactions[dateB][0].transactionDate).getTime() - new Date(groupedTransactions[dateA][0].transactionDate).getTime())
-              .map(([monthYear, txs]) => (
-                <div key={monthYear}>
-                  <div className="flex justify-between items-center mb-2 px-2">
-                    <h2 className="text-lg font-semibold text-foreground">{monthYear}</h2>
-                    <span className="text-xs text-muted-foreground">{txs.length} transaction{txs.length !== 1 ? 's' : ''}</span>
-                  </div>
-                  <ul className="space-y-2 px-2">
-                    {txs.filter(tx => !tx.parentId).map(tx => (
-                      <li key={tx.id} className="rounded-lg">
-                        <div>
-                          <TransactionCard
-                            transaction={tx}
-                            tagMap={tagMap}
-                            onCardClick={openDetailView}
-                            onTagClick={openTagSelector}
-                          />
-                          {tx.subTransactions && tx.subTransactions.length > 0 && (
-                            <>
-                              {tx.subTransactions.map(childTx => (
-                                <>
-                                <div className="border-t-[8px] mx-3 border-dashed border-secondary space-y-2"></div>
-                                <TransactionCard
-                                  key={childTx.id}
-                                  transaction={childTx}
-                                  tagMap={tagMap}
-                                  onCardClick={openDetailView}
-                                  onTagClick={openTagSelector}
-                                />
-                                </>
-                              ))}
-                            </>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+    const handleTransactionSubmit = async (transactionPayload: Transaction) => {
+        console.log("Submitting transaction via Redux:", transactionPayload);
+        const accountId = transactionPayload.account?.id || accounts[0]?.id;
+        if (!accountId) {
+            console.error("Account ID missing for transaction creation.");
+            throw new Error("Account ID is required to create a transaction.");
+        }
+
+        const { id, createdAt, updatedAt, account, subTransactions, ...createData } = transactionPayload;
+        const payloadForThunk: Partial<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'account' | 'subTransactions'>> & { accountId: number } = {
+            ...createData,
+            accountId: accountId,
+            description: createData.description || `CASH/${createData.type}/${new Date(createData.transactionDate).toLocaleDateString()} ${new Date(createData.transactionDate).toLocaleTimeString()}`
+        };
+
+        try {
+            await dispatch(createTransaction({ transactionData: payloadForThunk })).unwrap();
+            console.log("Transaction created successfully via Redux.");
+        } catch (err) {
+            console.error("Failed to submit transaction via Redux:", err);
+            throw err;
+        }
+    };
+
+    const handleSplitRefetch = () => {
+        dispatch(fetchTransactions({ page: 0 })); 
+    };
+
+    let lastRenderedMonthYear: string | null = null;
+
+    return (
+        <div className="text-foreground flex flex-col h-full bg-muted">
+            <div className="bg-secondary pt-4 border-b border-border">
+                <div className="flex justify-between items-start mb-4 px-2">
+                    <h1 className="text-3xl font-bold pl-2">Transactions</h1>
+                    <div className="flex">
+                        <button className="text-muted-foreground hover:text-foreground p-2"><FiFilter size={20} /></button>
+                        <button
+                            className="text-muted-foreground hover:text-foreground p-2"
+                            onClick={openAddTxSheet}
+                        >
+                            <FiPlus size={24} />
+                        </button>
+                    </div>
                 </div>
-              ))}
-          </div>
-        )}
 
-        {/* Loading Indicator - No sentinel element needed */}
-        <div className="h-10 flex justify-center items-center">
-          {loadingMore && <p className="text-sm text-muted-foreground">Loading more...</p>}
-          {!loadingMore && !hasMore && transactions.length > 0 && <p className="text-sm text-muted-foreground">End of transactions.</p>}
+                <div className="relative mb-4 px-4">
+                    <FiSearch className="absolute left-6 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                    <input
+                        type="text"
+                        placeholder="Search transactions"
+                        className="w-full bg-input border border-input rounded-lg pl-8 pr-4 py-1 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary"
+                    />
+                </div>
+            </div>
+
+            <div ref={scrollContainerRef} className="flex-grow overflow-y-auto thin-scrollbar px-2">
+                {isLoadingInitial && <p className="text-center text-muted-foreground">Loading transactions...</p>}
+                {overallError && <p className="text-center text-destructive">Error: {overallError}</p>}
+                {!isLoadingInitial && !overallError && transactions.length === 0 && <p className="text-center text-muted-foreground">No transactions found.</p>}
+
+                {transactions.length > 0 && (
+                    <ul className="space-y-2">
+                        {transactions.map((tx, index) => {
+                            if (tx.parentId) return null;
+
+                            const currentMonthYear = getMonthYear(tx.transactionDate);
+                            const showMonthHeader = currentMonthYear !== lastRenderedMonthYear;
+                            if (showMonthHeader) {
+                                lastRenderedMonthYear = currentMonthYear;
+                            }
+
+                            return (
+                                <React.Fragment key={tx.id}>
+                                    {showMonthHeader && (
+                                        <div className="flex justify-between items-center mb-2 px-2 pt-2">
+                                            <h2 className="text-lg font-semibold text-foreground">{currentMonthYear}</h2>
+                                        </div>
+                                    )}
+                                    <li className="rounded-lg">
+                                        <div>
+                                            <TransactionCard
+                                                transaction={tx}
+                                                tagMap={tagMap}
+                                                onCardClick={openDetailView}
+                                                onTagClick={openTagSelector}
+                                            />
+                                            {tx.subTransactions && tx.subTransactions.length > 0 && (
+                                                <>
+                                                {tx.subTransactions.map(childTx => (
+                                                    <React.Fragment key={childTx.id}>
+                                                        <div className="border-t-[8px] mx-3 border-dashed border-secondary space-y-2"></div>
+                                                        <TransactionCard
+                                                            transaction={childTx}
+                                                            tagMap={tagMap}
+                                                            onCardClick={openDetailView}
+                                                            onTagClick={openTagSelector}
+                                                        />
+                                                    </React.Fragment>
+                                                ))}
+                                                </>
+                                            )}
+                                        </div>
+                                    </li>
+                                </React.Fragment>
+                            );
+                        })}
+                    </ul>
+                )}
+
+                <div className="h-10 flex justify-center items-center">
+                    {isLoadingMore && <p className="text-sm text-muted-foreground">Loading more...</p>}
+                    {!isLoadingMore && !hasMore && transactions.length > 0 && <p className="text-sm text-muted-foreground">End of transactions.</p>}
+                </div>
+            </div>
+
+            {isAddTxSheetOpen && transactionToEdit && (
+                <AmountInputModal
+                    onClose={closeAddTxSheet}
+                    transaction={transactionToEdit}
+                    availableTags={tags}
+                    tagMap={tagMap}
+                    onSubmitTransaction={handleTransactionSubmit}
+                />
+            )}
+
+            <DraggableBottomSheet isOpen={isDetailViewOpen} onClose={closeDetailView}>
+                {selectedTransactionForDetail && (
+                    <TransactionDetailView
+                        transaction={selectedTransactionForDetail}
+                        tagMap={tagMap}
+                        onTagClick={openTagSelector}
+                        onManageSplit={openSplitView}
+                    />
+                )}
+            </DraggableBottomSheet>
+
+            <DraggableBottomSheet isOpen={isTagSelectorOpen} onClose={closeTagSelector}>
+                <TagSelector
+                    onSelectTag={handleUpdateTag}
+                    availableTags={tags}
+                    tagMap={tagMap}
+                    currentTagId={selectedTransactionForTag?.tagId}
+                    transaction={selectedTransactionForTag ?? undefined}
+                />
+            </DraggableBottomSheet>
+
+            <DraggableBottomSheet isOpen={isSplitViewOpen} onClose={closeSplitView}>
+                {selectedTransactionForSplit && (
+                    <SplitTransactionView
+                        transaction={selectedTransactionForSplit}
+                        tagMap={tagMap}
+                        onClose={closeSplitView}
+                        refetchData={handleSplitRefetch}
+                    />
+                )}
+            </DraggableBottomSheet>
+
         </div>
-      </div>
-
-      {isAddTxSheetOpen && transactionToEdit && (
-        <AmountInputModal
-          onClose={closeAddTxSheet}
-          transaction={transactionToEdit}
-          availableTags={tags}
-          tagMap={tagMap}
-          onSubmitTransaction={handleTransactionSubmit}
-        />
-      )}
-
-      <DraggableBottomSheet isOpen={isDetailViewOpen} onClose={closeDetailView}>
-        {selectedTransactionForDetail && (
-          <TransactionDetailView
-            transaction={selectedTransactionForDetail}
-            tagMap={tagMap}
-            onTagClick={openTagSelector}
-            onManageSplit={openSplitView}
-          />
-        )}
-      </DraggableBottomSheet>
-
-      <DraggableBottomSheet isOpen={isTagSelectorOpen} onClose={closeTagSelector}>
-        <TagSelector
-          onSelectTag={handleUpdateTag}
-          availableTags={tags}
-          tagMap={tagMap}
-          currentTagId={selectedTransactionForTag?.tagId}
-          transaction={selectedTransactionForTag ?? undefined}
-        />
-      </DraggableBottomSheet>
-
-      <DraggableBottomSheet isOpen={isSplitViewOpen} onClose={closeSplitView}>
-        {selectedTransactionForSplit && (
-          <SplitTransactionView
-            transaction={selectedTransactionForSplit}
-            tagMap={tagMap}
-            onClose={closeSplitView}
-            refetchData={refetchData}
-          />
-        )}
-      </DraggableBottomSheet>
-
-    </div>
-  );
+    );
 }
 
 export default Transactions; 
