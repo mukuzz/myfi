@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -37,12 +36,6 @@ public class HDFCBankScraper extends BankScrapper {
     public void scrapeBankTransactions(Account account) {
         String accountNumber = account.getAccountNumber();
         log.info("Starting savings account scraping for HDFC account number: {}", accountNumber);
-
-        // // Go to Home Page
-        // getPage().waitForSelector("#web");
-        // getPage().click("#web");
-        // getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
-        // getPage().waitForLoadState(LoadState.NETWORKIDLE);
 
         // Hover over the webSave element
         getPage().waitForSelector("#webSave");
@@ -70,30 +63,29 @@ public class HDFCBankScraper extends BankScrapper {
         getPage().waitForLoadState(LoadState.NETWORKIDLE);
 
         // Wait for dropdown to open and click "Recent Transactions" option
-        getPage().waitForSelector("#ui-select-choices-row-0-1");
-        getPage().click("#ui-select-choices-row-0-1");
+        getPage().waitForSelector("#ui-select-choices-row-0-0");
+        getPage().click("#ui-select-choices-row-0-0");
         getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
         getPage().waitForLoadState(LoadState.NETWORKIDLE);
-
+        
         // Get all transaction rows
         getPage().waitForSelector("tbody[ng-if='accountsStatementCtrl.dataFlag.apiTableYesData']");
-        List<ElementHandle> rows = getPage()
-                .querySelectorAll("tbody[ng-if='accountsStatementCtrl.dataFlag.apiTableYesData'] tr");
+        while (true) {
+            List<ElementHandle> rows = getPage()
+                    .querySelectorAll("tbody[ng-if='accountsStatementCtrl.dataFlag.apiTableYesData'] tr");
+            processBankTransactions(rows, account);
+            ElementHandle nextButton = getPage().querySelector("a.btn-pagination-next");
 
-        getPage().waitForSelector("#ui-select-choices-row-0-2");
-        getPage().click("#ui-select-choices-row-0-2");
-        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
-        getPage().waitForLoadState(LoadState.NETWORKIDLE);
-
-        getPage().waitForSelector("tbody[ng-if='accountsStatementCtrl.dataFlag.apiTableYesData']");
-        List<ElementHandle> secondRows = getPage()
-                .querySelectorAll("tbody[ng-if='accountsStatementCtrl.dataFlag.apiTableYesData'] tr");
-
-        List<ElementHandle> allRows = new ArrayList<>();
-        allRows.addAll(rows);
-        allRows.addAll(secondRows);
-
-        processBankTransactions(allRows, account);
+            if (nextButton != null && nextButton.getAttribute("disabled") == null) {
+                log.info("Navigating to next page of HDFC savings transactions");
+                nextButton.click();
+                getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+                getPage().waitForLoadState(LoadState.NETWORKIDLE);
+            } else {
+                log.info("No more transaction pages found or 'Next' button is disabled.");
+                break; // Exit the loop if no next page
+            }
+        }
 
         log.info("Finished savings account scraping for HDFC account number: {}", accountNumber);
     }
