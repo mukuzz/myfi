@@ -10,6 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -29,14 +33,17 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @GetMapping
-    public ResponseEntity<List<Transaction>> getAllTransactions() {
-        List<Transaction> transactions = transactionService.getAllTransactions();
+    public ResponseEntity<Page<Transaction>> getAllTransactions(
+            @PageableDefault(size = 20, sort = "transactionDate,desc") Pageable pageable) {
+        Page<Transaction> transactions = transactionService.getAllTransactions(pageable);
         return ResponseEntity.ok(transactions);
     }
 
     @GetMapping("/account/{accountId}")
-    public ResponseEntity<List<Transaction>> getTransactionsByAccountId(@PathVariable Long accountId) {
-        List<Transaction> transactions = transactionService.getTransactionsByAccountId(accountId);
+    public ResponseEntity<Page<Transaction>> getTransactionsByAccountId(
+            @PathVariable Long accountId,
+            @PageableDefault(size = 20, sort = "transactionDate,desc") Pageable pageable) {
+        Page<Transaction> transactions = transactionService.getTransactionsByAccountId(accountId, pageable);
         return ResponseEntity.ok(transactions);
     }
 
@@ -105,5 +112,11 @@ public class TransactionController {
         } else {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/current-month")
+    public ResponseEntity<List<Transaction>> getCurrentMonthTransactions() {
+        List<Transaction> transactions = transactionService.getTransactionsForCurrentMonth();
+        return ResponseEntity.ok(transactions);
     }
 } 

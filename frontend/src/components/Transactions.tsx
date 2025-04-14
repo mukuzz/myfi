@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { FiFilter, FiPlus, FiSearch } from 'react-icons/fi';
 import { Transaction, Account, TagMap, Tag } from '../types';
 import { groupTransactionsByMonth } from '../utils/transactionUtils';
@@ -21,6 +21,9 @@ function Transactions() {
     error,
     updateTransactionTag,
     refetchData,
+    loadMoreTransactions,
+    hasMore,
+    loadingMore,
     // createTransaction, // Ensure this exists and handles a Transaction object
     // accounts // Assume accounts are available from the hook, e.g., accounts[0]
   } = useTransactionData();
@@ -35,6 +38,34 @@ function Transactions() {
 
   // State to hold the transaction being added/edited
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
+
+  // Ref for the scrollable container
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll event handler for infinite loading
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (container && !loadingMore && hasMore && !loading) {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      // Load more when the user is near the bottom (e.g., within 500px)
+      if (scrollHeight - scrollTop - clientHeight < 500) {
+        loadMoreTransactions();
+      }
+    }
+  }, [loadingMore, hasMore, loading, loadMoreTransactions]);
+
+  // Effect to attach scroll listener
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+
+      // Cleanup function to remove the event listener
+      return () => {
+        container.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [handleScroll]); // Re-attach if handleScroll changes
 
   const groupedTransactions = useMemo(() => {
     if (!transactions || transactions.length === 0) return {};
@@ -150,12 +181,12 @@ function Transactions() {
         </div>
       </div>
 
-      <div className="flex-grow overflow-y-auto thin-scrollbar px-2 py-2">
-        {loading && <p className="text-center text-muted-foreground">Loading transactions...</p>}
+      <div ref={scrollContainerRef} className="flex-grow overflow-y-auto thin-scrollbar px-2 py-2">
+        {loading && transactions.length === 0 && <p className="text-center text-muted-foreground">Loading transactions...</p>}
         {error && <p className="text-center text-error">Error: {error}</p>}
         {!loading && !error && transactions.length === 0 && <p className="text-center text-muted-foreground">No transactions found.</p>}
 
-        {!loading && !error && transactions.length > 0 && (
+        {transactions.length > 0 && (
           <div className="space-y-4">
             {Object.entries(groupedTransactions)
               .sort(([dateA], [dateB]) => new Date(groupedTransactions[dateB][0].transactionDate).getTime() - new Date(groupedTransactions[dateA][0].transactionDate).getTime())
@@ -199,6 +230,12 @@ function Transactions() {
               ))}
           </div>
         )}
+
+        {/* Loading Indicator - No sentinel element needed */}
+        <div className="h-10 flex justify-center items-center">
+          {loadingMore && <p className="text-sm text-muted-foreground">Loading more...</p>}
+          {!loadingMore && !hasMore && transactions.length > 0 && <p className="text-sm text-muted-foreground">End of transactions.</p>}
+        </div>
       </div>
 
       {isAddTxSheetOpen && transactionToEdit && (

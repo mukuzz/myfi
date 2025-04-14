@@ -11,8 +11,13 @@ import java.util.List;
 import java.util.Optional;
 import java.math.BigDecimal;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.time.YearMonth;
+import java.time.LocalTime;
 
 @Service
 public class TransactionService {
@@ -21,8 +26,8 @@ public class TransactionService {
     private TransactionRepository transactionRepository;
 
     @Transactional(readOnly = true)
-    public List<Transaction> getAllTransactions() {
-        return transactionRepository.findAll();
+    public Page<Transaction> getAllTransactions(Pageable pageable) {
+        return transactionRepository.findAllByOrderByTransactionDateDesc(pageable);
     }
 
     @Transactional(readOnly = true)
@@ -122,7 +127,20 @@ public class TransactionService {
 
     @Transactional(readOnly = true)
     public List<Transaction> getTransactionsByAccountId(Long accountId) {
-        return transactionRepository.findByAccountId(accountId);
+        return transactionRepository.findByAccountId(accountId, Pageable.unpaged()).getContent();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Transaction> getTransactionsByAccountId(Long accountId, Pageable pageable) {
+        return transactionRepository.findByAccountId(accountId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Transaction> getTransactionsForCurrentMonth() {
+        YearMonth currentYearMonth = YearMonth.now();
+        LocalDateTime startOfMonth = currentYearMonth.atDay(1).atStartOfDay();
+        LocalDateTime endOfMonth = currentYearMonth.atEndOfMonth().atTime(LocalTime.MAX);
+        return transactionRepository.findByTransactionDateBetween(startOfMonth, endOfMonth);
     }
 
     /**

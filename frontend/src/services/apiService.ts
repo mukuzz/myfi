@@ -12,6 +12,19 @@ interface SupportedAccountInfo {
   name: string;
 }
 
+// Add Page interface here as well for the return type
+interface Page<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+  numberOfElements: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
 /**
  * Updates a transaction on the server.
  * @param id The ID of the transaction to update.
@@ -245,26 +258,49 @@ export const getSupportedAccountInfo = async (): Promise<Record<string, string[]
     return response.json();
 };
 
-export async function fetchTransactionsAndTags(): Promise<{ transactions: Transaction[], tags: Tag[] }> {
-  const [transactionsResponse, tagsResponse] = await Promise.all([
-    fetch(`${API_BASE_URL}/transactions`),
-    fetch(`${API_BASE_URL}/tags`)
-  ]);
-
-  if (!transactionsResponse.ok) {
-    throw new Error(`HTTP error fetching transactions! status: ${transactionsResponse.status}`);
+// Fetches a paginated list of transactions
+export async function fetchTransactions(page: number, size: number): Promise<Page<Transaction>> {
+  const response = await fetch(`${API_BASE_URL}/transactions?page=${page}&size=${size}&sort=transactionDate,desc`);
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {}
+    console.error("Failed to fetch transactions:", errorMessage);
+    throw new Error(`Failed to fetch transactions: ${errorMessage}`);
   }
-  if (!tagsResponse.ok) {
-    throw new Error(`HTTP error fetching tags! status: ${tagsResponse.status}`);
+  return response.json();
+}
+
+// Fetches transactions specifically for the current month
+export async function fetchCurrentMonthTransactions(): Promise<Transaction[]> {
+  const response = await fetch(`${API_BASE_URL}/transactions/current-month`);
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {}
+    console.error("Failed to fetch current month transactions:", errorMessage);
+    throw new Error(`Failed to fetch current month transactions: ${errorMessage}`);
   }
+  return response.json();
+}
 
-  const transactionsData = await transactionsResponse.json();
-  const tagsData = await tagsResponse.json();
-
-  const transactions = Array.isArray(transactionsData) ? transactionsData : [];
-  const tags = Array.isArray(tagsData) ? tagsData : [];
-
-  return { transactions, tags };
+// Fetches all tags
+export async function fetchTags(): Promise<Tag[]> {
+  const response = await fetch(`${API_BASE_URL}/tags`);
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {}
+    console.error("Failed to fetch tags:", errorMessage);
+    throw new Error(`Failed to fetch tags: ${errorMessage}`);
+  }
+  return response.json();
 }
 
 export async function updateTransactionTagApi(

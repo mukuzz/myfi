@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from './Card';
-import { fetchTransactionsAndTags } from '../services/apiService';
-import { Transaction } from '../types';
+import { fetchCurrentMonthTransactions, fetchTags } from '../services/apiService';
+import { Transaction, Tag } from '../types';
 import { FiMoreHorizontal } from 'react-icons/fi';
 
 interface TagSpending {
@@ -34,7 +34,11 @@ const SpendingSummary: React.FC = () => {
             setIsLoading(true);
             setError(null);
             try {
-                const { transactions, tags } = await fetchTransactionsAndTags();
+                // Fetch current month transactions and all tags
+                const [transactions, tagsData] = await Promise.all([
+                    fetchCurrentMonthTransactions(), // Use the new function
+                    fetchTags()
+                ]);
 
                 // --- Data Structures for Tag Hierarchy and Spending ---
 
@@ -45,7 +49,7 @@ const SpendingSummary: React.FC = () => {
                 // 3. Map parent tag ID to list of its direct children IDs
                 const childTagMap = new Map<number | null, number[]>();
 
-                tags.forEach(tag => {
+                tagsData.forEach((tag: Tag) => {
                     if (tag.id !== undefined) { // Ensure tag.id is defined
                          tagMap.set(tag.id, tag.name);
                          const parentId = tag.parentTagId ?? null;
