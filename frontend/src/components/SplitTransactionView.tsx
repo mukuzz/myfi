@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiCreditCard } from 'react-icons/fi';
+import { FiCornerRightDown, FiCreditCard } from 'react-icons/fi';
 import { LuPackageOpen } from 'react-icons/lu'; // Icon for split into following
 import { Transaction, TagMap } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { useAppDispatch, useAppSelector } from '../store/hooks'; // Import Redux hooks
-import { splitTransaction, resetMutationStatus, mergeTransaction } from '../store/slices/transactionsSlice'; // Import Redux action
+import { splitTransaction, resetMutationStatus, mergeTransaction, fetchCurrentMonthTransactions } from '../store/slices/transactionsSlice'; // Import Redux action
 import TransactionCard from './TransactionCard';
 import AmountInputModal from './AmountInputModal';
 
@@ -89,9 +89,9 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
 
         // Basic validation (already done in modal, but good to double-check)
         if (splitAmount1 <= 0 || splitAmount2 <= 0) {
-             console.error("Split amounts must be positive and less than the original.");
-             // Rely on modal validation, but log error just in case
-             // The slice will update mutationError if the dispatch fails server-side validation
+            console.error("Split amounts must be positive and less than the original.");
+            // Rely on modal validation, but log error just in case
+            // The slice will update mutationError if the dispatch fails server-side validation
             return;
         }
 
@@ -174,6 +174,7 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
             try {
                 console.log(`Dispatching merge action for Child Tx ID ${childTransaction.id}`);
                 await dispatch(mergeTransaction(childTransaction.id)).unwrap();
+                dispatch(fetchCurrentMonthTransactions());
                 console.log("Transaction merged successfully via Redux.");
                 // State updates automatically via Redux store changes -> re-render
                 // Potentially close the view if the parent becomes the only transaction?
@@ -208,8 +209,8 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
                             </div>
                         </div>
                         <div className="flex flex-col items-end">
-                             <span className="text-xs uppercase mb-1">On</span>
-                             <span className="text-foreground">{formatHeaderDate(displayTransaction.transactionDate)}</span>
+                            <span className="text-xs uppercase mb-1">On</span>
+                            <span className="text-foreground">{formatHeaderDate(displayTransaction.transactionDate)}</span>
                         </div>
                     </div>
                 </div>
@@ -233,15 +234,24 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
                                         {showDivider && (
                                             <div className="border-t-4 border-dashed border-muted my-2 mx-4"></div>
                                         )}
+
                                         <div className='mx-4'>
                                             <TransactionCard
                                                 transaction={tx}
                                                 tagMap={tagMap}
-                                                // Pass merge handler only for child transactions
-                                                onMergeClick={tx.parentId ? handleMergeClick : undefined}
-                                                // Other handlers might be needed depending on card usage
                                             />
                                         </div>
+                                        {!isParent ? (<div className='flex justify-end px-6' ><button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleMergeClick(tx);
+                                            }}
+                                            title="Merge back to parent"
+                                            className="text-sm text-secondary-foreground px-2 rounded-lg flex items-center space-x-1 bg-input hover:bg-muted focus:none"
+                                        >
+                                            <span>Merge to Original Transaction</span>
+                                            <FiCornerRightDown size={14} className="text-muted-foreground" />
+                                        </button></div>) : <></>}
                                     </React.Fragment>
                                 );
                             })
@@ -261,7 +271,7 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
 
                     {/* Split Button Area */}
                     <div className="flex-shrink-0 px-4">
-                         {canSplit && (
+                        {canSplit && (
                             <button
                                 onClick={handleOpenSplitInput}
                                 disabled={isSplitting} // Disable based on Redux mutation status
@@ -269,12 +279,12 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
                             >
                                 {combinedTransactions.length == 1 ? 'Split Transaction' : isSplitting ? 'Processing Split...' : "Split Further"}
                             </button>
-                         )}
-                         {!canSplit && (
-                             <p className="text-center text-muted-foreground text-sm py-2">
-                                 This is part of a split and cannot be split further.
-                             </p>
-                         )}
+                        )}
+                        {!canSplit && (
+                            <p className="text-center text-muted-foreground text-sm py-2">
+                                This is part of a split and cannot be split further.
+                            </p>
+                        )}
                     </div>
                 </div>
 
