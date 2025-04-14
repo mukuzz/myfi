@@ -4,7 +4,7 @@ import { LuPackageOpen } from 'react-icons/lu'; // Icon for split into following
 import { Transaction, TagMap } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { useAppDispatch, useAppSelector } from '../store/hooks'; // Import Redux hooks
-import { splitTransaction, resetMutationStatus } from '../store/slices/transactionsSlice'; // Import Redux action
+import { splitTransaction, resetMutationStatus, mergeTransaction } from '../store/slices/transactionsSlice'; // Import Redux action
 import TransactionCard from './TransactionCard';
 import AmountInputModal from './AmountInputModal';
 
@@ -148,6 +148,7 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
     // --- End Loading and Error States ---
 
     const isSplitting = mutationStatus === 'loading';
+    const isMerging = mutationStatus === 'loading'; // Reuse for now
     const canSplit = !displayTransaction.parentId; // Only parent transactions can be split further
 
     // Custom close handler for the modal to reset Redux state
@@ -155,6 +156,37 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
         setIsSplitInputOpen(false);
         dispatch(resetMutationStatus()); // Clear API errors when modal is closed manually
     };
+
+    // --- Merge Handler ---
+    const handleMergeClick = async (childTransaction: Transaction) => {
+        if (!childTransaction.id || !childTransaction.parentId) {
+            console.error("Invalid transaction provided for merge.");
+            return;
+        }
+
+        // Simple confirmation dialog
+        const confirmation = window.confirm(
+            `Are you sure you want to merge this transaction (Amount: ${formatCurrency(childTransaction.amount)}) back into its parent?`
+        );
+
+        if (confirmation) {
+            dispatch(resetMutationStatus()); // Clear previous errors
+            try {
+                console.log(`Dispatching merge action for Child Tx ID ${childTransaction.id}`);
+                await dispatch(mergeTransaction(childTransaction.id)).unwrap();
+                console.log("Transaction merged successfully via Redux.");
+                // State updates automatically via Redux store changes -> re-render
+                // Potentially close the view if the parent becomes the only transaction?
+                // Or maybe update the view title/state if needed.
+
+            } catch (err: any) {
+                console.error("Failed to dispatch merge transaction via Redux:", err);
+                // Error state (mutationError) is automatically set by the slice's rejected case
+                // Error will be displayed below the list
+            }
+        }
+    };
+    // --- End Merge Handler ---
 
     return (
         <>
@@ -205,9 +237,9 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
                                             <TransactionCard
                                                 transaction={tx}
                                                 tagMap={tagMap}
-                                                // Pass undefined for callbacks if they shouldn't trigger actions from here
-                                                // onCardClick={undefined} 
-                                                // onTagClick={undefined}
+                                                // Pass merge handler only for child transactions
+                                                onMergeClick={tx.parentId ? handleMergeClick : undefined}
+                                                // Other handlers might be needed depending on card usage
                                             />
                                         </div>
                                     </React.Fragment>
@@ -220,7 +252,10 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
                         )}
                         {/* Display Redux mutation errors here */}
                         {mutationStatus === 'failed' && mutationError && (
-                            <p className="text-center text-red-500 text-sm py-2 px-4">Error splitting: {mutationError}</p>
+                            <p className="text-center text-red-500 text-sm py-2 px-4">
+                                {/* Display merge errors as well */}
+                                Error: {mutationError}
+                            </p>
                         )}
                     </div>
 

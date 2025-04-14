@@ -236,4 +236,49 @@ public class TransactionService {
         // loaded depending on fetch strategy)
         return updatedParent;
     }
+
+    /**
+     * Merges a child transaction back into its parent transaction.
+     *
+     * @param childId The ID of the child transaction to merge.
+     * @return The updated parent transaction.
+     * @throws ResponseStatusException If the child or parent transaction is not found.
+     * @throws IllegalArgumentException If the transaction with childId is not a child transaction (has no parentId).
+     */
+    @Transactional
+    public Transaction mergeTransaction(Long childId) {
+        // 1. Fetch the child transaction
+        Transaction child = transactionRepository.findById(childId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Child transaction with ID " + childId + " not found."));
+
+        // 2. Check if it's actually a child
+        Long parentId = child.getParentId();
+        if (parentId == null) {
+            throw new IllegalArgumentException("Transaction with ID " + childId + " is not a child transaction and cannot be merged.");
+        }
+
+        // 3. Fetch the parent transaction
+        Transaction parent = transactionRepository.findById(parentId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Parent transaction with ID " + parentId + " not found for child " + childId + "."));
+
+        // 4. Calculate the new parent amount
+        BigDecimal newParentAmount = parent.getAmount().add(child.getAmount());
+
+        // 5. Update the parent transaction
+        parent.setAmount(newParentAmount);
+        // Restore original description? Maybe add a note?
+        // For now, just update amount and timestamp.
+        parent.setUpdatedAt(LocalDateTime.now());
+
+        // 6. Delete the child transaction
+        transactionRepository.delete(child);
+
+        // 7. Save the updated parent
+        Transaction updatedParent = transactionRepository.save(parent);
+
+        // 8. Return the updated parent
+        return updatedParent;
+    }
 }

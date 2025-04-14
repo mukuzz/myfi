@@ -431,4 +431,37 @@ export const deleteAccount = async (id: string): Promise<void> => {
   return;
 };
 
+/**
+ * Merges a child transaction back into its parent.
+ * @param childId The ID of the child transaction to merge.
+ * @returns The updated parent transaction data.
+ * @throws Error if the merge fails.
+ */
+export const mergeTransactionApi = async (
+  childId: number
+): Promise<Transaction> => {
+  const response = await fetch(`${API_BASE_URL}/transactions/${childId}/merge`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      // No body needed for this request
+    },
+  });
+
+  if (!response.ok) {
+    // Attempt to read error message from response body
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {
+      // Ignore if response body is not JSON or empty
+    }
+    console.error(`Failed to merge transaction ${childId}:`, errorMessage);
+    throw new Error(`Failed to merge transaction: ${errorMessage}`);
+  }
+
+  return response.json();
+};
+
 // Add other API functions here as needed (e.g., fetchTransactions, createTransaction, deleteTransaction) 

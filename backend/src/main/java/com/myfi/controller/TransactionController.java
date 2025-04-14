@@ -105,6 +105,21 @@ public class TransactionController {
         }
     }
 
+    @PostMapping("/{childId}/merge")
+    public ResponseEntity<?> mergeTransaction(@PathVariable Long childId) {
+        try {
+            Transaction updatedParent = transactionService.mergeTransaction(childId);
+            return ResponseEntity.ok(updatedParent);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        } catch (Exception e) {
+            log.error("Error merging transaction {}", childId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while merging the transaction.");
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
         if (transactionService.deleteTransaction(id)) {

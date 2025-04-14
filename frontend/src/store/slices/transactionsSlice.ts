@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as apiService from '../../services/apiService';
-import { Transaction, Page } from '../../types';
+import { Transaction, Page, Tag } from '../../types';
 import { deleteAccount } from '../slices/accountsSlice'; // Import the action from accountsSlice
 import { RootState } from '../store'; // Import RootState
 
@@ -196,7 +196,7 @@ export const updateTransactionAsync = createAsyncThunk<
 
 // Split Transaction
 export const splitTransaction = createAsyncThunk<
-    Transaction, // Returns the updated parent transaction
+    Transaction, // Returns the updated parent transaction (API should return this)
     SplitTransactionArgs,
     { rejectValue: string }
 >(
@@ -207,6 +207,24 @@ export const splitTransaction = createAsyncThunk<
             return response; // Assuming API returns the updated parent transaction with subTransactions
         } catch (error: any) {
             const message = error instanceof Error ? error.message : 'Failed to split transaction';
+            throw rejectWithValue(message);
+        }
+    }
+);
+
+// Merge Transaction
+export const mergeTransaction = createAsyncThunk<
+    Transaction, // Returns the updated parent transaction
+    number,      // Accepts the child transaction ID
+    { rejectValue: string }
+>(
+    'transactions/mergeTransaction',
+    async (childId, { rejectWithValue }) => {
+        try {
+            const updatedParent = await apiService.mergeTransactionApi(childId);
+            return updatedParent;
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to merge transaction';
             throw rejectWithValue(message);
         }
     }
@@ -346,7 +364,7 @@ const transactionsSlice = createSlice({
             })
             .addCase(updateTransactionTag.rejected, (state, action) => {
                 state.mutationStatus = 'failed';
-                state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Unknown error splitting transaction';
+                state.mutationError = action.payload || 'Failed to update tag';
             })
             // --- Handlers for updateTransactionAsync ---
             .addCase(updateTransactionAsync.pending, (state) => {
@@ -389,23 +407,71 @@ const transactionsSlice = createSlice({
                 state.mutationStatus = 'loading';
                 state.mutationError = null;
             })
-            .addCase(splitTransaction.fulfilled, (state, action: PayloadAction<Transaction>) => {
-                state.mutationStatus = 'succeeded';
-                // Find the original parent transaction and update it
-                const index = state.transactions.findIndex(tx => tx.id === action.payload.id);
-                if (index !== -1) {
-                    // Replace the old parent with the updated one (which now includes subTransactions)
-                    state.transactions[index] = action.payload;
+            .addCase(splitTransaction.fulfilled, (state, action) => {
+                // Action payload is the updated parent transaction
+                const updatedParent = action.payload;
+                // Find and update the parent in the list
+                const parentIndex = state.transactions.findIndex(tx => tx.id === updatedParent.id);
+                if (parentIndex !== -1) {
+                    // Replace the parent transaction with the updated one (which might have subTransactions)
+                    // The API currently returns the updated parent, not the new child.
+                    // We rely on the next fetch/view update to show the child.
+                    // TODO: Consider if the API should return both parent and child for immediate update.
+                    state.transactions[parentIndex] = updatedParent;
+                } else {
+                    // Handle case where parent wasn't in the list (should not happen ideally)
+                    state.transactions.push(updatedParent); 
                 }
-                 // Update in monthly transactions as well, if present
-                 const monthIndex = state.currentMonthTransactions.findIndex(tx => tx.id === action.payload.id);
-                 if (monthIndex !== -1) {
-                     state.currentMonthTransactions[monthIndex] = action.payload;
-                 }
+                // Update in current month list as well
+                const monthParentIndex = state.currentMonthTransactions.findIndex(tx => tx.id === updatedParent.id);
+                if (monthParentIndex !== -1) {
+                    state.currentMonthTransactions[monthParentIndex] = updatedParent;
+                }
+                state.mutationStatus = 'succeeded';
+                state.mutationError = null;
             })
             .addCase(splitTransaction.rejected, (state, action) => {
                 state.mutationStatus = 'failed';
-                state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to split transaction';
+                state.mutationError = action.payload || 'Failed to split transaction';
+            })
+            // --- Handlers for mergeTransaction ---
+            .addCase(mergeTransaction.pending, (state) => {
+                state.mutationStatus = 'loading';
+                state.mutationError = null;
+            })
+            .addCase(mergeTransaction.fulfilled, (state, action) => {
+                // action.payload is the updated parent transaction
+                // action.meta.arg is the childId that was merged
+                const updatedParent = action.payload;
+                const mergedChildId = action.meta.arg;
+
+                // Remove the merged child from the main list
+                state.transactions = state.transactions.filter(tx => tx.id !== mergedChildId);
+
+                // Find and update the parent in the main list
+                const parentIndex = state.transactions.findIndex(tx => tx.id === updatedParent.id);
+                if (parentIndex !== -1) {
+                    state.transactions[parentIndex] = updatedParent;
+                } else {
+                    // This case is unlikely if the parent existed before the merge
+                    console.warn('Parent transaction not found in state after merge for ID:', updatedParent.id);
+                    // Optionally add it back if necessary
+                    state.transactions.push(updatedParent);
+                }
+
+                // Remove child and update parent in current month list as well
+                state.currentMonthTransactions = state.currentMonthTransactions.filter(tx => tx.id !== mergedChildId);
+                const monthParentIndex = state.currentMonthTransactions.findIndex(tx => tx.id === updatedParent.id);
+                if (monthParentIndex !== -1) {
+                    state.currentMonthTransactions[monthParentIndex] = updatedParent;
+                }
+
+                state.mutationStatus = 'succeeded';
+                state.mutationError = null;
+            })
+            .addCase(mergeTransaction.rejected, (state, action) => {
+                state.mutationStatus = 'failed';
+                state.mutationError = action.payload || 'Failed to merge transaction';
             })
             // --- Handlers for deleteTransactionAsync ---
             .addCase(deleteTransactionAsync.pending, (state) => {
