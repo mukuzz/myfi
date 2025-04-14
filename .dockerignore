@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+npm-debug.log*
+yarn-error.log
+
+# Maven
+target/
+*.jar
+*.war
+
+# Build artifacts
+**/build
+**/dist
+
+# IDE / Editor specific
+.idea/
+.vscode/
+*.iml
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env*
+!/.env.example
+
+# Database file
+myfi.db
+*.db
+
+# Docker specific
+Dockerfile
+.dockerignore 

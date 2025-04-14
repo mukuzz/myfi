@@ -1,9 +1,7 @@
 import { Transaction, Account, ScrapeRequest, Tag, Page } from '../types';
 
 // Use environment variable or default.
-// NOTE: For Vite projects, prefer `import.meta.env.VITE_API_URL`.
-// If using that causes a type error, ensure "vite/client" is in your tsconfig types.
-const API_BASE_URL = process.env.API_BASE_URL || 'http://192.168.1.5:8080/api/v1';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/api/v1';
 
 // Define the expected structure for supported account info
 // Matches the interface in AddAccountSheet.tsx

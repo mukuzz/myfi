@@ -161,7 +161,7 @@ function Transactions() {
             </div>
 
             <div ref={scrollContainerRef} className="flex-grow overflow-y-auto thin-scrollbar px-2">
-                {isLoadingInitial && <p className="text-center text-muted-foreground">Loading transactions...</p>}
+                {isLoadingInitial && <p className="text-center p-8 text-muted-foreground">Loading transactions...</p>}
                 {overallError && <p className="text-center text-destructive">Error: {overallError}</p>}
                 {!isLoadingInitial && !overallError && transactions.length === 0 && <p className="text-center text-muted-foreground">No transactions found.</p>}
 

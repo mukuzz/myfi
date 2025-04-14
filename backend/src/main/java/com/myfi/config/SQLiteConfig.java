@@ -18,7 +18,7 @@ public class SQLiteConfig {
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("org.sqlite.JDBC");
-        dataSource.setUrl("jdbc:sqlite:myfi.db");
+        dataSource.setUrl("jdbc:sqlite:/data/myfi.db");
         return dataSource;
     }
 

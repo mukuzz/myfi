@@ -4,54 +4,17 @@ A modern personal finance management application built with Spring Boot (Java) f
 
 ## Table of Contents
 
-- [Project Structure](#project-structure)
 - [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
 - [Running the Application](#running-the-application)
   - [Backend (Spring Boot)](#backend-spring-boot)
   - [Frontend (React)](#frontend-react)
+- [Using Docker](#using-docker)
 - [Database](#database)
 - [API Documentation](#api-documentation)
 - [Development](#development)
 - [Contributing](#contributing)
-
-## Project Structure
-
-```
-myfi/
-├── .env                      # Backend environment variables (See .env.example)
-├── .gitignore                # Git ignore configuration
-├── Readme.md                 # This file
-├── myfi.db                   # SQLite database file (created on first run)
-│
-├── backend/                  # Spring Boot backend application
-│   ├── pom.xml               # Maven build configuration
-│   ├── .env                  # Backend environment variables (overrides root .env)
-│   ├── storage/              # Directory for storing larger files (e.g., Playwright traces)
-│   └── src/
-│       ├── main/
-│       │   ├── java/         # Java source code
-│       │   └── resources/    # Application properties, static assets, etc.
-│       │       ├── application.properties
-│       │       └── static/
-│       └── test/             # Backend tests
-│
-└── frontend/                 # React frontend application
-    ├── package.json          # npm package configuration
-    ├── package-lock.json     # npm lock file
-    ├── tsconfig.json         # TypeScript configuration
-    ├── tailwind.config.js    # Tailwind CSS configuration
-    ├── .env                  # Frontend environment variables
-    ├── .gitignore            # Frontend specific Git ignore
-    ├── public/               # Static assets served by the development server
-    └── src/                  # React/TypeScript source code
-        ├── index.tsx         # Application entry point
-        ├── App.tsx           # Main application component
-        ├── components/       # Reusable UI components
-        ├── services/         # API service integrations
-        └── ...               # Other feature modules/pages
-```
 
 ## Tech Stack
 
@@ -112,6 +75,46 @@ Environment variables are used for configuration.
 2.  Install dependencies: `npm install`
 3.  Start the development server: `npm start`
 4.  The frontend application will open in your browser at `http://localhost:3000` (or the configured port).
+
+### Using Docker
+
+Alternatively, you can build and run the entire application (backend and frontend) in a single Docker container.
+
+1.  **Build the Docker image:**
+    Make sure you have Docker installed and running. Navigate to the project root directory (where the `Dockerfile` is located) and run:
+    ```bash
+    docker build -t myfi-app .
+    ```
+
+2.  **Create a data directory (if it doesn't exist):**
+    The container expects the SQLite database (`myfi.db`) to be in a mounted volume. Create a `data` directory in the project root on your host machine:
+    ```bash
+    mkdir data
+    ```
+    *(Ensure your `myfi.db` file is placed inside this `data` directory before running the container. If the file doesn't exist, the application will create it inside the container's `/data` volume when first started).* 
+
+3.  **Run the Docker container:**
+    This command runs the container, maps port 8080, and mounts the local `./data` directory to `/data` inside the container for database persistence.
+    ```bash
+    docker run -d \
+      -p 8080:8080 \
+      -v "$(pwd)/data:/data" \
+      --name myfi-container \
+      myfi-app
+    ```
+
+4.  **Access the application:**
+    The application should now be accessible at `http://localhost:8080`.
+
+5.  **View logs:**
+    ```bash
+    docker logs myfi-container
+    ```
+
+6.  **Stop the container:**
+    ```bash
+    docker stop myfi-container
+    ```
 
 ## Database
 
