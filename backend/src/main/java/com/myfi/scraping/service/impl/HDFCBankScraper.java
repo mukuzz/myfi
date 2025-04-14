@@ -6,6 +6,7 @@ import com.myfi.model.Account;
 import com.myfi.model.Transaction;
 import com.myfi.scraping.model.AccountCredentials;
 import com.myfi.scraping.service.BankScrapper;
+import com.myfi.service.AccountHistoryService;
 import com.myfi.service.TransactionService;
 import com.myfi.model.Account.AccountType;
 import java.util.Set;
@@ -17,6 +18,8 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -24,12 +27,15 @@ import org.springframework.stereotype.Component;
 public class HDFCBankScraper extends BankScrapper {
 
     private final TransactionService transactionService;
+    private final AccountHistoryService accountHistoryService;
 
     private static final String HDFC_LOGIN_URL = "https://netbanking.hdfcbank.com/netbanking/";
 
-    public HDFCBankScraper(TransactionService transactionService) {
+    @Autowired
+    public HDFCBankScraper(TransactionService transactionService, AccountHistoryService accountHistoryService) {
         super();
         this.transactionService = transactionService;
+        this.accountHistoryService = accountHistoryService;
     }
 
     @Override
@@ -55,6 +61,19 @@ public class HDFCBankScraper extends BankScrapper {
         getPage().click("div[ng-click='mainCtrl.accountDetails(item,1)'] a.arrow");
         getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
         getPage().waitForLoadState(LoadState.NETWORKIDLE);
+
+        // Extract the current balance from the account page
+        getPage().waitForSelector(".summary-heading decimal-casing");
+        String balanceText = getPage().querySelector(".summary-heading decimal-casing").textContent().trim();
+        
+        // Clean up the balance text to extract just the number
+        String cleanedBalanceText = balanceText.replaceAll("[^0-9.-]", "");
+        BigDecimal currentBalance = new BigDecimal(cleanedBalanceText);
+        
+        log.info("Current balance for HDFC account {}: {}", account.getAccountNumber(), currentBalance);
+        
+        // Save the current balance to account history
+        accountHistoryService.createAccountHistoryRecord(account.getId(), currentBalance);
 
         // Wait for and click the dropdown control
         getPage().waitForSelector("hdfc-dropdown[control='accountsStatementCtrl.dropdownControl']");

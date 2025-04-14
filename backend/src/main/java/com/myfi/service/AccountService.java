@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -24,44 +25,60 @@ public class AccountService {
     @Autowired
     private AccountRepository accountRepository;
 
+    @Autowired
+    private AccountHistoryService accountHistoryService;
+
     private final List<BankScrapper> bankScrapers;
 
     @Autowired
-    public AccountService(AccountRepository accountRepository, List<BankScrapper> bankScrapers) {
+    public AccountService(AccountRepository accountRepository, AccountHistoryService accountHistoryService, List<BankScrapper> bankScrapers) {
         this.accountRepository = accountRepository;
+        this.accountHistoryService = accountHistoryService;
         this.bankScrapers = bankScrapers;
     }
 
     @Transactional(readOnly = true)
     public List<Account> getAllAccounts() {
-        return accountRepository.findAll();
+        List<Account> accounts = accountRepository.findAll();
+        accounts.forEach(this::populateLatestBalance);
+        return accounts;
     }
 
     @Transactional(readOnly = true)
     public Optional<Account> getAccountById(Long id) {
-        return accountRepository.findById(id);
+        return accountRepository.findById(id).map(account -> {
+            populateLatestBalance(account);
+            return account;
+        });
     }
 
     @Transactional(readOnly = true)
     public Optional<Account> getAccountByAccountNumber(String accountNumber) {
-        return accountRepository.findByAccountNumber(accountNumber);
+        return accountRepository.findByAccountNumber(accountNumber).map(account -> {
+            populateLatestBalance(account);
+            return account;
+        });
     }
 
     @Transactional
     public Account createAccount(Account account) {
         account.setCreatedAt(LocalDateTime.now());
-        // Ensure balance is set if not provided, or handle as needed
         if (account.getBalance() == null) {
-            // Set a default balance or throw an error, depending on requirements
-            // For example, setting default balance to 0
-            // account.setBalance(BigDecimal.ZERO);
-             throw new IllegalArgumentException("Account balance must be provided.");
+            throw new IllegalArgumentException("Initial account balance must be provided.");
         }
          if (account.getCurrency() == null) {
              throw new IllegalArgumentException("Account currency must be provided.");
          }
-        account.setActive(true); // Default to active
-        return accountRepository.save(account);
+        account.setActive(true);
+
+        BigDecimal initialBalance = account.getBalance();
+        Account savedAccount = accountRepository.save(account);
+
+        accountHistoryService.createAccountHistoryRecord(savedAccount.getId(), initialBalance);
+
+        savedAccount.setBalance(initialBalance);
+
+        return savedAccount;
     }
 
     @Transactional
@@ -70,12 +87,14 @@ public class AccountService {
                 .map(existingAccount -> {
                     existingAccount.setName(accountDetails.getName());
                     existingAccount.setType(accountDetails.getType());
-                    existingAccount.setBalance(accountDetails.getBalance());
                     existingAccount.setCurrency(accountDetails.getCurrency());
                     existingAccount.setActive(accountDetails.isActive());
                     existingAccount.setAccountNumber(accountDetails.getAccountNumber());
+                    existingAccount.setParentAccountId(accountDetails.getParentAccountId());
                     existingAccount.setUpdatedAt(LocalDateTime.now());
-                    return accountRepository.save(existingAccount);
+                    Account updatedAccount = accountRepository.save(existingAccount);
+                    populateLatestBalance(updatedAccount);
+                    return updatedAccount;
                 });
     }
 
@@ -106,5 +125,11 @@ public class AccountService {
         }
 
         return supportedAccountsMap;
+    }
+
+    private void populateLatestBalance(Account account) {
+        BigDecimal latestBalance = accountHistoryService.getLatestBalanceForAccount(account.getId())
+                                        .orElse(BigDecimal.ZERO);
+        account.setBalance(latestBalance);
     }
 } 

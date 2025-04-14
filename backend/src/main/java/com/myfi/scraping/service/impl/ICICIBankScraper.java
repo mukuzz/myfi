@@ -16,6 +16,7 @@ import com.myfi.model.Account;
 import com.myfi.model.Transaction;
 import com.myfi.scraping.model.AccountCredentials;
 import com.myfi.scraping.service.BankScrapper;
+import com.myfi.service.AccountHistoryService;
 import com.myfi.service.TransactionService;
 import com.myfi.model.Account.AccountType;
 
@@ -27,12 +28,15 @@ public class ICICIBankScraper extends BankScrapper {
 
     @Autowired
     private TransactionService transactionService;
-
+    private AccountHistoryService accountHistoryService;
+    
     private static final String ICICI_LOGIN_URL = "https://infinity.icicibank.com/corp/AuthenticationController?FORMSGROUP_ID__=AuthenticationFG&__START_TRAN_FLAG__=Y&FG_BUTTONS__=LOAD&ACTION.LOAD=Y&AuthenticationFG.LOGIN_FLAG=1&BANK_ID=ICI";
 
-    public ICICIBankScraper(TransactionService transactionService) {
-        super(); // Assuming the default constructor of BankScrapper handles Playwright setup
+    @Autowired
+    public ICICIBankScraper(TransactionService transactionService, AccountHistoryService accountHistoryService) {
+        super();
         this.transactionService = transactionService;
+        this.accountHistoryService = accountHistoryService;
     }
 
     @Override

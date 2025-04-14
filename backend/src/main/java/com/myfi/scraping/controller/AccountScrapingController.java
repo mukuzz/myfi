@@ -46,6 +46,12 @@ public class AccountScrapingController {
     @Autowired
     private SystemStatusService systemStatusService;
 
+    @Autowired
+    private ICICIBankScraper iciciBankScraper;
+
+    @Autowired
+    private HDFCBankScraper hdfcBankScraper;
+
     // Map to hold Semaphores for each bank type, limiting concurrency to 1 per type
     private final ConcurrentHashMap<String, Semaphore> bankSemaphores = new ConcurrentHashMap<>();
 
@@ -91,9 +97,9 @@ public class AccountScrapingController {
 
                     // Instantiate Scraper based on bank name
                     if (credentials.getAccountName().equalsIgnoreCase("ICICI")) {
-                        bankScrapper = new ICICIBankScraper(transactionService);
+                        bankScrapper = iciciBankScraper;
                     } else if (credentials.getAccountName().equalsIgnoreCase("HDFC")) {
-                        bankScrapper = new HDFCBankScraper(transactionService);
+                        bankScrapper = hdfcBankScraper;
                     } else {
                         log.error("Invalid bank name provided: {}", credentials.getAccountName());
                         taskError = true;

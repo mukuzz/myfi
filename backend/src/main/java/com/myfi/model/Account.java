@@ -29,7 +29,8 @@ public class Account {
     @Column(nullable = false)
     private AccountType type;
 
-    @Column(nullable = false)
+    // Balance will be derived from the latest AccountHistory
+    @Transient
     private BigDecimal balance;
 
     @Column(name = "currency", nullable = false)
@@ -55,6 +56,18 @@ public class Account {
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Transaction> transactions;
+
+    // Added relationship to AccountHistory
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore // Avoid infinite recursion during serialization
+    private List<AccountHistory> accountHistories;
+
+    // Method to get the latest balance (logic will be in service)
+    public BigDecimal getLatestBalance() {
+        // Placeholder: Actual logic will fetch from the latest AccountHistory
+        // For now, return the transient balance field if set, or zero
+        return this.balance != null ? this.balance : BigDecimal.ZERO;
+    }
 
     public enum AccountType {
         SAVINGS,

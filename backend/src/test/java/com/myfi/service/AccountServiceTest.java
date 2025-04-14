@@ -44,7 +44,7 @@ class AccountServiceTest {
     @BeforeEach
     void setUp() {
         // Re-initialize service with potentially updated mocks if constructor injection needs specific setup
-        accountService = new AccountService(accountRepository, bankScrapers);
+        accountService = new AccountService(accountRepository, null, bankScrapers);
 
         account1 = new Account();
         account1.setId(1L);
@@ -287,7 +287,7 @@ class AccountServiceTest {
     @Test
     void getSupportedAccounts_shouldReturnEmptyListsWhenNoScrapers() {
        // Use an empty list for scrapers in this specific test setup
-       accountService = new AccountService(accountRepository, Collections.emptyList());
+       accountService = new AccountService(accountRepository, null, Collections.emptyList());
 
         Map<String, List<String>> supportedAccounts = accountService.getSupportedAccounts();
 
@@ -303,7 +303,7 @@ class AccountServiceTest {
      @Test
     void getSupportedAccounts_shouldHandleNullScrapersListGracefully() {
         // Explicitly set scrapers to null
-        accountService = new AccountService(accountRepository, null);
+        accountService = new AccountService(accountRepository, null, Collections.emptyList());
 
         Map<String, List<String>> supportedAccounts = accountService.getSupportedAccounts();
 
