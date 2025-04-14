@@ -9,9 +9,6 @@ interface AddAccountViewProps {
   availableParentAccounts: Account[];
 }
 
-// Key prefix for local storage
-const NETBANKING_STORAGE_PREFIX = 'netbanking_';
-
 function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccountViewProps) {
   const dispatch = useAppDispatch();
   // Select supported accounts state from Redux
@@ -23,8 +20,6 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
   const [currency, setCurrency] = useState('INR');
   const [accountNumber, setAccountNumber] = useState('');
   const [parentAccountId, setParentAccountId] = useState<string>('');
-  const [netbankingUsername, setNetbankingUsername] = useState('');
-  const [netbankingPassword, setNetbankingPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -83,23 +78,6 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
         return;
     }
 
-    if ((netbankingUsername && !netbankingPassword) || (!netbankingUsername && netbankingPassword)) {
-      setSubmitError('Please provide both netbanking username and password, or leave both empty.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (netbankingUsername && netbankingPassword && trimmedAccountNumber) {
-      try {
-        const storageKey = `${NETBANKING_STORAGE_PREFIX}${trimmedAccountNumber}`;
-        const credentials = { username: netbankingUsername, password: netbankingPassword };
-        localStorage.setItem(storageKey, JSON.stringify(credentials));
-        console.log(`Netbanking credentials saved for account ${trimmedAccountNumber}`);
-      } catch (storageError) {
-        console.error("Failed to save netbanking credentials to local storage:", storageError);
-      }
-    }
-
     const accountData: Omit<Account, 'id' | 'createdAt' | 'updatedAt'> = {
       name,
       type: type!,
@@ -121,8 +99,6 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
         setCurrency('INR');
         setAccountNumber('');
         setParentAccountId('');
-        setNetbankingUsername('');
-        setNetbankingPassword('');
         setSubmitError(null);
 
         dispatch(fetchAccounts());
@@ -255,37 +231,6 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
                 className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
                 placeholder="The complete account number"
               />
-            </div>
-
-            <div>
-              <label htmlFor="netbankingUsername" className="block text-sm font-medium text-muted-foreground mb-1">
-                Netbanking Username (Optional)
-              </label>
-              <input
-                type="text"
-                id="netbankingUsername"
-                value={netbankingUsername}
-                onChange={(e) => setNetbankingUsername(e.target.value)}
-                className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
-                placeholder="Your online banking username"
-                autoComplete="off"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="netbankingPassword" className="block text-sm font-medium text-muted-foreground mb-1">
-                Netbanking Password (Optional)
-              </label>
-              <input
-                type="password"
-                id="netbankingPassword"
-                value={netbankingPassword}
-                onChange={(e) => setNetbankingPassword(e.target.value)}
-                className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
-                placeholder="Your online banking password"
-                autoComplete="off"
-              />
-               <p className="text-xs text-muted-foreground mt-1">This information is stored only on your device.</p>
             </div>
 
             <div>
