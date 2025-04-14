@@ -3,9 +3,13 @@ import { FiCreditCard } from 'react-icons/fi'; // Example icons, Add FiSave
 import { BsDiagram3 } from 'react-icons/bs'; // Icon for splits
 import { HiOutlineDotsHorizontal } from 'react-icons/hi'; // Ellipsis Icon
 import { Transaction, TagMap } from '../types'; // Import TagMap
-import { updateTransaction } from '../services/apiService'; // Adjust the path as needed
 import TransactionWithNarration from './TransactionWithNarration'; // Import the new component
 import { ReactComponent as ExcludedIcon } from '../assets/icons/ExcludedFromAccountingIcon.svg'; // Import the custom SVG
+
+// Import Redux hooks and actions
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../store/store'; // Correct path based on search
+import { updateTransactionAsync } from '../store/slices/transactionsSlice';
 
 // A simple debounce function (consider using lodash.debounce for production)
 const debounce = <F extends (...args: any[]) => any>(func: F, waitFor: number) => {
@@ -57,48 +61,51 @@ function TransactionDetailView({
     const [note, setNote] = useState(transaction.notes || ''); // Use 'notes' based on model change
     const [isSaving, setIsSaving] = useState(false); // Optional: for loading state
 
+    // Get the dispatch function
+    const dispatch = useDispatch<AppDispatch>();
+
     // Access tag name directly from the Tag object in the map
     const currentTagName = transaction.tagId ? tagMap[transaction.tagId]?.name : 'Untagged';
 
-    // Debounced function to save the note
+    // Debounced function to save the note using Redux action
     const debouncedSaveNote = useCallback(
         debounce(async (newNote: string) => {
             if (!transaction?.id) return; // Ensure transaction and id exist
-            setIsSaving(true);
-            console.log('Saving note:', newNote);
-            transaction.notes = newNote;
+            setIsSaving(true); // Keep local saving state for potential UI feedback
+            console.log('Dispatching updateTransactionAsync for note:', newNote);
             try {
-                updateTransaction(transaction.id, { ...transaction });
-                console.log('Note saved successfully');
+                await dispatch(updateTransactionAsync({ transactionId: transaction.id, updatedData: { notes: newNote } })).unwrap();
+                console.log('Note update dispatched successfully');
+                // TODO: Add success feedback if needed, relying on Redux state update
             } catch (error) {
-                console.error('Failed to save note:', error);
+                console.error('Failed to dispatch note update:', error);
                 // TODO: Add user feedback for save failure
             } finally {
                 setIsSaving(false);
             }
-        }, 100), // Debounce time: 500ms
-        [transaction?.id, updateTransaction] // Dependencies for useCallback
+        }, 500), // Debounce time: 500ms
+        [transaction?.id, dispatch] // Dependencies for useCallback
     );
 
     const toggleExclude = async () => {
+        if (!transaction?.id) {
+            console.error('Cannot update excludeFromAccounting: transaction ID is missing');
+            return; // Exit if no transaction ID
+        }
+
         const newExcludedValue = !isExcluded;
         setIsExcluded(newExcludedValue);
 
-        // Save the changes to the server
-        if (transaction?.id) {
-            try {
-                console.log('Updating excludeFromAccounting:', newExcludedValue);
-                transaction.excludeFromAccounting = newExcludedValue;
-                await updateTransaction(transaction.id, { ...transaction });
-                console.log('excludeFromAccounting updated successfully');
-            } catch (error) {
-                console.error('Failed to update excludeFromAccounting:', error);
-                // Optional: revert the UI state if the server update fails
-                setIsExcluded(!newExcludedValue);
-                // TODO: Add user feedback for save failure
-            }
-        } else {
-            console.error('Cannot update excludeFromAccounting: transaction ID is missing');
+        // Dispatch the update action
+        try {
+            console.log('Dispatching updateTransactionAsync for excludeFromAccounting:', newExcludedValue);
+            await dispatch(updateTransactionAsync({ transactionId: transaction.id, updatedData: { excludeFromAccounting: newExcludedValue } })).unwrap();
+            console.log('excludeFromAccounting update dispatched successfully');
+        } catch (error) {
+            console.error('Failed to dispatch excludeFromAccounting update:', error);
+            // Optional: revert the UI state if the server update fails
+            setIsExcluded(!newExcludedValue);
+            // TODO: Add user feedback for save failure
         }
     };
 

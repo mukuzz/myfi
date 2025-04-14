@@ -12,6 +12,10 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
@@ -71,22 +75,38 @@ class TransactionServiceTest {
 
     @Test
     void getAllTransactions_shouldReturnAllTransactions() {
-        when(transactionRepository.findAll()).thenReturn(Arrays.asList(transaction1, transaction2));
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Transaction> transactionList = Arrays.asList(transaction1, transaction2);
+        Page<Transaction> transactionPage = new PageImpl<>(transactionList, pageable, transactionList.size());
+        when(transactionRepository.findAll(any(Pageable.class))).thenReturn(transactionPage);
 
-        List<Transaction> transactions = transactionService.getAllTransactions();
+        // Act
+        Page<Transaction> result = transactionService.getAllTransactions(pageable);
 
-        assertNotNull(transactions);
-        assertEquals(2, transactions.size());
-        verify(transactionRepository, times(1)).findAll();
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.getTotalElements());
+        assertEquals(2, result.getContent().size());
+        assertEquals(transaction1, result.getContent().get(0));
+        verify(transactionRepository, times(1)).findAll(pageable);
     }
 
      @Test
     void getAllTransactions_shouldReturnEmptyListWhenNoTransactions() {
-        when(transactionRepository.findAll()).thenReturn(Collections.emptyList());
-        List<Transaction> transactions = transactionService.getAllTransactions();
-        assertNotNull(transactions);
-        assertTrue(transactions.isEmpty());
-        verify(transactionRepository, times(1)).findAll();
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Transaction> emptyPage = Page.empty(pageable);
+        when(transactionRepository.findAll(any(Pageable.class))).thenReturn(emptyPage);
+
+        // Act
+        Page<Transaction> result = transactionService.getAllTransactions(pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        assertEquals(0, result.getTotalElements());
+        verify(transactionRepository, times(1)).findAll(pageable);
     }
 
     @Test
@@ -265,26 +285,39 @@ class TransactionServiceTest {
 
     @Test
     void getTransactionsByAccountId_shouldReturnTransactionsForAccount() {
-        when(transactionRepository.findByAccountId(1L)).thenReturn(Arrays.asList(transaction1, transaction2));
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Transaction> transactionList = Arrays.asList(transaction1, transaction2);
+        Page<Transaction> transactionPage = new PageImpl<>(transactionList, pageable, transactionList.size());
+        when(transactionRepository.findByAccountId(eq(1L), any(Pageable.class))).thenReturn(transactionPage);
 
-        List<Transaction> transactions = transactionService.getTransactionsByAccountId(1L);
+        // Act
+        Page<Transaction> result = transactionService.getTransactionsByAccountId(1L, pageable);
 
-        assertNotNull(transactions);
-        assertEquals(2, transactions.size());
-        assertEquals(1L, transactions.get(0).getAccount().getId());
-        assertEquals(1L, transactions.get(1).getAccount().getId());
-        verify(transactionRepository, times(1)).findByAccountId(1L);
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.getTotalElements());
+        assertEquals(2, result.getContent().size());
+        assertEquals(1L, result.getContent().get(0).getAccount().getId());
+        assertEquals(1L, result.getContent().get(1).getAccount().getId());
+        verify(transactionRepository, times(1)).findByAccountId(1L, pageable);
     }
 
     @Test
     void getTransactionsByAccountId_shouldReturnEmptyListWhenNoTransactionsForAccount() {
-        when(transactionRepository.findByAccountId(anyLong())).thenReturn(Collections.emptyList());
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Transaction> emptyPage = Page.empty(pageable);
+        when(transactionRepository.findByAccountId(anyLong(), any(Pageable.class))).thenReturn(emptyPage);
 
-        List<Transaction> transactions = transactionService.getTransactionsByAccountId(99L);
+        // Act
+        Page<Transaction> result = transactionService.getTransactionsByAccountId(99L, pageable);
 
-        assertNotNull(transactions);
-        assertTrue(transactions.isEmpty());
-        verify(transactionRepository, times(1)).findByAccountId(99L);
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        assertEquals(0, result.getTotalElements());
+        verify(transactionRepository, times(1)).findByAccountId(99L, pageable);
     }
 
     // --- Split Transaction Tests ---
@@ -386,7 +419,7 @@ class TransactionServiceTest {
         });
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
-        assertTrue(exception.getReason().contains("Parent transaction with ID 99 not found"));
+        assertEquals("Parent transaction with ID 99 not found", exception.getReason());
         verify(transactionRepository, never()).save(any(Transaction.class));
     }
 

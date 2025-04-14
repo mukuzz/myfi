@@ -46,6 +46,11 @@ interface CreateTransactionArgs {
     transactionData: Partial<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'account' | 'subTransactions'> & { accountId: number }>; // Require accountId
 }
 
+interface UpdateTransactionArgs {
+    transactionId: number;
+    updatedData: Partial<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'account' | 'subTransactions'>>;
+}
+
 interface UpdateTransactionTagArgs {
     transactionId: number;
     newTagId: number | null;
@@ -137,6 +142,24 @@ export const updateTransactionTag = createAsyncThunk<
     }
 );
 
+// Update Transaction (General)
+export const updateTransactionAsync = createAsyncThunk<
+    Transaction, // Return the updated transaction
+    UpdateTransactionArgs,
+    { rejectValue: string }
+>(
+    'transactions/updateTransactionAsync',
+    async ({ transactionId, updatedData }, { rejectWithValue }) => {
+        try {
+            const response = await apiService.updateTransaction(transactionId, updatedData);
+            return response;
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to update transaction';
+            throw rejectWithValue(message);
+        }
+    }
+);
+
 // Create the transactions slice
 const transactionsSlice = createSlice({
     name: 'transactions',
@@ -222,6 +245,26 @@ const transactionsSlice = createSlice({
             .addCase(updateTransactionTag.rejected, (state, action) => {
                 state.mutationStatus = 'failed';
                 state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to update tag';
+            })
+            // --- Handlers for updateTransactionAsync ---
+            .addCase(updateTransactionAsync.pending, (state) => {
+                state.mutationStatus = 'loading';
+                state.mutationError = null;
+            })
+            .addCase(updateTransactionAsync.fulfilled, (state, action: PayloadAction<Transaction>) => {
+                state.mutationStatus = 'succeeded';
+                const index = state.transactions.findIndex(tx => tx.id === action.payload.id);
+                if (index !== -1) {
+                    state.transactions[index] = action.payload;
+                }
+                const monthIndex = state.currentMonthTransactions.findIndex(tx => tx.id === action.payload.id);
+                if (monthIndex !== -1) {
+                    state.currentMonthTransactions[monthIndex] = action.payload;
+                }
+            })
+            .addCase(updateTransactionAsync.rejected, (state, action) => {
+                state.mutationStatus = 'failed';
+                state.mutationError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to update transaction';
             });
     },
 });

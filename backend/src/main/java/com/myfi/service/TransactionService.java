@@ -77,33 +77,50 @@ public class TransactionService {
     public Optional<Transaction> updateTransaction(Long id, Transaction transactionDetails) {
         return transactionRepository.findById(id)
                 .map(existingTransaction -> {
-                    existingTransaction.setAmount(transactionDetails.getAmount());
-                    existingTransaction.setDescription(transactionDetails.getDescription());
-                    existingTransaction.setType(transactionDetails.getType());
-                    existingTransaction.setTransactionDate(transactionDetails.getTransactionDate());
-                    existingTransaction.setTagId(transactionDetails.getTagId());
-                    existingTransaction.setAccount(transactionDetails.getAccount()); // Allow updating account linkage
-                    existingTransaction.setCounterParty(transactionDetails.getCounterParty()); // Update counterParty
-                    existingTransaction.setNotes(transactionDetails.getNotes()); // Update notes
-                    existingTransaction.setExcludeFromAccounting(transactionDetails.isExcludeFromAccounting()); // Update
-                                                                                                                // excludeFromAccounting
-                    // Add other updatable fields as needed
+                    // Update only non-null fields from transactionDetails
+                    if (transactionDetails.getAmount() != null) {
+                        existingTransaction.setAmount(transactionDetails.getAmount());
+                    }
+                    if (transactionDetails.getDescription() != null) {
+                        existingTransaction.setDescription(transactionDetails.getDescription());
+                    }
+                    if (transactionDetails.getType() != null) {
+                        existingTransaction.setType(transactionDetails.getType());
+                    }
+                    if (transactionDetails.getTransactionDate() != null) {
+                        existingTransaction.setTransactionDate(transactionDetails.getTransactionDate());
+                    }
+                    // Handle tagId potentially being null to untag
+                    if (transactionDetails.getTagId() != null || transactionDetails.getTagId() == null) { // Allow setting tagId to null
+                        existingTransaction.setTagId(transactionDetails.getTagId());
+                    }
+                    if (transactionDetails.getAccount() != null) {
+                        existingTransaction.setAccount(transactionDetails.getAccount()); // Consider fetching Account by ID if only ID is passed
+                    }
+                    if (transactionDetails.getCounterParty() != null) {
+                        existingTransaction.setCounterParty(transactionDetails.getCounterParty());
+                    }
+                    if (transactionDetails.getNotes() != null) {
+                        existingTransaction.setNotes(transactionDetails.getNotes());
+                    }
+                    if (transactionDetails.isExcludeFromAccounting() != existingTransaction.isExcludeFromAccounting()) { // Check for actual change
+                        existingTransaction.setExcludeFromAccounting(transactionDetails.isExcludeFromAccounting());
+                    }
+
+                    // Always update the timestamp
                     existingTransaction.setUpdatedAt(LocalDateTime.now());
 
-                    // Regenerate unique key after updates
+                    // Regenerate unique key if relevant fields were updated
+                    // (Consider if key generation depends on specific fields being present)
                     try {
                         existingTransaction.generateUniqueKey();
                     } catch (IllegalStateException e) {
-                        // Handle cases where key generation fails due to missing fields
-                        // This might indicate a data integrity issue if mandatory fields become null
-                        // during update
-                        System.err.println("Error regenerating unique key during update: " + e.getMessage());
+                        System.err.println("Error regenerating unique key during partial update: " + e.getMessage());
                         // Depending on requirements, you might throw an exception
-                        throw new RuntimeException("Failed to regenerate unique key during transaction update.", e);
+                        throw new RuntimeException("Failed to regenerate unique key during partial transaction update.", e);
                     }
 
-                    // Optional: Re-check for duplicates based on the new key if strict uniqueness
-                    // after update is required
+                    // Optional: Re-check for duplicates based on the new key if needed
                     // Optional<Transaction> duplicateCheck =
                     // transactionRepository.findByUniqueKey(existingTransaction.getUniqueKey());
                     // if (duplicateCheck.isPresent() &&

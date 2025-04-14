@@ -10,19 +10,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -72,14 +73,21 @@ class TransactionControllerTest {
 
     @Test
     void getAllTransactions_shouldReturnListOfTransactions() throws Exception {
-        given(transactionService.getAllTransactions()).willReturn(Arrays.asList(transaction1, transaction2));
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Transaction> transactionList = Arrays.asList(transaction1, transaction2);
+        Page<Transaction> transactionPage = new PageImpl<>(transactionList, pageable, transactionList.size());
 
-        mockMvc.perform(get("/api/v1/transactions"))
+        given(transactionService.getAllTransactions(any(Pageable.class))).willReturn(transactionPage);
+
+        mockMvc.perform(get("/api/v1/transactions")
+                       .accept(MediaType.APPLICATION_JSON))
                .andExpect(status().isOk())
                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-               .andExpect(jsonPath("$", hasSize(2)))
-               .andExpect(jsonPath("$[0].description", is("Debit Txn")))
-               .andExpect(jsonPath("$[1].description", is("Credit Txn")));
+               .andExpect(jsonPath("$.content", hasSize(2)))
+               .andExpect(jsonPath("$.content[0].description", is("Debit Txn")))
+               .andExpect(jsonPath("$.content[1].description", is("Credit Txn")))
+               .andExpect(jsonPath("$.totalPages", is(1)))
+               .andExpect(jsonPath("$.totalElements", is(2)));
     }
 
     @Test
