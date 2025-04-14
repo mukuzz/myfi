@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { fetchAccounts, triggerScraping } from '../services/apiService';
+import { triggerScraping } from '../services/apiService';
 import { Account, ScrapeRequest } from '../types';
 import { FiRefreshCw, FiLoader, FiXCircle, FiCheckCircle, FiInfo } from 'react-icons/fi';
 import { formatDistanceToNow } from '../utils/datetimeUtils';
@@ -7,6 +7,10 @@ import { formatDistanceToNow } from '../utils/datetimeUtils';
 import { decryptCredentials, EncryptedCredentialData } from '../utils/cryptoUtils';
 // Import PassphraseModal
 import PassphraseModal from './PassphraseModal';
+// Redux imports
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../store/store'; // Corrected import path
+import { fetchTransactions, fetchCurrentMonthTransactions } from '../store/slices/transactionsSlice';
 
 // Key prefix for local storage (use a consistent prefix)
 const NETBANKING_STORAGE_PREFIX = 'myfi_credential_'; // Changed prefix slightly for clarity
@@ -14,7 +18,7 @@ const NETBANKING_STORAGE_PREFIX = 'myfi_credential_'; // Changed prefix slightly
 interface RefreshSheetContentProps {
   onClose: () => void;
   lastRefreshTime: number | null;
-  onRefreshSuccess: () => void;
+  onRefreshSuccess: () => void; // Keep for now, primarily signals completion to parent
 }
 
 type RefreshStatus = 'idle' | 'prompting' | 'loading' | 'success' | 'error';
@@ -26,39 +30,61 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
   // Ref to store accounts that need credentials for decryption later
   const accountsToRefreshRef = useRef<Account[]>([]);
 
+  // Redux state and dispatch
+  const dispatch = useDispatch();
+  const allAccounts = useSelector((state: RootState) => state.accounts.accounts);
+  const accountsStatus = useSelector((state: RootState) => state.accounts.status);
+  const accountsError = useSelector((state: RootState) => state.accounts.error);
+
   // Function to check which accounts have stored credentials
-  const checkForRefreshableAccounts = useCallback(async () => {
-    setStatus('loading'); // Initial loading state while checking
+  const checkForRefreshableAccounts = useCallback(() => {
+    // Use accounts from Redux state directly
+    // Reset status for this specific check
+    setStatus('loading'); // Start loading for this specific action
     setErrorMessage(null);
     accountsToRefreshRef.current = []; // Clear previous list
 
-    try {
-      const allAccounts = await fetchAccounts();
-      if (!allAccounts || allAccounts.length === 0) {
-        setErrorMessage('No accounts configured.');
+    // Handle cases where accounts haven't loaded yet in Redux
+    if (accountsStatus === 'loading') {
+        setErrorMessage('Accounts are still loading, please wait...');
+        setStatus('idle'); // Go back to idle, button should ideally be disabled by parent
+        return;
+    }
+    if (accountsStatus === 'failed') {
+        setErrorMessage(`Failed to load accounts: ${accountsError || 'Unknown error'}`);
         setStatus('idle');
         return;
-      }
-
-      const refreshableAccounts = allAccounts.filter(account => {
-        const storageKey = `${NETBANKING_STORAGE_PREFIX}${account.id}`; // Use account ID as key
-        return localStorage.getItem(storageKey) !== null;
-      });
-
-      if (refreshableAccounts.length === 0) {
-        setErrorMessage('No accounts found with saved credentials to refresh.');
-        setStatus('idle');
-      } else {
-        accountsToRefreshRef.current = refreshableAccounts;
-        // Show passphrase modal instead of changing status to 'prompting'
-        setIsPassphraseModalOpen(true);
-      }
-    } catch (err: any) {
-      console.error('Failed to fetch accounts:', err);
-      setErrorMessage(err.message || 'Failed to check accounts. Please try again.');
-      setStatus('error');
     }
-  }, []);
+    if (!allAccounts || allAccounts.length === 0) {
+        setErrorMessage('No accounts configured in the application.');
+        setStatus('idle');
+        return;
+    }
+
+    try {
+        // Filter accounts directly from Redux state
+        const refreshableAccounts = allAccounts.filter((account: Account) => {
+            const storageKey = `${NETBANKING_STORAGE_PREFIX}${account.id}`; // Use account ID as key
+            return localStorage.getItem(storageKey) !== null;
+        });
+
+        if (refreshableAccounts.length === 0) {
+            setErrorMessage('No accounts found with saved credentials to refresh.');
+            setStatus('idle'); // Stay idle if no accounts found
+        } else {
+            accountsToRefreshRef.current = refreshableAccounts;
+            // Show passphrase modal instead of changing status to 'prompting'
+            setIsPassphraseModalOpen(true);
+             // Reset component status, modal handles next steps
+             setStatus('idle');
+        }
+    } catch (err: any) {
+        // This catch block might be less likely now, but keep for safety
+        console.error('Error during credential check:', err);
+        setErrorMessage('An unexpected error occurred while checking credentials.');
+        setStatus('error');
+    }
+  }, [allAccounts, accountsStatus, accountsError]); // Depend on Redux state
 
   // Handle passphrase submission from the PassphraseModal
   const handlePassphraseSubmit = useCallback(async (passphrase: string) => {
@@ -94,7 +120,14 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
 
         } catch (error: any) {
           console.error(`Decryption failed for account ${account.name} (${account.id}):`, error);
-          setErrorMessage(error.message || `Decryption failed for account ${account.name}. Check passphrase.`);
+          // More specific error from crypto util
+          let decrError = 'Decryption failed. Check passphrase or data.';
+          if (error instanceof Error && error.message.includes('bad decrypt')) {
+              decrError = 'Invalid passphrase or corrupted data.';
+          } else if (error instanceof Error) {
+              decrError = error.message;
+          }
+          setErrorMessage(`Account ${account.name}: ${decrError}`);
           setStatus('error');
           decryptionFailed = true;
           break; // Stop processing further accounts on decryption failure
@@ -120,20 +153,25 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
       await triggerScraping(scrapeRequests);
 
       setStatus('success');
-      onRefreshSuccess();
+
+      // Dispatch actions to refresh transactions in Redux store
+      // We cast to `any` because the Thunk type expects arguments, but we want default behavior
+      dispatch(fetchTransactions() as any);
+      dispatch(fetchCurrentMonthTransactions() as any);
+
+      onRefreshSuccess(); // Signal success to parent (e.g., for updating last refresh time)
 
       setTimeout(() => {
-        setStatus('idle');
+        // Don't reset status here, let the success message show until close
         setErrorMessage(null);
         accountsToRefreshRef.current = []; // Clear accounts list
-        onClose();
-      }, 2000);
+        onClose(); // Close the sheet
+      }, 2000); // Keep showing success message for 2 seconds
 
     } catch (err: any) {
       console.error('Failed to trigger scraping:', err);
       // If the API returns specific errors (e.g., bad credentials during scrape), display them.
-      // For now, show a generic message.
-      let apiErrorMessage = 'Scraping request failed. Please check backend logs.';
+      let apiErrorMessage = 'Scraping request failed. Check backend logs or connection.';
       if (err.response && err.response.data && err.response.data.message) {
           apiErrorMessage = err.response.data.message;
       } else if (err.message) {
@@ -143,7 +181,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
       setStatus('error');
       accountsToRefreshRef.current = []; // Clear accounts list
     }
-  }, [onClose, onRefreshSuccess]);
+  }, [dispatch, onClose, onRefreshSuccess]); // Added dispatch to dependencies
 
   // Handle closing the passphrase modal without submitting
   const handleClosePassphraseModal = useCallback(() => {

@@ -220,7 +220,7 @@ function Transactions() {
                 {!isLoadingInitial && !overallError && transactions.length === 0 && <p className="text-center text-muted-foreground">No transactions found.</p>}
 
                 {transactions.length > 0 && (
-                    <ul className="space-y-2">
+                    <ul className="space-y-2 px-2">
                         {transactions.map((tx, index) => {
                             if (tx.parentId) return null;
 
