@@ -29,7 +29,7 @@ public class ICICIBankScraper extends BankScrapper {
     @Autowired
     private TransactionService transactionService;
     private AccountHistoryService accountHistoryService;
-    
+
     private static final String ICICI_LOGIN_URL = "https://infinity.icicibank.com/corp/AuthenticationController?FORMSGROUP_ID__=AuthenticationFG&__START_TRAN_FLAG__=Y&FG_BUTTONS__=LOAD&ACTION.LOAD=Y&AuthenticationFG.LOGIN_FLAG=1&BANK_ID=ICI";
 
     @Autowired
@@ -69,6 +69,23 @@ public class ICICIBankScraper extends BankScrapper {
         // Find and click the radio button for the specified account number
         for (ElementHandle row : getPage().querySelectorAll("#SummaryList tr")) {
             if (row.textContent().contains(accountNumber)) {
+
+                // Extract the current balance from the account row
+                ElementHandle balanceElement = row.querySelector("span[id^='HREF_actBalOutput']");
+                if (balanceElement != null) {
+                    String balanceText = balanceElement.textContent().trim();
+                    // Clean up the balance text to extract just the number (remove commas and other non-numeric chars)
+                    String cleanedBalanceText = balanceText.replaceAll("[^0-9.-]", "");
+                    BigDecimal currentBalance = new BigDecimal(cleanedBalanceText);
+                    
+                    log.info("Current balance for ICICI account {}: {}", account.getAccountNumber(), currentBalance);
+                    
+                    // Save the current balance to account history
+                    accountHistoryService.createAccountHistoryRecord(account.getId(), currentBalance);
+                } else {
+                    log.warn("Could not find balance element for ICICI account: {}", account.getAccountNumber());
+                }
+
                 ElementHandle radio = row.querySelector("input[type='radio']");
                 if (radio != null) {
                     radio.click();

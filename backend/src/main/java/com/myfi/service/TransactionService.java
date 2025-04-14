@@ -118,24 +118,10 @@ public class TransactionService {
                     // Always update the timestamp
                     existingTransaction.setUpdatedAt(LocalDateTime.now());
 
-                    // Regenerate unique key if relevant fields were updated
-                    // (Consider if key generation depends on specific fields being present)
-                    try {
-                        existingTransaction.generateUniqueKey();
-                    } catch (IllegalStateException e) {
-                        System.err.println("Error regenerating unique key during partial update: " + e.getMessage());
-                        // Depending on requirements, you might throw an exception
-                        throw new RuntimeException("Failed to regenerate unique key during partial transaction update.", e);
-                    }
-
-                    // Optional: Re-check for duplicates based on the new key if needed
-                    // Optional<Transaction> duplicateCheck =
-                    // transactionRepository.findByUniqueKey(existingTransaction.getUniqueKey());
-                    // if (duplicateCheck.isPresent() &&
-                    // !duplicateCheck.get().getId().equals(existingTransaction.getId())) {
-                    // throw new IllegalStateException("Update would result in a duplicate
-                    // transaction.");
-                    // }
+                    // IMPORTANT:
+                    // Don't regenerate unique key
+                    // As updating the unique key will result in duplicate transactions
+                    // As in case of split transactions, the amount chnaged and the unique key will change                    
 
                     return transactionRepository.save(existingTransaction);
                 });
