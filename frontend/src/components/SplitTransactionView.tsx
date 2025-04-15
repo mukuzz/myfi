@@ -239,6 +239,7 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
                                             <TransactionCard
                                                 transaction={tx}
                                                 tagMap={tagMap}
+                                                className="border border-border rounded-xl shadow"
                                             />
                                         </div>
                                         {!isParent ? (<div className='flex justify-end px-6' ><button

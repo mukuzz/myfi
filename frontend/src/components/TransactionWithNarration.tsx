@@ -11,7 +11,7 @@ interface TransactionWithNarrationProps {
 const TransactionWithNarration: React.FC<TransactionWithNarrationProps> = ({ transaction, tagMap, onTagClick }) => {
   return (
     <div className="rounded-xl shadow overflow-hidden bg-muted p-1 mb-4 flex-shrink-0">
-      <TransactionCard transaction={transaction} tagMap={tagMap} onTagClick={onTagClick} />
+      <TransactionCard transaction={transaction} tagMap={tagMap} onTagClick={onTagClick} className="border border-border rounded-xl shadow" />
       {transaction.description && (
         <div className="bg-muted p-2 mt-1">
           <div className="flex justify-between items-start">

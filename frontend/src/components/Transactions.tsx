@@ -101,7 +101,7 @@ function Transactions() {
 
     const handleUpdateTag = async (newTagId: number | null) => {
         if (!selectedTransactionForTag) return;
-        
+
         dispatch(updateTransactionTag({
             transactionId: selectedTransactionForTag.id,
             newTagId,
@@ -176,6 +176,8 @@ function Transactions() {
                                 lastRenderedMonthYear = currentMonthYear;
                             }
 
+                            const hasChildTransactions = tx.subTransactions != null && tx.subTransactions.length > 0;
+
                             return (
                                 <React.Fragment key={tx.id}>
                                     {showMonthHeader && (
@@ -183,29 +185,48 @@ function Transactions() {
                                             <h2 className="text-lg font-semibold text-foreground">{currentMonthYear}</h2>
                                         </div>
                                     )}
-                                    <li className="rounded-lg">
-                                        <div>
+                                    <li>
+                                        <div className="flex flex-col border border-border rounded-xl shadow overflow-hidden">
+                                            {hasChildTransactions && (
+                                                <button className="flex justify-between items-center" onClick={() => openSplitView(tx)}>
+                                                    <div className="bg-background p-3 text-xl font-medium text-secondary-foreground">
+                                                        ₹{
+                                                            [tx, ...(tx.subTransactions || [])].reduce((sum, t) =>
+                                                                sum + (t.type === 'DEBIT' ? -t.amount : t.amount), 0
+                                                            ).toLocaleString('en-IN')
+                                                        }
+                                                    </div>
+                                                    <div className='flex flex-row items-center font-bold text-muted-foreground/50 px-3'>
+                                                        <div className="bg-background text-sm font-medium text-secondary-foreground pr-2">
+                                                            {tx.subTransactions?.length} split{tx.subTransactions?.length === 1 ? "" : "s"}
+                                                        </div>
+                                                        {">"}
+                                                    </div>
+                                                </button>
+                                            )}
                                             <TransactionCard
                                                 transaction={tx}
                                                 tagMap={tagMap}
                                                 onCardClick={openDetailView}
                                                 onTagClick={openTagSelector}
+                                                className={hasChildTransactions ? "border-t-2 border-dashed border-border" : ""}
                                             />
                                             {tx.subTransactions && tx.subTransactions.length > 0 && (
                                                 <>
-                                                {tx.subTransactions.map(childTx => (
-                                                    <React.Fragment key={childTx.id}>
-                                                        <div className="border-t-[8px] mx-3 border-dashed border-secondary space-y-2"></div>
-                                                        <TransactionCard
-                                                            transaction={childTx}
-                                                            tagMap={tagMap}
-                                                            onCardClick={openDetailView}
-                                                            onTagClick={openTagSelector}
-                                                        />
-                                                    </React.Fragment>
-                                                ))}
+                                                    {tx.subTransactions.map(childTx => (
+                                                        <React.Fragment key={childTx.id}>
+                                                            <TransactionCard
+                                                                transaction={childTx}
+                                                                tagMap={tagMap}
+                                                                onCardClick={openDetailView}
+                                                                onTagClick={openTagSelector}
+                                                                className="border-t-2 border-dashed border-border"
+                                                            />
+                                                        </React.Fragment>
+                                                    ))}
                                                 </>
                                             )}
+
                                         </div>
                                     </li>
                                 </React.Fragment>

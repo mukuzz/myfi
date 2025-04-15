@@ -10,16 +10,17 @@ interface TransactionCardProps {
   tagMap: TagMap;
   onTagClick?: (transaction: Transaction, event: React.MouseEvent) => void;
   onCardClick?: (transaction: Transaction) => void;
+  className?: string;
 }
 
-function TransactionCard({ transaction, tagMap, onTagClick, onCardClick }: TransactionCardProps) {
+function TransactionCard({ transaction, tagMap, onTagClick, onCardClick, className }: TransactionCardProps) {
   const currentTagName = transaction.tagId ? tagMap[transaction.tagId]?.name : undefined;
 
   return (
     <div
       role={onCardClick ? "button" : undefined}
       tabIndex={onCardClick ? 0 : undefined}
-      className={`bg-secondary p-3 rounded-xl shadow flex-shrink-0 w-full text-left transition-colors ${onCardClick ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`bg-secondary p-3 flex-shrink-0 w-full text-left transition-colors ${onCardClick ? 'cursor-pointer' : 'cursor-default'} ${className}`}
       onClick={() => onCardClick && onCardClick(transaction)}
       onKeyDown={(e) => {
         if (onCardClick && (e.key === 'Enter' || e.key === ' ')) {
