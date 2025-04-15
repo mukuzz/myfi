@@ -1,5 +1,6 @@
 package com.myfi.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -14,11 +15,20 @@ import java.util.Properties;
 @Configuration
 public class SQLiteConfig {
 
+    @Value("${spring.datasource.url}")
+    private String databasePath;
+
+    @Value("${spring.jpa.hibernate.ddl-auto}")
+    private String ddlAuto;
+
+    @Value("${spring.jpa.show-sql}")
+    private String showSql;
+
     @Bean
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("org.sqlite.JDBC");
-        dataSource.setUrl("jdbc:sqlite:/data/myfi.db");
+        dataSource.setUrl("jdbc:sqlite:" + databasePath);
         return dataSource;
     }
 
@@ -31,8 +41,8 @@ public class SQLiteConfig {
         
         Properties properties = new Properties();
         properties.setProperty("hibernate.dialect", "org.hibernate.community.dialect.SQLiteDialect");
-        properties.setProperty("hibernate.hbm2ddl.auto", "update");
-        properties.setProperty("hibernate.show_sql", "true");
+        properties.setProperty("hibernate.hbm2ddl.auto", ddlAuto);
+        properties.setProperty("hibernate.show_sql", showSql);
         em.setJpaProperties(properties);
         
         return em;

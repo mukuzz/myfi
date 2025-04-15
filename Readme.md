@@ -1,6 +1,6 @@
 # MyFi
 
-A modern personal finance management application built with Spring Boot (Java) for the backend and React (TypeScript) for the frontend.
+A modern personal finance management application with seamless transaction updates.
 
 ## Table of Contents
 
@@ -85,6 +85,10 @@ Alternatively, you can build and run the entire application (backend and fronten
     ```bash
     docker build -t myfi-app .
     ```
+    *Or, for specific platforms like `linux/amd64` (e.g., when building on an M1/M2 Mac for a Linux deployment):*
+    ```bash
+    docker buildx build --platform linux/amd64 -t myfi-app .
+    ```
 
 2.  **Create a data directory (if it doesn't exist):**
     The container expects the SQLite database (`myfi.db`) to be in a mounted volume. Create a `data` directory in the project root on your host machine:
@@ -115,6 +119,30 @@ Alternatively, you can build and run the entire application (backend and fronten
     ```bash
     docker stop myfi-container
     ```
+
+### Copying the Image Manually (using scp)
+
+If you need to deploy the image to a server without using a Docker registry, you can save it to a file and copy it using `scp`.
+
+1.  **Save the Docker image to a tar file:**
+    This command saves your `myfi-app` image to a file named `myfi-app.tar`.
+    ```bash
+    docker save -o myfi-app.tar myfi-app:latest
+    ```
+
+2.  **Copy the tar file to the remote server:**
+    Use `scp` to transfer the file. Replace `<user>` with your username on the remote server and `<remote-server-address>` with its IP address or hostname. Replace `<path/on/server>` with the desired directory on the remote server.
+    ```bash
+    scp myfi-app.tar <user>@<remote-server-address>:<path/on/server>/myfi-app.tar
+    ```
+    *Example: `scp myfi-app.tar deploy@192.168.1.100:/home/deploy/`*
+
+3.  **Load the image on the remote server:**
+    After logging into the remote server (e.g., via `ssh`), navigate to the directory where you copied the file and load the image into Docker:
+    ```bash
+    docker load -i myfi-app.tar
+    ```
+    Now the `myfi-app:latest` image is available on the remote server, and you can run it using `docker run` (similar to step 3 in the main Docker section, ensuring the data volume path is correct for the server environment).
 
 ## Database
 

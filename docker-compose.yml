@@ -1,6 +1,7 @@
+version: "2"
 services:
-  app:
-    image: myfi-app
+  myfi-app:
+    image: myfi-app:latest
     container_name: myfi
     networks:
       - nginx

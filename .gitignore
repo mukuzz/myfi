@@ -46,6 +46,7 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+**/resources/**
 
 # Spring Boot Gradle
 .gradle/
