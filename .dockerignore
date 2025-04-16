@@ -3,14 +3,15 @@
 .gitignore
 
 # Node
-node_modules
-npm-debug.log*
-yarn-error.log
+**/node_modules
+**/npm-debug.log*
+**/yarn-error.log
 
 # Maven
-target/
-*.jar
-*.war
+**/target/
+**/*.jar
+
+**/*.war
 
 # Build artifacts
 **/build
@@ -22,17 +23,16 @@ target/
 *.iml
 
 # OS specific
-.DS_Store
-Thumbs.db
+**/.DS_Store
+**/Thumbs.db
 
 # Environment files
-.env*
-.env
+**/.env*
 !/.env.example
 
 # Database file
-myfi.db
-*.db
+**/myfi.db
+**/*.db
 
 # Docker specific
 Dockerfile
