@@ -2,6 +2,9 @@ package com.myfi.scraping.service;
 
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
@@ -11,6 +14,7 @@ import com.myfi.model.Account;
 import com.myfi.scraping.model.AccountCredentials;
 import com.myfi.model.Account.AccountType;
 
+@Service
 public abstract class BankScrapper {
 
     private Page page;
@@ -19,12 +23,15 @@ public abstract class BankScrapper {
     private Browser browser;
     private BrowserContext context;
 
+    @Value("${playwright.headless}")
+    private boolean headless;
+
     public Page getPage() {
         if (page == null) {
             playwright = Playwright.create();
             try {
                 browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                    .setHeadless(false)
+                    .setHeadless(headless)
                     .setTimeout(120000)); // 2 minutes timeout
                 context = browser.newContext();
                 this.page = context.newPage();
