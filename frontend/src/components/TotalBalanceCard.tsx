@@ -36,10 +36,10 @@ function TotalBalanceCard() {
     const total = parentAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
     
     const aggregated = parentAccounts.reduce((acc, current) => {
-      const key = current.name; 
+      const key = current.name + "|" + current.type + "|" + current.accountNumber;
 
       if (!acc[key]) {
-        acc[key] = { balance: 0, count: 0, name: key, logoKey: key }; // Add logoKey here
+        acc[key] = { balance: 0, count: 0, name: key, logoKey: current.name }; // Add logoKey here
       }
       acc[key].balance += current.balance || 0;
       acc[key].count += 1;
@@ -53,7 +53,7 @@ function TotalBalanceCard() {
   }, [accounts]);
 
   const formatCurrency = (amount: number, currency: string = 'INR', compact: boolean = false) => {
-     if (compact && amount >= 1000) {
+     if (compact && Math.abs(amount) >= 1000) {
        return new Intl.NumberFormat('en-IN', {
          notation: "compact",
          compactDisplay: "short",

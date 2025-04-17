@@ -18,7 +18,7 @@ node_modules/
 .env.production.local
 .env
 *.db
-myfi.tar
+*.tar
 storage/
 data/
 

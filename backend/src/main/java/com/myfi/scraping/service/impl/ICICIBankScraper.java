@@ -221,7 +221,185 @@ public class ICICIBankScraper extends BankScrapper {
     @Override
     public void scrapeCreditCardTransactions(Account account) {
         String cardNumber = account.getAccountNumber();
-        log.warn("ICICI Credit Card scraping not implemented yet for card number: {}", cardNumber);
+        
+        log.info("Starting credit card scraping for ICICI card number: {}", cardNumber);
+
+        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+        getPage().waitForLoadState(LoadState.NETWORKIDLE);
+
+        List<ElementHandle> rows = getPage().querySelectorAll("#topbar p");
+        for (ElementHandle row : rows) {
+            if (row.textContent().contains("CARDS & LOANS")) {
+                row.hover();
+                break;
+            }
+        }
+                
+        // Wait for and click the Accounts link by finding the parent anchor tag containing the specific image
+        getPage().waitForSelector("a:has(img[src='PR2/L001/consumer/theme/dashboardRevamp/topMenuImages/CARDLN/RCCRDM.svg'])");
+        getPage().click("a:has(img[src='PR2/L001/consumer/theme/dashboardRevamp/topMenuImages/CARDLN/RCCRDM.svg'])");
+        
+        // Wait for page load after clicking
+        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+        getPage().waitForLoadState(LoadState.NETWORKIDLE);
+
+        getPage().waitForSelector(".credit-nav");
+
+        // Find the credit card tab that matches the account number
+        List<ElementHandle> cardTabs = getPage().querySelectorAll(".nav-tabs .nav-link");
+        boolean cardFound = false;
+
+        String cardLabel = null;
+        
+        for (ElementHandle tab : cardTabs) {
+            // Extract card number from the tab
+            ElementHandle cardNumElement = tab.querySelector("p.card-num");
+            cardLabel = cardNumElement != null ? cardNumElement.textContent() : tab.textContent();
+            log.debug("Checking credit card tab: {}", cardLabel);
+            
+            // Check if this tab contains the card number (last 4 digits)
+            String lastThreeDigits = cardNumber.substring(cardNumber.length() - 3);
+            if (cardLabel.endsWith(lastThreeDigits)) {
+                log.info("Found matching credit card tab for card ending with {}", lastThreeDigits);
+                tab.click();
+                cardFound = true;
+                
+                // Wait for the tab content to load
+                getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+                getPage().waitForLoadState(LoadState.NETWORKIDLE);
+                break;
+            }
+        }
+        
+        if (!cardFound) {
+            log.warn("Could not find credit card tab matching card number: {}", cardNumber);
+            return;
+        }
+
+        // Extract credit card balance information from the matching tab panel
+        log.info("Extracting credit card balance information for card: {}", cardLabel);
+        
+        // Find the tab panel that contains the card information
+        List<ElementHandle> tabPanels = getPage().querySelectorAll("div[role='tabpanel']");
+        ElementHandle matchingPanel = null;
+        
+        for (ElementHandle panel : tabPanels) {
+            String panelText = panel.textContent();
+            if (panelText.contains(cardLabel)) {
+                log.debug("Found matching tab panel for card: {}", cardLabel);
+                matchingPanel = panel;
+                break;
+            }
+        }
+        
+        if (matchingPanel == null) {
+            log.warn("Could not find tab panel containing card information for: {}", cardLabel);
+            return;
+        }
+
+        // Click on the "Current Statement" link using href attribute
+        matchingPanel.waitForSelector("a[href='javascript:currentStatement();']");
+        ElementHandle currentStatementLink = matchingPanel.querySelector("a[href='javascript:currentStatement();']");
+        currentStatementLink.click();
+
+        // Wait for the statement to load
+        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+        getPage().waitForLoadState(LoadState.NETWORKIDLE);
+
+        // Extract the current outstanding amount from the statement summary
+        getPage().waitForSelector("#DispFormWithTableContent");
+        
+        // First check if the element contains "Statement Summary" text
+        ElementHandle statementSummarySection = getPage().querySelector("#DispFormWithTableContent:has-text('Statement Summary')");
+        
+        if (statementSummarySection != null) {
+            // Look for the table containing "Current Outstanding Amount"
+            ElementHandle summaryTable = statementSummarySection.querySelector("table:has(th:has-text('Current Outstanding Amount'))");
+            
+            if (summaryTable != null) {
+                // Find the cell with the current outstanding amount (5th column in the table)
+                ElementHandle outstandingCell = summaryTable.querySelector("tr.linesbg td:nth-child(5) span.tableGlobal");
+                
+                if (outstandingCell != null) {
+                    String outstandingText = outstandingCell.textContent().trim();
+                    // Clean up the balance text to extract just the number
+                    String cleanedOutstandingText = outstandingText.replaceAll("[^0-9.-]", "");
+                    BigDecimal currentBalance = new BigDecimal(cleanedOutstandingText);
+                    
+                    log.info("Current outstanding amount for ICICI credit card {}: {}", cardNumber, currentBalance);
+                    
+                    // Save the current balance to account history (as negative value since it's credit card debt)
+                    accountHistoryService.createAccountHistoryRecord(account.getId(), currentBalance.negate());
+                } else {
+                    log.warn("Could not find current outstanding amount cell for ICICI credit card: {}", cardNumber);
+                }
+            } else {
+                log.warn("Could not find statement summary table for ICICI credit card: {}", cardNumber);
+            }
+        } else {
+            log.warn("Could not find Statement Summary section for ICICI credit card: {}", cardNumber);
+        }
+
+        // extract the transactions
+        getPage().waitForSelector("#ListingTable3 #Redeem");
+        ElementHandle transactionTable = getPage().querySelector("#ListingTable3 #Redeem");
+        if (transactionTable != null) {
+            List<ElementHandle> transactionRows = transactionTable.querySelectorAll("tbody tr.listgreyrow");
+            processCreditCardTransactions(account, transactionRows);
+        } else {
+            log.warn("Could not find credit card transaction table for card: {}", cardNumber);
+        }
+    }
+
+    private void processCreditCardTransactions(Account account, List<ElementHandle> rows) {
+        for (ElementHandle row : rows) {
+            try {
+                // Extract date (1st cell)
+                String dateStr = row.querySelector("td:nth-child(1)").textContent().trim();
+                LocalDateTime date = LocalDateTime.parse(dateStr + " 00:00", 
+                    DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+
+                // Extract description (3rd cell)
+                String description = row.querySelector("td:nth-child(3)").textContent().trim()
+                    .replaceAll("\\s+", " ").trim(); // Normalize whitespace
+
+                // Extract amount string (4th cell)
+                String amountStr = row.querySelector("td:nth-child(4)").textContent().trim();
+
+                // Determine transaction type and amount
+                Transaction.TransactionType type;
+                BigDecimal amount;
+                String cleanedAmountStr = amountStr.replace("Dr.", "").replace("Cr.", "").replaceAll("[^0-9.]", ""); // Remove non-numeric chars and Dr./Cr. indicators
+
+                if (amountStr.contains("Dr.")) {
+                    type = Transaction.TransactionType.DEBIT;
+                    amount = new BigDecimal(cleanedAmountStr);
+                } else if (amountStr.contains("Cr.")) {
+                    type = Transaction.TransactionType.CREDIT;
+                    amount = new BigDecimal(cleanedAmountStr); 
+                } else {
+                    log.warn("Skipping credit card transaction row as type (Dr./Cr.) not found or amount invalid: Date={}, Desc={}, RawAmount={}", dateStr, description, amountStr);
+                    continue;
+                }
+
+                // Create transaction object
+                Transaction transaction = Transaction.builder()
+                    .amount(amount)
+                    .description(description)
+                    .type(type)
+                    .transactionDate(date)
+                    .createdAt(LocalDateTime.now())
+                    .account(account)
+                    .build();
+
+                // Save transaction to database
+                transactionService.createTransaction(transaction);
+
+            } catch (Exception e) {
+                String rowHtml = row.innerHTML(); // Get inner HTML for logging context
+                log.error("Error processing credit card transaction row. Row HTML: '{}'. Error: {}", rowHtml, e.getMessage(), e);
+            }
+        }
     }
 
     @Override

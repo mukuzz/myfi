@@ -65,13 +65,13 @@ public class HDFCBankScraper extends BankScrapper {
         // Extract the current balance from the account page
         getPage().waitForSelector(".summary-heading decimal-casing");
         String balanceText = getPage().querySelector(".summary-heading decimal-casing").textContent().trim();
-        
+
         // Clean up the balance text to extract just the number
         String cleanedBalanceText = balanceText.replaceAll("[^0-9.-]", "");
         BigDecimal currentBalance = new BigDecimal(cleanedBalanceText);
-        
+
         log.info("Current balance for HDFC account {}: {}", account.getAccountNumber(), currentBalance);
-        
+
         // Save the current balance to account history
         accountHistoryService.createAccountHistoryRecord(account.getId(), currentBalance);
 
@@ -86,7 +86,7 @@ public class HDFCBankScraper extends BankScrapper {
         getPage().click("#ui-select-choices-row-0-0");
         getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
         getPage().waitForLoadState(LoadState.NETWORKIDLE);
-        
+
         // Get all transaction rows
         getPage().waitForSelector("tbody[ng-if='accountsStatementCtrl.dataFlag.apiTableYesData']");
         while (true) {
@@ -156,12 +156,6 @@ public class HDFCBankScraper extends BankScrapper {
         log.info("Starting credit card scraping for HDFC card number ending in: {}",
                 cardNumber.substring(cardNumber.length() - 4));
 
-        // Go to Home Page
-        getPage().waitForSelector("#web");
-        getPage().click("#web");
-        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
-        getPage().waitForLoadState(LoadState.NETWORKIDLE);
-
         // Hover over the webSave element
         getPage().waitForSelector("#webPay");
         getPage().hover("#webPay");
@@ -180,17 +174,26 @@ public class HDFCBankScraper extends BankScrapper {
 
         // Find and click arrow for matching card number (last 4 digits)
         String last4Digits = cardNumber.substring(cardNumber.length() - 4);
-        List<ElementHandle> cardRows = getPage().querySelectorAll(".panel-row");
+        List<ElementHandle> cardRows = getPage().querySelectorAll("#goToCreditCardSection .panel-row");
+        boolean cardFound = false; // Flag to track if the card was found
         for (ElementHandle row : cardRows) {
             String cardText = row.querySelector(".f4.c2").textContent().replaceAll("\\s+", "");
             if (cardText.endsWith(last4Digits)) {
                 ElementHandle arrow = row.querySelector("a.arrow");
                 if (arrow != null) {
                     arrow.click();
+                    cardFound = true; // Set flag to true when card is found and clicked
                     break;
                 }
             }
         }
+
+        // Proceed only if the card was found and clicked
+        if (!cardFound) {
+            log.warn("Could not find the credit card ending in {} on the page.", last4Digits);
+            return;
+        }
+
         getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
         getPage().waitForLoadState(LoadState.NETWORKIDLE);
 
@@ -210,6 +213,7 @@ public class HDFCBankScraper extends BankScrapper {
 
         log.info("Finished credit card scraping for HDFC card number ending in: {}.",
                 last4Digits);
+
     }
 
     private void processCreditCardTransactions(Account account, List<ElementHandle> rows) {
