@@ -32,7 +32,7 @@ const AccountCard: React.FC<AccountCardProps> = ({
         </p>
       </div>
       {/* Middle row: Name/Type */}
-      <div className="flex justify-between items-center mt-6"> 
+      <div className="flex justify-between items-center mt-3"> 
          <h2 className="font-bold text-foreground text-xl"> 
             {account.name}
          </h2>
@@ -41,12 +41,14 @@ const AccountCard: React.FC<AccountCardProps> = ({
          </p>
       </div>
        {/* Bottom row: Number/Copy */}
-      <div className="flex justify-between items-center mt-2 space-x-2"> 
+      <div className="flex flex-col items-start mt-2"> 
         <p className="text-muted-foreground text-xs uppercase truncate"> 
           Account Number
         </p>
         <div className="flex items-center space-x-2">
-          <p className="text-foreground text-sm">{account.accountNumber}</p> 
+          <p className="text-foreground text-sm">
+            {account.accountNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}
+          </p>
           <button
             onClick={(e) => {
               e.stopPropagation();

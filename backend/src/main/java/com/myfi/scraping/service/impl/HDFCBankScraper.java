@@ -197,19 +197,58 @@ public class HDFCBankScraper extends BankScrapper {
         getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
         getPage().waitForLoadState(LoadState.NETWORKIDLE);
 
-        // Click on Unbilled Transactions section using ng-click attribute
-        getPage().waitForSelector(
-                "h4[ng-click='mainCtrl.showSearchBox = false; mainCtrl.hideSearchIcon = true'] .arrow-up");
-        getPage().click("h4[ng-click='mainCtrl.showSearchBox = false; mainCtrl.hideSearchIcon = true'] .arrow-up");
-        getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
-        getPage().waitForLoadState(LoadState.NETWORKIDLE);
+        // Wait for the credit card summary section to load
+        getPage().waitForSelector(".summary-list");
 
-        // Get all transaction rows
-        getPage().waitForSelector("ul[ng-repeat=\"transaction in mainCtrl.filteredItems.data\"]");
-        List<ElementHandle> rows = getPage()
-                .querySelectorAll("ul[ng-repeat=\"transaction in mainCtrl.filteredItems.data\"]");
+        // Extract the current outstanding amount
+        try {
+            // Look for the element containing the outstanding amount
+            ElementHandle outstandingAmountElement = getPage().querySelector(
+                    "div.smrySect1 p.f12.c1.margin-top10.margin-bottom10 decimal-casing, " +
+                            "div.margin-top10.margin-bottom20 p.f12.c1.margin-top10.margin-bottom10 decimal-casing");
 
-        processCreditCardTransactions(account, rows);
+            if (outstandingAmountElement != null) {
+                // Extract the amount parts and combine them
+                String wholeNumber = outstandingAmountElement.querySelector("span[ng-style]:nth-child(2)").textContent()
+                        .trim();
+                String decimal = outstandingAmountElement
+                        .querySelector("span[ng-style='{\\'font-size\\': \\'16px\\'}']").textContent().trim();
+
+                // Remove commas and combine the parts
+                String amountStr = wholeNumber.replaceAll(",", "") + decimal;
+                BigDecimal outstandingAmount = new BigDecimal(amountStr);
+
+                // Save the current balance to account history (as negative value since it's
+                // credit card debt)
+                accountHistoryService.createAccountHistoryRecord(account.getId(), outstandingAmount.negate());
+
+                log.info("Current outstanding amount for HDFC credit card {}: {}",
+                        account.getAccountNumber().substring(account.getAccountNumber().length() - 4),
+                        outstandingAmount);
+            } else {
+                log.warn("Could not find outstanding amount element on the page");
+            }
+        } catch (Exception e) {
+            log.error("Error extracting credit card outstanding amount", e);
+        }
+
+        try {
+            // Click on Unbilled Transactions section using ng-click attribute
+            getPage().waitForSelector(
+                    "h4[ng-click='mainCtrl.showSearchBox = false; mainCtrl.hideSearchIcon = true'] .arrow-up");
+            getPage().click("h4[ng-click='mainCtrl.showSearchBox = false; mainCtrl.hideSearchIcon = true'] .arrow-up");
+            getPage().waitForLoadState(LoadState.DOMCONTENTLOADED);
+            getPage().waitForLoadState(LoadState.NETWORKIDLE);
+
+            // Get all transaction rows
+            getPage().waitForSelector("ul[ng-repeat=\"transaction in mainCtrl.filteredItems.data\"]");
+            List<ElementHandle> rows = getPage()
+                    .querySelectorAll("ul[ng-repeat=\"transaction in mainCtrl.filteredItems.data\"]");
+
+            processCreditCardTransactions(account, rows);
+        } catch (Exception e) {
+            log.error("Error scraping credit card transactions", e);
+        }
 
         log.info("Finished credit card scraping for HDFC card number ending in: {}.",
                 last4Digits);

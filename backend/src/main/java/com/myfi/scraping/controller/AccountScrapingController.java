@@ -137,10 +137,6 @@ public class AccountScrapingController {
                     taskError = true;
                     return null; // Return null on error
                 } finally {
-                     log.debug("Attempting to release permit for bank: {} (Account: {})", bankName, accountNumberToScrape);
-                    bankSemaphore.release(); // Release the permit for this bank type
-                    log.info("Permit released for bank: {}. (Account: {})", bankName, accountNumberToScrape);
-
                     if (bankScrapper != null) {
                         try {
                             bankScrapper.logout();
@@ -152,6 +148,9 @@ public class AccountScrapingController {
                     if (taskError) {
                         hasErrors.set(true); // Set the global error flag if this task encountered any error
                     }
+                    log.debug("Attempting to release permit for bank: {} (Account: {})", bankName, accountNumberToScrape);
+                    bankSemaphore.release(); // Release the permit for this bank type
+                    log.info("Permit released for bank: {}. (Account: {})", bankName, accountNumberToScrape);
                 }
             };
             futures.add(executor.submit(task));

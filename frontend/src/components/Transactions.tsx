@@ -137,7 +137,7 @@ function Transactions() {
 
     return (
         <div className="text-foreground flex flex-col h-full bg-background">
-            <div className="bg-secondary pt-4 border-b border-border">
+            <div className="bg-background pt-4 border-b border-border">
                 <div className="flex justify-between items-start mb-4 px-2">
                     <h1 className="text-3xl font-bold pl-2">Transactions</h1>
                     <div className="flex">
@@ -186,7 +186,7 @@ function Transactions() {
                                         </div>
                                     )}
                                     <li>
-                                        <div className="flex flex-col border border-border rounded-xl shadow overflow-hidden">
+                                        <div className="flex flex-col border border-border rounded-xl overflow-hidden">
                                             {hasChildTransactions && (
                                                 <button className="flex justify-between items-center" onClick={() => openSplitView(tx)}>
                                                     <div className="bg-background p-3 text-xl font-medium text-secondary-foreground">

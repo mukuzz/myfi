@@ -35,7 +35,7 @@ function App() {
       ) : (
         <>
           {/* Desktop: Main Content Area */}
-          <main className="flex-grow overflow-y-auto flex flex-row h-full">
+          <main className="flex-grow overflow-y-auto flex flex-row h-full no-scrollbar">
             <div className="flex-1 overflow-y-auto"><Home /></div>
             <div className="flex-1 overflow-y-auto max-w-[400px] border-l border-border"><Transactions /></div>
           </main>

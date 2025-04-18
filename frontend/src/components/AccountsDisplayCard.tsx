@@ -7,7 +7,7 @@ import AccountCard from './AccountCard';
 import AccountDetailsModal from './AccountDetailsModal';
 import { copyToClipboard } from '../utils/clipboard';
 import {
-  FiCreditCard, FiAlertTriangle, FiPlus
+  FiCreditCard, FiAlertTriangle, FiPlus, FiChevronDown, FiChevronUp
 } from 'react-icons/fi';
 import Card from './Card';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -25,6 +25,7 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [expandedParents, setExpandedParents] = useState<Record<string, boolean>>({}); // State for expanded parents
   
   const dispatch = useAppDispatch();
   const { accounts: allAccounts, status, error } = useAppSelector(state => state.accounts);
@@ -110,6 +111,14 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
     }
   };
 
+  // Function to toggle parent expansion state
+  const toggleParentExpansion = (parentId: string) => {
+    setExpandedParents(prev => ({
+      ...prev,
+      [parentId]: !prev[parentId]
+    }));
+  };
+
   if (status === 'failed') {
     return (
       <div className="flex flex-col items-center justify-center bg-background text-foreground">
@@ -141,45 +150,53 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
           </div>
         )}
 
-        {status === 'succeeded' && !error && groupedAccounts.map(parentAccount => (
-          <div key={parentAccount.id} className="inline-block align-top mr-4" style={{ width: '320px' }}>
-            <div
-              className={`bg-card ${parentAccount.children.length > 0 ? 'rounded-t-2xl border-b-0' : 'rounded-2xl'} overflow-hidden shadow border border-border`}
-            >
-              <AccountCard
-                account={parentAccount}
-                getBankLogo={getBankLogo}
-                formatCurrency={formatCurrency}
-                getAccountTypeLabel={getAccountTypeLabel}
-                handleCopyAccountNumber={handleCopyAccountNumber}
-                onCardClick={handleAccountClick}
-              />
+        {status === 'succeeded' && !error && groupedAccounts.map(parentAccount => {
+          const isExpanded = !!expandedParents[parentAccount.id];
+          return (
+            <div key={parentAccount.id} className="inline-block align-top mr-4 min-w-[280px]">
+              <div
+                className={`bg-card rounded-2xl overflow-hidden border border-border relative`} // Always rounded, remove conditional border
+              >
+                <AccountCard
+                  account={parentAccount}
+                  getBankLogo={getBankLogo}
+                  formatCurrency={formatCurrency}
+                  getAccountTypeLabel={getAccountTypeLabel}
+                  handleCopyAccountNumber={handleCopyAccountNumber}
+                  onCardClick={handleAccountClick}
+                />
+                {/* Add Toggle Button if children exist */}
+                {parentAccount.children.length > 0 && (
+                  <button
+                    onClick={() => toggleParentExpansion(String(parentAccount.id))}
+                    className="absolute bottom-2 right-2 p-1 bg-muted/50 hover:bg-muted rounded-full text-muted-foreground"
+                    aria-label={isExpanded ? 'Collapse child accounts' : 'Expand child accounts'}
+                  >
+                    {isExpanded ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+                  </button>
+                )}
+              </div>
+
+              {/* Conditionally render children */}
+              {isExpanded && parentAccount.children.length > 0 && (
+                <div className="bg-card rounded-2xl overflow-hidden border-l border-r border-b -mt-2 border-border"> {/* Adjust margin/padding */}
+                  {parentAccount.children.map((childAccount, index) => (
+                    <div key={childAccount.id} className={`${index > 0 ? 'border-t border-border' : ''}`}>
+                      <AccountCard
+                        account={childAccount}
+                        getBankLogo={getBankLogo}
+                        formatCurrency={formatCurrency}
+                        getAccountTypeLabel={getAccountTypeLabel}
+                        handleCopyAccountNumber={handleCopyAccountNumber}
+                        onCardClick={handleAccountClick}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-
-            {parentAccount.children.length > 0 && (
-              <div className="bg-muted/20 text-center py-1 border-l border-r border-border">
-                <p className="text-xs text-muted-foreground font-medium">Linked Accounts</p>
-              </div>
-            )}
-
-            {parentAccount.children.length > 0 && (
-              <div className="bg-card shadow rounded-b-2xl overflow-hidden border-l border-r border-b border-border border-t-0">
-                {parentAccount.children.map((childAccount, index) => (
-                  <div key={childAccount.id} className={`${index > 0 ? 'border-t border-border' : ''}`}>
-                    <AccountCard
-                      account={childAccount}
-                      getBankLogo={getBankLogo}
-                      formatCurrency={formatCurrency}
-                      getAccountTypeLabel={getAccountTypeLabel}
-                      handleCopyAccountNumber={handleCopyAccountNumber}
-                      onCardClick={handleAccountClick}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+          )
+        })}
 
         {status === 'succeeded' && !error && accounts.length === 0 && (
           <div className="text-center py-8 flex-shrink-0" style={{ width: '100%' }}>
