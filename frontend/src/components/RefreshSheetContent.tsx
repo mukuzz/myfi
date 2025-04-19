@@ -1,34 +1,37 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { triggerScraping } from '../services/apiService';
-import { Account, ScrapeRequest } from '../types';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { triggerScraping, getScrapingStatus } from '../services/apiService';
+import { Account, ScrapeRequest, ScrapingProgress, ScrapingStatus } from '../types';
 import { FiRefreshCw, FiLoader, FiXCircle, FiCheckCircle, FiInfo } from 'react-icons/fi';
 import { formatDistanceToNow } from '../utils/datetimeUtils';
-// Import the crypto utility and the data interface
 import { decryptCredentials, EncryptedCredentialData } from '../utils/cryptoUtils';
-// Import PassphraseModal
 import PassphraseModal from './PassphraseModal';
-// Redux imports
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../store/store'; // Corrected import path
+import { RootState } from '../store/store';
 import { fetchTransactions, fetchCurrentMonthTransactions } from '../store/slices/transactionsSlice';
+import AccountProgressItem from './AccountProgressItem';
 
-// Key prefix for local storage (use a consistent prefix)
-const NETBANKING_STORAGE_PREFIX = 'myfi_credential_'; // Changed prefix slightly for clarity
+
+const NETBANKING_STORAGE_PREFIX = 'myfi_credential_';
 
 interface RefreshSheetContentProps {
   onClose: () => void;
   lastRefreshTime: number | null;
-  onRefreshSuccess: () => void; // Keep for now, primarily signals completion to parent
+  onRefreshSuccess: () => void;
 }
 
-type RefreshStatus = 'idle' | 'prompting' | 'loading' | 'success' | 'error';
+// Simplified status, mainly controlling the *current* refresh section
+type ComponentStatus = 'idle' | 'loading' | 'success' | 'error';
 
 function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: RefreshSheetContentProps) {
-  const [status, setStatus] = useState<RefreshStatus>('idle');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  console.log('RefreshSheetContent rendering/mounting...');
+
+  const [componentStatus, setComponentStatus] = useState<ComponentStatus>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // For general/decryption errors or API fetch errors
+  const [displayProgress, setDisplayProgress] = useState<{ [accountNumber: string]: ScrapingProgress }>({}); // Unified progress display
   const [isPassphraseModalOpen, setIsPassphraseModalOpen] = useState<boolean>(false);
-  // Ref to store accounts that need credentials for decryption later
-  const accountsToRefreshRef = useRef<Account[]>([]);
+  const [accountsToRefresh, setAccountsToRefresh] = useState<Account[]>([]);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const statusResetTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for the status reset timeout
 
   // Redux state and dispatch
   const dispatch = useDispatch();
@@ -36,256 +39,361 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
   const accountsStatus = useSelector((state: RootState) => state.accounts.status);
   const accountsError = useSelector((state: RootState) => state.accounts.error);
 
-  // Function to check which accounts have stored credentials
-  const checkForRefreshableAccounts = useCallback(() => {
-    // Use accounts from Redux state directly
-    // Reset status for this specific check
-    setStatus('loading'); // Start loading for this specific action
-    setErrorMessage(null);
-    accountsToRefreshRef.current = []; // Clear previous list
+  // --- Polling Logic ---
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+      console.log("Scraping status polling stopped.");
+    }
+    // Also clear any pending status reset timeout
+    if (statusResetTimeoutRef.current) {
+        clearTimeout(statusResetTimeoutRef.current);
+        statusResetTimeoutRef.current = null;
+    }
+  }, []);
 
-    // Handle cases where accounts haven't loaded yet in Redux
+  const startPolling = useCallback(() => {
+    stopPolling(); // Clear existing intervals and timeouts
+    console.log("Starting scraping status polling...");
+    setComponentStatus('loading'); // Ensure status is loading when polling starts
+    setErrorMessage(null); // Clear previous errors when starting a new poll cycle
+
+    const pollFn = async () => {
+      try {
+        // console.log("Polling for scraping status...");
+        const statusResponse = await getScrapingStatus();
+        // console.log("Received status response:", JSON.stringify(statusResponse, null, 2));
+
+        // Update the *unified* progress state
+        setDisplayProgress(statusResponse.progressMap);
+
+        if (!statusResponse.refreshInProgress) {
+          console.log("API indicates refresh is no longer in progress. Processing final state.");
+          stopPolling(); // Stop interval immediately
+
+          const finalProgressMap = statusResponse.progressMap;
+          const progressValues = Object.values(finalProgressMap);
+          const isAnyError = progressValues.some(p =>
+            p.status === ScrapingStatus.ERROR ||
+            p.status === ScrapingStatus.LOGIN_FAILED ||
+            p.status === ScrapingStatus.SCRAPING_FAILED ||
+            p.status === ScrapingStatus.LOGOUT_FAILED
+          );
+
+          // Set final component status (success/error)
+          if (isAnyError) {
+            console.log("Refresh finished with errors.");
+            setComponentStatus('error');
+            setErrorMessage('One or more accounts failed to refresh. See details below.');
+          } else {
+            console.log("Refresh finished successfully.");
+            setComponentStatus('success');
+            setErrorMessage(null); // Clear previous errors
+            dispatch(fetchTransactions() as any);
+            dispatch(fetchCurrentMonthTransactions() as any);
+            onRefreshSuccess(); // Notify parent of success
+          }
+
+        } else {
+          // Still processing according to API
+          console.log("API indicates refresh is still in progress. Continuing poll.");
+          // Ensure component is in loading state if it somehow changed
+          if (componentStatus !== 'loading') {
+              setComponentStatus('loading');
+          }
+        }
+
+      } catch (error: any) {
+        console.error("Error polling scraping status:", error);
+        setErrorMessage(`Failed to get refresh status: ${error.message}`);
+        setComponentStatus('error'); // Show error in the 'current refresh' section
+        // Don't update last attempt state here as the poll failed, not the scrape job
+        stopPolling();
+      }
+    };
+
+    pollFn(); // Run immediately
+    pollIntervalRef.current = setInterval(pollFn, 5000); // Poll every 5 seconds
+
+  }, [stopPolling, dispatch, onRefreshSuccess, onClose]);
+
+  // --- Initial Status Fetch ---
+  useEffect(() => {
+    let isMounted = true;
+    const fetchInitialStatus = async () => {
+        console.log("Fetching initial scraping status on component mount...");
+        setComponentStatus('idle'); // Assume idle initially
+
+        try {
+            const initialStatusResponse = await getScrapingStatus();
+            if (!isMounted) return;
+
+            // Always update displayProgress with the fetched map
+            setDisplayProgress(initialStatusResponse.progressMap);
+
+            // *** Check the refreshInProgress flag first ***
+            if (initialStatusResponse.refreshInProgress) {
+                console.log("Initial status indicates refresh is IN progress. Starting polling.");
+                startPolling(); // This will set status to loading
+            } else {
+                 console.log("Initial status indicates refresh is NOT in progress. Displaying last result.");
+                 // Refresh is not running, displayProgress is already set above
+                 setComponentStatus('idle'); // Stay idle
+                 stopPolling(); // Ensure polling is stopped
+            }
+        } catch (error: any) {
+            if (!isMounted) return;
+            console.error("Error fetching initial scraping status:", error);
+            setErrorMessage(`Failed to fetch initial status: ${error.message}`);
+            // Keep componentStatus idle, just show the error message
+            setComponentStatus('idle');
+            setDisplayProgress({}); // Clear progress on initial fetch error
+            stopPolling();
+        }
+    };
+
+    fetchInitialStatus();
+
+    return () => {
+        console.log('RefreshSheetContent UNMOUNTING...');
+        isMounted = false;
+        stopPolling(); // Clean up interval and timeout on unmount
+    };
+    // Dependencies: only run on mount essentially, but include utils used inside
+   }, [startPolling, stopPolling]);
+
+  // --- Credential Check & Passphrase ---
+  const checkForRefreshableAccounts = useCallback(() => {
+    // Reset only general error message, keep last attempt visible
+    setErrorMessage(null);
+    // Reset component status to idle in case it was error/success previously
+    // Keep displayProgress showing the last result
+    setComponentStatus('idle');
+
+    // Handle Redux account loading states
     if (accountsStatus === 'loading') {
         setErrorMessage('Accounts are still loading, please wait...');
-        setStatus('idle'); // Go back to idle, button should ideally be disabled by parent
         return;
     }
     if (accountsStatus === 'failed') {
         setErrorMessage(`Failed to load accounts: ${accountsError || 'Unknown error'}`);
-        setStatus('idle');
         return;
     }
     if (!allAccounts || allAccounts.length === 0) {
         setErrorMessage('No accounts configured in the application.');
-        setStatus('idle');
         return;
     }
 
     try {
-        // Filter accounts directly from Redux state
         const refreshableAccounts = allAccounts.filter((account: Account) => {
-            const storageKey = `${NETBANKING_STORAGE_PREFIX}${account.id}`; // Use account ID as key
+            const storageKey = `${NETBANKING_STORAGE_PREFIX}${account.id}`;
             return localStorage.getItem(storageKey) !== null;
         });
 
         if (refreshableAccounts.length === 0) {
             setErrorMessage('No accounts found with saved credentials to refresh.');
-            setStatus('idle'); // Stay idle if no accounts found
         } else {
-            accountsToRefreshRef.current = refreshableAccounts;
-            // Show passphrase modal instead of changing status to 'prompting'
+            setAccountsToRefresh(refreshableAccounts);
             setIsPassphraseModalOpen(true);
-             // Reset component status, modal handles next steps
-             setStatus('idle');
         }
     } catch (err: any) {
-        // This catch block might be less likely now, but keep for safety
         console.error('Error during credential check:', err);
         setErrorMessage('An unexpected error occurred while checking credentials.');
-        setStatus('error');
+        setComponentStatus('error'); // Indicate an error in the process itself
+        setDisplayProgress({}); // Clear progress on credential check error
     }
   }, [allAccounts, accountsStatus, accountsError]); // Depend on Redux state
 
-  // Handle passphrase submission from the PassphraseModal
+  // --- Handle Passphrase Submit ---
   const handlePassphraseSubmit = useCallback(async (passphrase: string) => {
     setIsPassphraseModalOpen(false);
-    setStatus('loading');
-    setErrorMessage(null);
+    setComponentStatus('loading'); // Set component status to loading for the *new* refresh
+    setErrorMessage(null); // Clear previous errors
 
     const scrapeRequests: ScrapeRequest[] = [];
     let decryptionFailed = false;
+    let decryptionErrorAccountName = '';
 
-    for (const account of accountsToRefreshRef.current) {
+    // Initialize *display* progress map for expected accounts
+    const initialProgress: { [accountNumber: string]: ScrapingProgress } = {};
+    accountsToRefresh.forEach(acc => {
+        initialProgress[acc.accountNumber] = {
+            accountNumber: acc.accountNumber,
+            accountName: acc.name,
+            status: ScrapingStatus.PENDING,
+            startTime: new Date().toISOString(),
+            lastUpdateTime: new Date().toISOString(),
+            errorMessage: null,
+            history: [{ status: ScrapingStatus.PENDING, timestamp: new Date().toISOString(), message: 'Refresh initiated' }]
+        };
+    });
+    setDisplayProgress(initialProgress); // Show pending state immediately in the unified display
+
+    for (const account of accountsToRefresh) {
       const storageKey = `${NETBANKING_STORAGE_PREFIX}${account.id}`;
       const storedDataString = localStorage.getItem(storageKey);
 
       if (storedDataString) {
         try {
           const encryptedData: EncryptedCredentialData = JSON.parse(storedDataString);
-          // Decrypt using the utility function
           const { username, password } = await decryptCredentials(encryptedData, passphrase);
-
-          // Add PLAINTEXT credentials to the request list
           scrapeRequests.push({
-            accountId: account.id,
-            accountType: account.type,
-            accountName: account.name,
-            username,
-            password,
-            accountNumber: account.accountNumber, // Keep for potential backend use
+            accountId: account.id, accountType: account.type, accountName: account.name,
+            username, password, accountNumber: account.accountNumber,
           });
-           // IMPORTANT: Clear plaintext password from memory ASAP
-           // (JavaScript memory management makes guarantees hard, but avoid holding onto it)
-           // password = null; // Attempt to nullify
-
         } catch (error: any) {
           console.error(`Decryption failed for account ${account.name} (${account.id}):`, error);
-          // More specific error from crypto util
           let decrError = 'Decryption failed. Check passphrase or data.';
           if (error instanceof Error && error.message.includes('bad decrypt')) {
               decrError = 'Invalid passphrase or corrupted data.';
           } else if (error instanceof Error) {
               decrError = error.message;
           }
-          setErrorMessage(`Account ${account.name}: ${decrError}`);
-          setStatus('error');
+          decryptionErrorAccountName = account.name;
+          setErrorMessage(`Account ${decryptionErrorAccountName}: ${decrError}`);
+          setComponentStatus('error'); // Show error in the 'current refresh' section
           decryptionFailed = true;
-          break; // Stop processing further accounts on decryption failure
+          setDisplayProgress({}); // Clear the pending progress display on decryption failure
+          break;
         }
       }
     }
 
+    // If decryption failed, stop here, show error message, keep componentStatus as 'error'
     if (decryptionFailed) {
-        accountsToRefreshRef.current = []; // Clear accounts list on failure
-        return; // Stop if decryption failed
+        setAccountsToRefresh([]);
+        setDisplayProgress({}); // Clear the pending progress display
+        // Don't stop polling, as it wasn't started
+        return;
     }
 
-    if (scrapeRequests.length === 0) {
-      setStatus('idle'); // Or 'prompting' again?
+    // If no requests could be prepared (e.g., data missing after filtering)
+    if (scrapeRequests.length === 0 && !decryptionFailed) {
+      setComponentStatus('idle'); // Go back to idle
       setErrorMessage('No credentials could be decrypted or prepared for refresh.');
-      accountsToRefreshRef.current = [];
+      setAccountsToRefresh([]);
+      setDisplayProgress({}); // Clear progress if no requests were made
       return;
     }
 
+    // If requests are ready, trigger the scrape
     try {
-      // 3. Call the scraping API with PLAINTEXT credentials
-      console.log('Triggering scraping for:', scrapeRequests.map(r => ({ ...r, password: '***' }))); // Log without password
+      console.log('Triggering scraping for:', scrapeRequests.map(r => ({ ...r, password: '***' })));
       await triggerScraping(scrapeRequests);
-
-      setStatus('success');
-
-      // Dispatch actions to refresh transactions in Redux store
-      // We cast to `any` because the Thunk type expects arguments, but we want default behavior
-      dispatch(fetchTransactions() as any);
-      dispatch(fetchCurrentMonthTransactions() as any);
-
-      onRefreshSuccess(); // Signal success to parent (e.g., for updating last refresh time)
-
-      setTimeout(() => {
-        // Don't reset status here, let the success message show until close
-        setErrorMessage(null);
-        accountsToRefreshRef.current = []; // Clear accounts list
-        onClose(); // Close the sheet
-      }, 2000); // Keep showing success message for 2 seconds
-
+      // Successfully triggered, start polling. Polling function will handle status updates.
+      startPolling();
     } catch (err: any) {
       console.error('Failed to trigger scraping:', err);
-      // If the API returns specific errors (e.g., bad credentials during scrape), display them.
       let apiErrorMessage = 'Scraping request failed. Check backend logs or connection.';
-      if (err.response && err.response.data && err.response.data.message) {
-          apiErrorMessage = err.response.data.message;
-      } else if (err.message) {
+      if (err.message) {
           apiErrorMessage = err.message;
       }
       setErrorMessage(apiErrorMessage);
-      setStatus('error');
-      accountsToRefreshRef.current = []; // Clear accounts list
+      setComponentStatus('error'); // Show error in the 'current refresh' section
+      setAccountsToRefresh([]);
+      setDisplayProgress({}); // Clear pending progress on trigger failure
+      // Don't need to stop polling as it wasn't started on trigger failure
     }
-  }, [dispatch, onClose, onRefreshSuccess]); // Added dispatch to dependencies
+  }, [startPolling, accountsToRefresh]); // Removed stopPolling, dispatch, updateLastAttemptState from deps
 
-  // Handle closing the passphrase modal without submitting
+
   const handleClosePassphraseModal = useCallback(() => {
     setIsPassphraseModalOpen(false);
-    setStatus('idle');
+    // setComponentStatus('idle'); // No, keep the status (likely idle or showing last result)
+    // stopPolling(); // No need to stop polling if it wasn't started
+    setAccountsToRefresh([]); // Clear the accounts list state
   }, []);
 
- const renderContent = () => {
-    switch (status) {
-        case 'loading':
-             return (
-                <div className="flex flex-col items-center justify-center">
-                    <FiLoader className="animate-spin h-8 w-8 text-primary mb-4" />
-                    <p className="text-muted-foreground">
-                        Decrypting and refreshing...
-                     </p>
-                </div>
-            );
-        case 'success':
-             return (
-                <div className="flex flex-col items-center justify-center text-center">
-                    <FiCheckCircle className="h-8 w-8 text-success mb-4" />
-                    <p className="font-semibold text-success">Refresh Successful!</p>
-                    <p className="text-sm text-muted-foreground mt-1">Transactions will appear soon.</p>
-                 </div>
-             );
-        case 'error':
-            return (
-                <div className="flex flex-col items-center justify-center text-center w-full max-w-xs">
-                    <FiXCircle className="h-8 w-8 text-error mb-4" />
-                     <p className="font-semibold text-error mb-2">Refresh Failed</p>
-                    {errorMessage && (
-                        <div className="bg-error/10 text-error border border-error/30 rounded-md p-3 mb-4 text-sm w-full text-center">
-                            {errorMessage}
-                        </div>
-                    )}
-                     <button
-                        onClick={checkForRefreshableAccounts} // Allow retry by going back to prompt
-                        className={`mt-2 py-2 px-4 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary`}
-                     >
-                         Try Again
-                     </button>
-                 </div>
-             );
-        case 'idle':
-        default:
-            return (
-                <div className="flex flex-col items-center justify-center text-center">
-                    {errorMessage && ( // For messages like "no accounts found"
-                         <div className="bg-info/10 text-info border border-info/30 rounded-md p-3 mb-4 text-sm w-full max-w-xs text-center">
-                             {errorMessage}
-                         </div>
-                     )}
-                     <p className="text-sm text-muted-foreground mb-6 text-center px-4">
-                        Check for accounts with saved credentials and initiate refresh.
+
+ // Derive progress list for rendering the unified section
+ const displayProgressList: ScrapingProgress[] = Object.values(displayProgress);
+
+
+ return (
+    <div className="p-2 pt-8 flex flex-col overflow-y-auto">
+
+        {/* 1. Header Section (Last Refresh Time) */}
+        <div className="mb-6 text-center">
+            {lastRefreshTime ? (
+                <>
+                    <p className="text-sm text-muted-foreground">
+                        Last successful refresh:
                     </p>
-                    <button
-                        onClick={checkForRefreshableAccounts}
-                        className={`w-full max-w-xs py-3 px-4 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary`}
-                    >
-                        <FiRefreshCw className="mr-2 h-5 w-5" />
-                        Start Refresh
-                    </button>
-                </div>
-            );
-    }
- };
-
-
-  return (
-    // Increased height and padding for better layout
-    <div className="p-6 pt-8 flex-grow flex flex-col h-[50vh] min-h-[400px]">
-
-        <div className="flex-grow overflow-y-auto flex flex-col justify-center items-center">
-            {/* Display Last Refresh Time - moved above the main content area */}
-            <div className="mb-6 text-center flex-shrink-0">
-                {lastRefreshTime ? (
-                    <>
-                        <p className="text-sm text-muted-foreground">
-                            Last successful refresh:
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            {formatDistanceToNow(lastRefreshTime, { addSuffix: true })}
-                        </p>
-                    </>
-                ) : (
-                     <p className="text-sm text-muted-foreground flex items-center justify-center">
-                        <FiInfo className="mr-1 h-4 w-4"/> No refresh history found.
+                    <p className="text-sm text-muted-foreground">
+                        {formatDistanceToNow(lastRefreshTime, { addSuffix: true })}
                     </p>
-                )}
-            </div>
-
-             {/* Dynamic content area */}
-            <div className="w-full flex-grow flex flex-col justify-center items-center px-4 pb-6">
-                 {renderContent()}
-            </div>
+                </>
+            ) : (
+                 <p className="text-sm text-muted-foreground flex items-center justify-center">
+                    <FiInfo className="mr-1 h-4 w-4"/> No successful refresh history found.
+                </p>
+            )}
         </div>
 
-        {/* Passphrase Modal */}
+        <div className="w-full flex flex-col justify-start items-center px-4 pb-6 space-y-6">
+
+            {/* Show Refresh button when idle or on error */}
+            {(componentStatus === 'idle' || componentStatus === 'error') && (
+                 <button
+                    onClick={checkForRefreshableAccounts}
+                    // Disable when accounts are loading
+                    disabled={accountsStatus === 'loading'}
+                    className={`py-3 px-6 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                    <FiRefreshCw className="h-5 w-5 mr-2" />Refresh
+                </button>
+            )}
+
+             {/* 2. General Error Display Area (outside main progress flow) */}
+             {/* Show general errors mainly when idle, or specific API/decryption errors when error */}
+             {errorMessage && (componentStatus === 'idle' || componentStatus === 'error') && (
+                 <div className="bg-error/10 text-error border border-error/30 rounded-md p-3 text-sm w-full max-w-md text-center">
+                     {errorMessage}
+                 </div>
+             )}
+
+
+            {/* 3. Unified Progress/Status Area */}
+            <div className="flex flex-col w-full max-w-md space-y-4 py-4">
+                {/* Conditional Title/Status Message */}
+                {componentStatus === 'loading' && (
+                    <div className="flex items-center justify-center">
+                        <FiLoader className="animate-spin h-5 w-5 text-primary mr-3" />
+                        <p className="text-lg font-semibold text-foreground">Refreshing Accounts...</p>
+                    </div>
+                )}
+                 {componentStatus === 'idle' && displayProgressList.length > 0 && (
+                     <div className="text-center">
+                         <p className="font-medium text-muted-foreground">Last Refresh Status</p>
+                     </div>
+                 )}
+
+
+                {/* Progress Details List (Rendered based on componentStatus and if data exists) */}
+                {displayProgressList.length > 0 && (
+                        <ul className="w-full bg-card border border-border rounded-2xl divide-y divide-border">
+                            {displayProgressList.map(p => <AccountProgressItem key={`${p.accountNumber}-display`} progress={p} />)}
+                        </ul>
+                )}
+
+                {/* Loading state placeholder if no progress yet */}
+                {componentStatus === 'loading' && displayProgressList.length === 0 && (
+                    <p className="text-muted-foreground text-sm text-center">Waiting for progress updates...</p>
+                )}
+
+                 {/* Removed dedicated Try Again button */}
+            </div>
+
+        </div> {/* End Scrollable Content Area */}
+
+
+        {/* Passphrase Modal (Remains unchanged) */}
         <PassphraseModal
           isOpen={isPassphraseModalOpen}
           onClose={handleClosePassphraseModal}
           onPassphraseSubmit={handlePassphraseSubmit}
-          existingPassphrase={true} // Always prompt for existing passphrase in refresh flow
+          existingPassphrase={true}
         />
     </div>
   );

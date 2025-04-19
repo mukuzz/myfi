@@ -1,4 +1,4 @@
-import { Transaction, Account, ScrapeRequest, Tag, Page } from '../types';
+import { Transaction, Account, ScrapeRequest, Tag, Page, ScrapingStatusResponse } from '../types';
 
 // Use environment variable or default.
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/api/v1';
@@ -9,6 +9,27 @@ interface SupportedAccountInfo {
   type: Account['type'];
   name: string;
 }
+
+// Utility to handle fetch responses
+const handleResponse = async (response: Response) => {
+    if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorBody = await response.json();
+          errorMessage = errorBody.message || errorBody.error || errorMessage;
+        } catch (e) {
+          // Ignore if response body is not JSON or empty
+        }
+        throw new Error(errorMessage);
+    }
+    // Check if response has content before trying to parse JSON
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
+        return response.json();
+    }
+    // Return null or handle appropriately if no JSON content (e.g., for 204 No Content)
+    return null; 
+};
 
 /**
  * Updates a transaction on the server.
@@ -167,7 +188,6 @@ export const createTransaction = async (transactionData: Partial<Omit<Transactio
 
 // Trigger scraping process for given accounts
 export const triggerScraping = async (scrapeRequests: ScrapeRequest[]): Promise<void> => {
-  // We expect a 202 Accepted or similar, no specific body needed for now
   const response = await fetch(`${API_BASE_URL}/scraping/scrape`, {
     method: 'POST',
     headers: {
@@ -175,21 +195,9 @@ export const triggerScraping = async (scrapeRequests: ScrapeRequest[]): Promise<
     },
     body: JSON.stringify(scrapeRequests),
   });
-
-  if (!response.ok) {
-     // Attempt to read error message from response body
-     let errorMessage = `HTTP error! status: ${response.status}`;
-     try {
-       const errorBody = await response.json();
-       errorMessage = errorBody.message || errorBody.error || errorMessage;
-     } catch (e) {
-       // Ignore if response body is not JSON or empty
-     }
-     throw new Error(errorMessage);
-   }
-
-   // No specific return value needed if the backend just acknowledges the request
-   return;
+  // Backend returns 200 OK on successful initiation or completion with/without errors
+  await handleResponse(response); 
+  // No specific return value needed
 };
 
 // Fetch the last scrape time
@@ -460,6 +468,21 @@ export const mergeTransactionApi = async (
   }
 
   return response.json();
+};
+
+/**
+ * Fetches the current status of the scraping process.
+ * @returns A promise that resolves with the ScrapingStatusResponse.
+ * @throws Error if the fetch fails.
+ */
+export const getScrapingStatus = async (): Promise<ScrapingStatusResponse> => {
+  const response = await fetch(`${API_BASE_URL}/scraping/status`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  return handleResponse(response);
 };
 
 // Add other API functions here as needed (e.g., fetchTransactions, createTransaction, deleteTransaction) 

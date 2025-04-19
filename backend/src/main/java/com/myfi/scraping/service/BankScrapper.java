@@ -31,8 +31,7 @@ public abstract class BankScrapper {
             playwright = Playwright.create();
             try {
                 browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                    .setHeadless(headless)
-                    .setTimeout(120000)); // 2 minutes timeout
+                    .setHeadless(headless));
                 context = browser.newContext();
                 this.page = context.newPage();
             } catch (Exception e) {
@@ -58,7 +57,13 @@ public abstract class BankScrapper {
             }
             
             if (playwright != null) {
-                playwright.close();
+                try {
+                    playwright.close();
+                } catch (Exception e) {
+                    // Log the error but continue closing other resources
+                    // Assuming a logger 'log' is available or add one if needed
+                    // log.error("Error closing Playwright instance: {}", e.getMessage(), e); 
+                }
                 playwright = null;
             }
         }

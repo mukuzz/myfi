@@ -48,13 +48,62 @@ export interface Account {
 
 // Type for the scraping request payload
 export interface ScrapeRequest {
-  accountNumber: string;
+  accountId: number;
+  accountType: string; // Or use AccountType enum if defined on frontend
+  accountName: string;
   username: string;
-  password: string;
-  accountId: number; // To link back scraped data
-  accountType: Account['type']; // May be useful for the scraper
-  accountName: string; // Added account name
-  // Add any other fields the scraper might need
+  password?: string; // Password might be optional if already stored/handled securely
+  accountNumber: string;
+}
+
+// Define scraping status enum based on backend
+export enum ScrapingStatus {
+    PENDING = 'PENDING',
+    ACQUIRING_PERMIT = 'ACQUIRING_PERMIT',
+    LOGIN_STARTED = 'LOGIN_STARTED',
+    LOGIN_SUCCESS = 'LOGIN_SUCCESS',
+    LOGIN_FAILED = 'LOGIN_FAILED',
+    SCRAPING_STARTED = 'SCRAPING_STARTED',
+    SCRAPING_BANK_STARTED = 'SCRAPING_BANK_STARTED',
+    SCRAPING_CC_STARTED = 'SCRAPING_CC_STARTED',
+    SCRAPING_SUCCESS = 'SCRAPING_SUCCESS',
+    SCRAPING_FAILED = 'SCRAPING_FAILED',
+    LOGOUT_STARTED = 'LOGOUT_STARTED',
+    LOGOUT_SUCCESS = 'LOGOUT_SUCCESS',
+    LOGOUT_FAILED = 'LOGOUT_FAILED',
+    COMPLETED = 'COMPLETED',
+    ERROR = 'ERROR'
+}
+
+// Interface for a single event in the scraping history
+// Matches backend ScrapingEvent
+export interface ScrapingEvent {
+    status: ScrapingStatus;
+    timestamp: string; // ISO 8601 date string
+    message?: string;
+}
+
+// Interface for individual account scraping progress
+// Matches backend ScrapingProgress
+export interface ScrapingProgress {
+    accountNumber: string;
+    accountName: string;
+    status: ScrapingStatus;
+    startTime: string; // ISO 8601 date string for start
+    lastUpdateTime: string; // ISO 8601 date string for last update
+    errorMessage?: string | null; // Optional error message
+    history: ScrapingEvent[]; // History of events
+}
+
+// Interface for the overall status response
+// Matches backend ScrapingStatusResponse
+export interface ScrapingStatusResponse {
+    progressMap: { [accountNumber: string]: ScrapingProgress };
+    refreshInProgress: boolean;
+}
+
+export interface SystemStatus {
+// ... existing SystemStatus interface ...
 }
 
 // Generic Page type for paginated API responses
