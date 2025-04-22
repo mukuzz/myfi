@@ -13,7 +13,7 @@ public class ExecutorConfig {
     @Bean(name = "scrapingExecutor")
     public ExecutorService scrapingExecutorService() {
         // Using a fixed pool size of 4 as previously used, adjust as needed
-        int poolSize = 4; 
+        int poolSize = 10; 
         return Executors.newFixedThreadPool(poolSize);
     }
 
