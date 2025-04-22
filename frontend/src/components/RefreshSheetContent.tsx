@@ -123,7 +123,6 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
     let isMounted = true;
     const fetchInitialStatus = async () => {
         console.log("Fetching initial scraping status on component mount...");
-        setComponentStatus('idle'); // Assume idle initially
 
         try {
             const initialStatusResponse = await getScrapingStatus();

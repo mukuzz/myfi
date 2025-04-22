@@ -49,7 +49,7 @@ const AccountProgressItem: React.FC<AccountProgressItemProps> = ({ progress }) =
     // const message = progress.errorMessage || latestEvent?.message || statusText; // Message not used currently
 
     return (
-        <li className="border-b border-border last:border-b-0 py-3 px-3">
+        <li className="py-3 px-3">
             <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
                 <div className="flex items-center min-w-0"> {/* Added min-w-0 for better truncation */}
                     {isLoading && <FiLoader className="animate-spin h-4 w-4 text-muted-foreground mr-2 flex-shrink-0" />}
