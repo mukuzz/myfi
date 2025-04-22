@@ -188,13 +188,17 @@ function Transactions() {
                                     <li>
                                         <div className="flex flex-col border border-border rounded-xl overflow-hidden">
                                             {hasChildTransactions && (
-                                                <button className="flex justify-between items-center" onClick={() => openSplitView(tx)}>
-                                                    <div className="bg-background p-3 text-xl font-medium text-secondary-foreground">
-                                                        ₹{
-                                                            [tx, ...(tx.subTransactions || [])].reduce((sum, t) =>
-                                                                sum + (t.type === 'DEBIT' ? -t.amount : t.amount), 0
-                                                            ).toLocaleString('en-IN')
-                                                        }
+                                                <button className="flex justify-between items-center bg-secondary" onClick={() => openSplitView(tx)}>
+                                                    <div className="flex flex-row items-center p-3 text-muted-foreground">
+                                                        {tx.type === 'DEBIT' ? '-' : '+'}
+                                                        <div className='flex flex-row items-start'>
+                                                            <span className={`text-sm mx-0.5`}>₹</span>
+                                                            <span className='text-xl font-semibold accent-foreground text-foreground'>{
+                                                                Math.abs([tx, ...(tx.subTransactions || [])].reduce((sum, t) =>
+                                                                    sum + (t.type === 'DEBIT' ? -t.amount : t.amount), 0
+                                                                )).toLocaleString('en-IN')
+                                                            }</span>
+                                                        </div>
                                                     </div>
                                                     <div className='flex flex-row items-center font-bold text-muted-foreground/50 px-3'>
                                                         <div className="bg-background text-sm font-medium text-secondary-foreground pr-2">

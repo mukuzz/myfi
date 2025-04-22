@@ -41,13 +41,15 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick, classNa
       <hr className="border-t border-border my-2 pointer-events-none" />
 
       <div className="flex justify-between items-center mt-1 pointer-events-none">
-        <span className={`whitespace-nowrap flex items-center`}>
-          <span className={`text-sm text-muted-foreground`}>{transaction.type === 'DEBIT' ? '-' : '+'}
-            <LuIndianRupee className="inline h-4 w-4 relative -top-[1px] " />
-          </span>
-
-          <span className={`text-xl font-semibold accent-foreground`}>{transaction.amount.toLocaleString('en-IN')}</span>
-        </span>
+        <div className="flex flex-row items-center text-muted-foreground">
+            {transaction.type === 'DEBIT' ? '-' : '+'}
+            <div className='flex flex-row items-start'>
+                <span className={`text-sm mx-0.5`}>₹</span>
+                <span className='text-xl font-semibold accent-foreground text-foreground'>
+                {transaction.amount.toLocaleString('en-IN')}
+                </span>
+            </div>
+        </div>
         <div className="flex items-center space-x-2 whitespace-nowrap overflow-hidden text-ellipsis pointer-events-auto">
           <button
             onClick={(e) => onTagClick && onTagClick(transaction, e)}
