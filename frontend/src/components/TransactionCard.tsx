@@ -3,7 +3,7 @@ import { FiTag, FiCreditCard } from 'react-icons/fi';
 import { Transaction, TagMap } from '../types';
 import { formatDate } from '../utils/dateUtils';
 import { ReactComponent as ExcludedIcon } from '../assets/icons/ExcludedFromAccountingIcon.svg';
-import CurrencyDisplay from './CurrencyDisplay';
+import AmountDisplay from './AmountDisplay';
 
 interface TransactionCardProps {
   transaction: Transaction;
@@ -41,7 +41,7 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick, classNa
       <hr className="border-t border-border my-2 pointer-events-none" />
 
       <div className="flex justify-between items-center mt-1 pointer-events-none">
-        <CurrencyDisplay 
+        <AmountDisplay 
           amount={transaction.amount}
           className='text-xl font-semibold text-foreground'
           smallRupeeSymbol={true}

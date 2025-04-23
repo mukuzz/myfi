@@ -4,7 +4,7 @@ import { Transaction, Tag, TagMap } from '../types'; // Keep Transaction type
 import { formatCurrency, formatDate as formatDateUtil } from '../utils/formatters';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import TagSelector from './TagSelector';
-import CurrencyDisplay from './CurrencyDisplay'; // Import the new component
+import AmountDisplay from './AmountDisplay';
 
 
 // Format date for display in input area
@@ -207,7 +207,7 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
                         {mode === 'split' && maxAmount !== undefined && (
                             <div className="flex flex-row justify-center items-center mb-3">
                                 <p className="text-xs text-muted-foreground text-center mr-2">Splitting from</p>
-                                <CurrencyDisplay amount={maxAmount} showType={false} className="font-medium" />
+                                <AmountDisplay amount={maxAmount} showType={false} className="font-medium" />
                             </div>
                         )}
 
@@ -233,7 +233,7 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
 
                         {/* Amount Display & Tag Button */}
                         <div className={`flex justify-between items-center mb-3`}>
-                            <CurrencyDisplay 
+                            <AmountDisplay 
                                 amount={parseFloat(amountString) || 0} 
                                 smallRupeeSymbol={true}
                                 className="text-3xl font-semibold"

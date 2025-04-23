@@ -1,7 +1,7 @@
 import React from 'react';
 import { Account } from '../types';
 import { FiCopy } from 'react-icons/fi';
-import CurrencyDisplay from './CurrencyDisplay';
+import AmountDisplay from './AmountDisplay';
 
 interface AccountCardProps {
   account: Account;
@@ -26,9 +26,8 @@ const AccountCard: React.FC<AccountCardProps> = ({
       {/* Top row: Logo/Balance */}
       <div className="flex justify-between items-center">
         {getBankLogo(account.name)}
-        <CurrencyDisplay 
+        <AmountDisplay 
           amount={account.balance} 
-          
           className="font-semibold text-right text-lg" 
           showOnlyNegative={true}
         />

@@ -4,7 +4,8 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchCurrentMonthTransactions } from '../store/slices/transactionsSlice';
 import { Transaction } from '../types'; // Import Transaction type
 import { FiMoreHorizontal } from 'react-icons/fi'; // Import icon
-import CurrencyDisplay from './CurrencyDisplay'; // Import the new component
+import AmountDisplay from './AmountDisplay';
+
 
 const MonthlyCashFlowCard: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -74,15 +75,15 @@ const MonthlyCashFlowCard: React.FC = () => {
           <div className="space-y-2 font-medium"> 
             <div className="flex justify-between">
               <span>Incoming</span>
-              <CurrencyDisplay amount={incoming} className="font-medium" type="CREDIT" showFraction={false}/>
+              <AmountDisplay amount={incoming} className="font-medium" type="CREDIT" showFraction={false}/>
             </div>
             <div className="flex justify-between">
               <span>Outgoing</span>
-              <CurrencyDisplay amount={outgoing} className="font-medium" type="DEBIT" showFraction={false}/>
+              <AmountDisplay amount={outgoing} className="font-medium" type="DEBIT" showFraction={false}/>
             </div>
             <div className="flex justify-between">
               <span>Invested</span>
-              <CurrencyDisplay amount={invested} className="font-medium" showType={false} showFraction={false}/> 
+              <AmountDisplay amount={invested} className="font-medium" showType={false} showFraction={false}/> 
             </div>
           </div>
         )}

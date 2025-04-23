@@ -1,7 +1,7 @@
 import React from 'react';
 import { LuIndianRupee } from 'react-icons/lu';
 
-interface CurrencyDisplayProps {
+interface AmountDisplayProps {
   amount: number | undefined | null;
   className?: string;
   currency?: string;
@@ -13,7 +13,7 @@ interface CurrencyDisplayProps {
   showOnlyNegative?: boolean;
 }
 
-const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({ 
+const AmountDisplay: React.FC<AmountDisplayProps> = ({ 
   amount,
   className = '',
   currency = 'INR',
@@ -52,4 +52,4 @@ const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
   );
 };
 
-export default CurrencyDisplay; 
+export default AmountDisplay; 
