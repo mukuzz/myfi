@@ -4,7 +4,7 @@ import { Transaction, Tag, TagMap } from '../types'; // Keep Transaction type
 import { formatCurrency, formatDate as formatDateUtil } from '../utils/formatters';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import TagSelector from './TagSelector';
-import TransactionCard from './TransactionCard'; // Import TransactionCard component
+import CurrencyDisplay from './CurrencyDisplay'; // Import the new component
 
 
 // Format date for display in input area
@@ -124,12 +124,6 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
         setTransactionType(prev => prev === 'DEBIT' ? 'CREDIT' : 'DEBIT');
     };
 
-    const formatDisplayAmount = (amountStr: string) => {
-        const num = parseFloat(amountStr);
-        if (isNaN(num)) return '0';
-        return num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-    };
-
     // New handlers for tag selection
     const openTagSelector = () => {
         setIsTagSelectorOpen(true);
@@ -211,9 +205,10 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
 
                         {/* Show max amount hint in split mode */}
                         {mode === 'split' && maxAmount !== undefined && (
-                            <p className="text-xs text-muted-foreground text-center mb-2">
-                                Splitting from {formatCurrency(maxAmount)}
-                            </p>
+                            <div className="flex flex-row justify-center items-center mb-3">
+                                <p className="text-xs text-muted-foreground text-center mr-2">Splitting from</p>
+                                <CurrencyDisplay amount={maxAmount} showType={false} className="font-medium" />
+                            </div>
                         )}
 
                         {/* Description & Date Input */}
@@ -238,13 +233,12 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
 
                         {/* Amount Display & Tag Button */}
                         <div className={`flex justify-between items-center mb-3`}>
-                            <span className={`text-3xl font-semibold font-foreground flex items-center`}>
-                                <span className="text-foreground text-lg font-thin mr-1">{transactionType === 'DEBIT' ? '-' : '+'}</span>
-                                <span className='flex items-start'>
-                                    <span className="text-foreground text-sm align-top mr-0.5 mt-1">₹</span>
-                                    {formatDisplayAmount(amountString)}
-                                </span>
-                            </span>
+                            <CurrencyDisplay 
+                                amount={parseFloat(amountString) || 0} 
+                                smallRupeeSymbol={true}
+                                className="text-3xl font-semibold"
+                                type={transactionType}
+                            />
                             {/* Tag Button - Now opens TagSelector */}
                             <button
                                 onClick={openTagSelector}

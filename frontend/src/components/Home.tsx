@@ -2,6 +2,7 @@ import SpendingSummary from './SpendingSummary';
 import TotalBalanceCard from './TotalBalanceCard';
 import AccountsDisplayCard from './AccountsDisplayCard';
 import { FiUser } from 'react-icons/fi';
+import MonthlyCashFlowCard from './MonthlyCashFlowCard';
 
 function Home() {
   return <div className="bg-background text-foreground flex flex-col flex-grow space-y-4 p-4 ">
@@ -20,6 +21,7 @@ function Home() {
       <div className="lg:w-1/2 flex flex-col gap-4"> 
         <TotalBalanceCard />
         <SpendingSummary />
+        <MonthlyCashFlowCard />
       </div>
 
       {/* Column 2 */}

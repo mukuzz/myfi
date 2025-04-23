@@ -4,6 +4,7 @@ import { IconType } from 'react-icons';
 import Card from './Card';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAccounts as fetchAccountsRedux } from '../store/slices/accountsSlice';
+import CurrencyDisplay from './CurrencyDisplay';
 
 // Mock data for sparkline - replace with actual data fetching/generation
 const sparklineData = [5, 10, 5, 20, 8, 15]; 
@@ -130,9 +131,13 @@ function TotalBalanceCard() {
 
         {/* Balance and Sparkline */}
         <div className="flex justify-between items-center mb-6">
-          <span className="text-3xl font-bold text-foreground">
-            {formatCurrency(totalBalance)}
-          </span>
+          {/* Use CurrencyDisplay for total balance */}
+          <CurrencyDisplay 
+            amount={totalBalance}
+            className="text-3xl font-bold text-foreground" 
+            showType={false}
+            showFraction={false}
+          />
           {renderSparkline()}
         </div>
 

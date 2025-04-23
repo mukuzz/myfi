@@ -81,14 +81,6 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
     ).join(' ');
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: currency || 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const getBankLogo = (bankName: string) => {
     return (
       <div className="w-10 h-10 flex items-center justify-center text-primary">
@@ -160,7 +152,6 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
                 <AccountCard
                   account={parentAccount}
                   getBankLogo={getBankLogo}
-                  formatCurrency={formatCurrency}
                   getAccountTypeLabel={getAccountTypeLabel}
                   handleCopyAccountNumber={handleCopyAccountNumber}
                   onCardClick={handleAccountClick}
@@ -185,7 +176,6 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
                       <AccountCard
                         account={childAccount}
                         getBankLogo={getBankLogo}
-                        formatCurrency={formatCurrency}
                         getAccountTypeLabel={getAccountTypeLabel}
                         handleCopyAccountNumber={handleCopyAccountNumber}
                         onCardClick={handleAccountClick}
@@ -220,7 +210,6 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
           <AccountDetailsModal
             account={selectedAccount}
             onClose={closeDetailsSheet}
-            formatCurrency={formatCurrency}
             getAccountTypeLabel={getAccountTypeLabel}
           />
         )}

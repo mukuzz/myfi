@@ -1,9 +1,9 @@
 import React from 'react';
 import { FiTag, FiCreditCard } from 'react-icons/fi';
-import { LuIndianRupee } from 'react-icons/lu';
 import { Transaction, TagMap } from '../types';
 import { formatDate } from '../utils/dateUtils';
 import { ReactComponent as ExcludedIcon } from '../assets/icons/ExcludedFromAccountingIcon.svg';
+import CurrencyDisplay from './CurrencyDisplay';
 
 interface TransactionCardProps {
   transaction: Transaction;
@@ -41,15 +41,12 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick, classNa
       <hr className="border-t border-border my-2 pointer-events-none" />
 
       <div className="flex justify-between items-center mt-1 pointer-events-none">
-        <div className="flex flex-row items-center text-muted-foreground">
-            {transaction.type === 'DEBIT' ? '-' : '+'}
-            <div className='flex flex-row items-start'>
-                <span className={`text-sm mx-0.5`}>₹</span>
-                <span className='text-xl font-semibold accent-foreground text-foreground'>
-                {transaction.amount.toLocaleString('en-IN')}
-                </span>
-            </div>
-        </div>
+        <CurrencyDisplay 
+          amount={transaction.amount}
+          className='text-xl font-semibold text-foreground'
+          smallRupeeSymbol={true}
+          type={transaction.type}
+        />
         <div className="flex items-center space-x-2 whitespace-nowrap overflow-hidden text-ellipsis pointer-events-auto">
           <button
             onClick={(e) => onTagClick && onTagClick(transaction, e)}

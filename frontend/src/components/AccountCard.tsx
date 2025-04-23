@@ -1,11 +1,11 @@
 import React from 'react';
 import { Account } from '../types';
 import { FiCopy } from 'react-icons/fi';
+import CurrencyDisplay from './CurrencyDisplay';
 
 interface AccountCardProps {
   account: Account;
   getBankLogo: (bankName: string) => React.ReactNode;
-  formatCurrency: (amount: number, currency: string) => string;
   getAccountTypeLabel: (type: Account['type']) => string;
   handleCopyAccountNumber: (accountNumber: string) => Promise<void>;
   onCardClick: (account: Account) => void;
@@ -14,7 +14,6 @@ interface AccountCardProps {
 const AccountCard: React.FC<AccountCardProps> = ({ 
   account, 
   getBankLogo,
-  formatCurrency,
   getAccountTypeLabel,
   handleCopyAccountNumber,
   onCardClick
@@ -27,9 +26,12 @@ const AccountCard: React.FC<AccountCardProps> = ({
       {/* Top row: Logo/Balance */}
       <div className="flex justify-between items-center">
         {getBankLogo(account.name)}
-        <p className="font-semibold text-right text-lg"> 
-           {formatCurrency(account.balance, account.currency)}
-        </p>
+        <CurrencyDisplay 
+          amount={account.balance} 
+          
+          className="font-semibold text-right text-lg" 
+          showOnlyNegative={true}
+        />
       </div>
       {/* Middle row: Name/Type */}
       <div className="flex justify-between items-center mt-3"> 

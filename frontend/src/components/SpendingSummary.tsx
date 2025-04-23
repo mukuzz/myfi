@@ -5,6 +5,7 @@ import { FiMoreHorizontal } from 'react-icons/fi';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchCurrentMonthTransactions } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
+import CurrencyDisplay from './CurrencyDisplay';
 
 interface TagSpending {
     name: string;
@@ -14,10 +15,10 @@ interface TagSpending {
 const SpendingSummary: React.FC = () => {
     const dispatch = useAppDispatch();
 
-    const { 
+    const {
         currentMonthTransactions,
         currentMonthStatus: transactionsStatus,
-        currentMonthError: transactionsError 
+        currentMonthError: transactionsError
     } = useAppSelector((state) => state.transactions);
     const {
         tags,
@@ -58,13 +59,13 @@ const SpendingSummary: React.FC = () => {
 
         tags.forEach((tag: Tag) => {
             if (tag.id !== undefined) {
-                 tagMap.set(tag.id, tag.name);
-                 const parentId = tag.parentTagId ?? null;
-                 tagParentMap.set(tag.id, parentId);
-                 if (!childTagMap.has(parentId)) {
-                     childTagMap.set(parentId, []);
-                 }
-                 childTagMap.get(parentId)?.push(tag.id);
+                tagMap.set(tag.id, tag.name);
+                const parentId = tag.parentTagId ?? null;
+                tagParentMap.set(tag.id, parentId);
+                if (!childTagMap.has(parentId)) {
+                    childTagMap.set(parentId, []);
+                }
+                childTagMap.get(parentId)?.push(tag.id);
             }
         });
         tagMap.set(0, "Untagged");
@@ -103,10 +104,10 @@ const SpendingSummary: React.FC = () => {
         tagMap.forEach((name, tagId) => {
             const parentId = tagParentMap.get(tagId);
             if (parentId === null || tagId === 0) {
-                 const totalAmount = calculateTotalSpending(tagId);
-                 if (totalAmount > 0) {
+                const totalAmount = calculateTotalSpending(tagId);
+                if (totalAmount > 0) {
                     aggregatedSpending.push({ name, amount: totalAmount });
-                 }
+                }
             }
         });
 
@@ -138,22 +139,22 @@ const SpendingSummary: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                     {isLoading && <p className="text-muted-foreground text-center">Loading...</p>}
-                     {error && <p className="text-destructive text-center">Error: {error}</p>}
-                     {!isLoading && !error && spendingByTag.length === 0 && (
+                    {isLoading && <p className="text-muted-foreground text-center">Loading...</p>}
+                    {error && <p className="text-destructive text-center">Error: {error}</p>}
+                    {!isLoading && !error && spendingByTag.length === 0 && (
                         <p className="text-muted-foreground text-center">No spending data for this period.</p>
-                     )}
-                     {!isLoading && !error && spendingByTag.map((item, index) => {
+                    )}
+                    {!isLoading && !error && spendingByTag.map((item, index) => {
                         const barWidthPercentage = totalSpending > 0 ? (item.amount / totalSpending) * 100 : 0;
                         return (
                             <div key={index} className="flex justify-between items-center space-x-2">
                                 <div className="relative flex-1 min-w-0">
-                                    <div 
-                                        className="absolute inset-y-0 left-0 bg-muted rounded-lg" 
-                                        style={{ width: `${barWidthPercentage}%`, zIndex: 1 }} 
+                                    <div
+                                        className="absolute inset-y-0 left-0 bg-muted rounded-lg"
+                                        style={{ width: `${barWidthPercentage}%`, zIndex: 1 }}
                                         aria-hidden="true"
                                     ></div>
-                                    <span 
+                                    <span
                                         className="relative font-medium text-card-foreground block truncate px-2 py-1"
                                         style={{ zIndex: 2 }}
                                     >
@@ -161,7 +162,7 @@ const SpendingSummary: React.FC = () => {
                                     </span>
                                 </div>
                                 <span className="font-medium text-card-foreground whitespace-nowrap">
-                                    {formatCurrency(item.amount)}
+                                    <CurrencyDisplay amount={item.amount} className="font-medium" showType={false} showFraction={false} />
                                 </span>
                             </div>
                         );

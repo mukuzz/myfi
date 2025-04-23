@@ -8,6 +8,7 @@ import { encryptCredentials } from '../utils/cryptoUtils';
 import PassphraseModal from './PassphraseModal';
 import { useAppDispatch } from '../store/hooks';
 import { deleteAccount as deleteAccountAction } from '../store/slices/accountsSlice';
+import CurrencyDisplay from './CurrencyDisplay';
 
 const NETBANKING_STORAGE_PREFIX = 'myfi_credential_';
 const PASSPHRASE_SET_KEY = 'myfi_passphrase_set';
@@ -15,7 +16,6 @@ const PASSPHRASE_SET_KEY = 'myfi_passphrase_set';
 interface AccountDetailsModalProps {
   account: Account;
   onClose: () => void;
-  formatCurrency: (amount: number, currency: string) => string;
   getAccountTypeLabel: (type: Account['type']) => string;
 }
 
@@ -24,7 +24,6 @@ type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
 const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
   account,
   onClose,
-  formatCurrency,
   getAccountTypeLabel,
 }) => {
   const dispatch = useAppDispatch();
@@ -181,7 +180,10 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Current Balance</p>
-            <p className="font-medium">{formatCurrency(account.balance, account.currency)}</p>
+            <CurrencyDisplay 
+              amount={account.balance} 
+              className="font-medium"
+            />
           </div>
         </div>
       </div>
