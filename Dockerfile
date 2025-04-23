@@ -61,4 +61,4 @@ COPY --from=backend-builder /app/backend/target/*.jar ./app.jar
 EXPOSE 8080
 
 # Command to run the application
-ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Kolkata", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
