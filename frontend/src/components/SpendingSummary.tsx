@@ -5,7 +5,7 @@ import { FiMoreHorizontal } from 'react-icons/fi';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchCurrentMonthTransactions } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
-import AmountDisplay from './AmountDisplay';
+import CurrencyDisplay from './AmountDisplay';
 
 interface TagSpending {
     name: string;
@@ -162,7 +162,7 @@ const SpendingSummary: React.FC = () => {
                                     </span>
                                 </div>
                                 <span className="font-medium text-card-foreground whitespace-nowrap">
-                                    <AmountDisplay amount={item.amount} className="font-medium" showType={false} showFraction={false} />
+                                    <CurrencyDisplay amount={item.amount} className="font-medium" showType={false} showFraction={false} />
                                 </span>
                             </div>
                         );

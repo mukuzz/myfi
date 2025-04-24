@@ -8,7 +8,7 @@ import { encryptCredentials } from '../utils/cryptoUtils';
 import PassphraseModal from './PassphraseModal';
 import { useAppDispatch } from '../store/hooks';
 import { deleteAccount as deleteAccountAction } from '../store/slices/accountsSlice';
-import AmountDisplay from './AmountDisplay';
+import CurrencyDisplay from './AmountDisplay';
 
 const NETBANKING_STORAGE_PREFIX = 'myfi_credential_';
 const PASSPHRASE_SET_KEY = 'myfi_passphrase_set';
@@ -180,7 +180,7 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Current Balance</p>
-            <AmountDisplay 
+            <CurrencyDisplay 
               amount={account.balance} 
               className="font-medium"
             />
