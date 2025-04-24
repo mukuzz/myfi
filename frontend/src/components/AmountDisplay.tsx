@@ -1,7 +1,7 @@
 import React from 'react';
 import { LuIndianRupee } from 'react-icons/lu';
 
-interface AmountDisplayProps {
+interface CurrencyDisplayProps {
   amount: number | undefined | null;
   className?: string;
   currency?: string;
@@ -13,7 +13,7 @@ interface AmountDisplayProps {
   showOnlyNegative?: boolean;
 }
 
-const AmountDisplay: React.FC<AmountDisplayProps> = ({ 
+const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({ 
   amount,
   className = '',
   currency = 'INR',
@@ -35,21 +35,19 @@ const AmountDisplay: React.FC<AmountDisplayProps> = ({
   let formattedAmount = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: 0, 
+    minimumFractionDigits: 0,
     maximumFractionDigits: showFraction ? 2 : 0,
-  }).format(Math.abs(amount)).replace(/₹/, '');
+  }).format(Math.abs(amount)).replace(/₹/, '').trim();
 
   return (
     <div className={`flex flex-row items-center text-muted-foreground ${className}`}>
         {showType && (showOnlyNegative ? type === 'DEBIT' : true) && <span className={`text-sm font-mono`}>{type === 'DEBIT' ? '-' : '+'}</span>}
         <div className={`flex flex-row ${smallRupeeSymbol ? 'items-start' : 'items-center'}`}>
             <LuIndianRupee className={`${smallRupeeSymbol ? 'text-xs' : 'p-0.5 -mx-0.5'} font-base`}/>
-            <span className=' accent-foreground text-foreground'>
-            {formattedAmount}
-            </span>
+            <span className=' accent-foreground text-foreground'>{formattedAmount}</span>
         </div>
     </div>
   );
 };
 
-export default AmountDisplay; 
+export default CurrencyDisplay; 

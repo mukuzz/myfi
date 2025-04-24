@@ -4,7 +4,7 @@ import { Transaction, Tag, TagMap } from '../types'; // Keep Transaction type
 import { formatCurrency, formatDate as formatDateUtil } from '../utils/formatters';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import TagSelector from './TagSelector';
-import AmountDisplay from './AmountDisplay';
+import CurrencyDisplay from './AmountDisplay';
 
 
 // Format date for display in input area
@@ -112,6 +112,7 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
                 return; // Prevent exceeding max amount
             }
         }
+        transaction.amount = parseFloat(nextAmountString);
         setAmountString(nextAmountString);
     };
 
@@ -121,7 +122,11 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
     };
 
     const toggleTransactionType = () => {
-        setTransactionType(prev => prev === 'DEBIT' ? 'CREDIT' : 'DEBIT');
+        setTransactionType(prev => {
+            let type: 'CREDIT' | 'DEBIT' = prev === 'DEBIT' ? 'CREDIT' : 'DEBIT';
+            transaction.type = type;
+            return type;
+        });
     };
 
     // New handlers for tag selection
@@ -136,6 +141,7 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
     const handleSelectTag = (tagId: number | null) => {
         setSelectedTagId(tagId === null ? undefined : tagId);
         closeTagSelector();
+        transaction.tagId = tagId;
     };
 
     const handleSubmit = async () => {
@@ -207,7 +213,7 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
                         {mode === 'split' && maxAmount !== undefined && (
                             <div className="flex flex-row justify-center items-center mb-3">
                                 <p className="text-xs text-muted-foreground text-center mr-2">Splitting from</p>
-                                <AmountDisplay amount={maxAmount} showType={false} className="font-medium" />
+                                <CurrencyDisplay amount={maxAmount} showType={false} className="font-medium" />
                             </div>
                         )}
 
@@ -216,24 +222,35 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
                             <input
                                 type="text"
                                 value={description}
-                                onChange={(e) => setDescription(e.target.value)}
+                                onChange={(e) => {
+                                    setDescription(e.target.value);
+                                    transaction.description = e.target.value;
+                                }}
                                 placeholder="Paid to?"
                                 className="flex-grow min-w-0 bg-transparent border border-dashed border-muted-foreground rounded px-2 py-1 text-sm placeholder-muted-foreground focus:outline-none focus:border-primary mr-2"
                                 disabled={isSubmitting}
                             />
                             {/* Date Button - Needs a way to select date */}
                             <button
-                                // onClick={() => { /* Open date picker */ }}
                                 className="border border-dashed border-muted-foreground rounded px-2 py-1 text-sm text-muted-foreground whitespace-nowrap"
                                 disabled={isSubmitting}
                             >
-                                {formatDateForDisplay(transactionDate)}
+                                <input
+                                    type="date"
+                                    value={transactionDate.toISOString().split('T')[0]}
+                                    className="bg-transparent border-none focus:outline-none text-sm text-muted-foreground"
+                                    max={new Date().toISOString().split('T')[0]}
+                                    onChange={(e) => {
+                                        setTransactionDate(new Date(e.target.value));
+                                        transaction.transactionDate = e.target.value;   
+                                    }}
+                                />
                             </button>
                         </div>
 
                         {/* Amount Display & Tag Button */}
                         <div className={`flex justify-between items-center mb-3`}>
-                            <AmountDisplay 
+                            <CurrencyDisplay 
                                 amount={parseFloat(amountString) || 0} 
                                 smallRupeeSymbol={true}
                                 className="text-3xl font-semibold"

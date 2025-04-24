@@ -10,7 +10,7 @@ export interface Transaction {
   transactionDate: string; // Dates usually come as ISO strings
   createdAt: string; // Added createdAt field
   updatedAt?: string; // Added updatedAt field
-  tagId?: number; // Use tagId (optional if a transaction might not have a tag)
+  tagId?: number | null; // Use tagId (optional if a transaction might not have a tag)
   account?: Account | null; // Replacing accountId with account object
   counterParty?: string; // Added from backend model
   parentId?: number | null; // Optional parent ID for subtransactions
