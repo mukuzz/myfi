@@ -40,7 +40,7 @@ const RefreshBar: React.FC = () => { // No props needed now
     <>
       {/* The clickable bar */}
       <div 
-        className="md:static bottom-16 left-0 right-0 flex-shrink-0 px-4 py-2 bg-muted border-t border-border flex items-center justify-center cursor-pointer"
+        className="sticky z-10 bottom-0 left-0 right-0 flex-shrink-0 px-4 py-2 bg-muted border-t border-border flex items-center justify-center cursor-pointer"
         onClick={openRefreshSheet}
       >
         <FiRefreshCw className="mr-2 h-4 w-4" />

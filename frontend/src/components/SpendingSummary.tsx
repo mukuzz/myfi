@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from './Card';
 import { Transaction, Tag } from '../types';
 import { FiMoreHorizontal } from 'react-icons/fi';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { fetchCurrentMonthTransactions } from '../store/slices/transactionsSlice';
+import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
 import CurrencyDisplay from './AmountDisplay';
 
@@ -14,11 +15,12 @@ interface TagSpending {
 
 const SpendingSummary: React.FC = () => {
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
 
     const {
-        currentMonthTransactions,
-        currentMonthStatus: transactionsStatus,
-        currentMonthError: transactionsError
+        transactions,
+        status: transactionsStatus,
+        error: transactionsError
     } = useAppSelector((state) => state.transactions);
     const {
         tags,
@@ -30,28 +32,31 @@ const SpendingSummary: React.FC = () => {
     const error = transactionsError || tagsError;
 
     useEffect(() => {
-        if (transactionsStatus === 'idle') {
-            dispatch(fetchCurrentMonthTransactions());
+        if (transactionsStatus === 'idle' || transactionsStatus === 'failed') {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1; // 1-indexed month
+            dispatch(fetchTransactionsForMonth({ year: currentYear, month: currentMonth }));
         }
-        if (tagsStatus === 'idle') {
+        if (tagsStatus === 'idle' || tagsStatus === 'failed') {
             dispatch(fetchTags());
         }
     }, [dispatch, transactionsStatus, tagsStatus]);
-
-    const formatCurrency = (amount: number): string => {
-        const formatter = new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            maximumFractionDigits: 0,
-        });
-        const formatted = formatter.format(Math.abs(amount)).replace(/^₹\s/, '₹');
-        return `${formatted}`;
-    };
 
     const spendingByTag = useMemo((): TagSpending[] => {
         if (transactionsStatus !== 'succeeded' || tagsStatus !== 'succeeded') {
             return [];
         }
+        
+        // Filter transactions for the current month
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth(); // 0-indexed
+
+        const currentMonthTransactions = transactions.filter(tx => {
+            const txDate = new Date(tx.transactionDate);
+            return txDate.getFullYear() === currentYear && txDate.getMonth() === currentMonth;
+        });
 
         const tagMap = new Map<number, string>();
         const tagParentMap = new Map<number, number | null>();
@@ -76,6 +81,7 @@ const SpendingSummary: React.FC = () => {
             initialSpendingMap.set(tagId, 0);
         });
 
+        // Use the filtered transactions for the current month
         currentMonthTransactions.forEach((tx: Transaction) => {
             if (tx.type === 'DEBIT' && !tx.excludeFromAccounting) {
                 const tagId = tx.tagId ?? 0;
@@ -115,7 +121,7 @@ const SpendingSummary: React.FC = () => {
 
         return aggregatedSpending;
 
-    }, [currentMonthTransactions, tags, transactionsStatus, tagsStatus]);
+    }, [transactions, tags, transactionsStatus, tagsStatus]);
 
     const currentDate = new Date();
     const monthYear = `${currentDate.toLocaleString('default', { month: 'long' }).toUpperCase()} ${currentDate.getFullYear()}`;
@@ -124,11 +130,15 @@ const SpendingSummary: React.FC = () => {
         return spendingByTag.reduce((sum, item) => sum + item.amount, 0);
     }, [spendingByTag]);
 
+    const handleCardClick = () => {
+        navigate('/spending-summary');
+    };
+
     return (
-        <Card className="flex flex-col">
+        <Card className="flex flex-col cursor-pointer" onClick={handleCardClick}>
             <header className="pl-4 pr-2 border-b border-border flex items-center justify-between flex-shrink-0">
                 <h1 className="text-xs font-bold">Spending Summary</h1>
-                <button className="text-muted-foreground p-2">
+                <button className="text-muted-foreground p-2" onClick={(e) => e.stopPropagation()}>
                     <FiMoreHorizontal size={20} />
                 </button>
             </header>
@@ -144,7 +154,7 @@ const SpendingSummary: React.FC = () => {
                     {!isLoading && !error && spendingByTag.length === 0 && (
                         <p className="text-muted-foreground text-center">No spending data for this period.</p>
                     )}
-                    {!isLoading && !error && spendingByTag.map((item, index) => {
+                    {!isLoading && !error && spendingByTag.slice(0, 5).map((item, index) => {
                         const barWidthPercentage = totalSpending > 0 ? (item.amount / totalSpending) * 100 : 0;
                         return (
                             <div key={index} className="flex justify-between items-center space-x-2">

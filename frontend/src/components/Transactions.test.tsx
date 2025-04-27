@@ -147,12 +147,9 @@ const mockInitialState: Partial<RootState> = {
             empty: false
         },
         currentPage: 0,
-        hasMore: true,
+        hasMore: false,
         status: 'succeeded',
         error: null,
-        currentMonthTransactions: [], // Add if needed by tests
-        currentMonthStatus: 'idle',
-        currentMonthError: null,
         mutationStatus: 'idle',
         mutationError: null,
     },

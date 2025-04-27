@@ -154,6 +154,21 @@ public class TransactionService {
         return transactionRepository.findByTransactionDateBetween(startOfMonth, endOfMonth);
     }
 
+    @Transactional(readOnly = true)
+    public List<Transaction> getTransactionsForMonth(int year, int month) {
+        // Validate month (1-12)
+        if (month < 1 || month > 12) {
+            throw new IllegalArgumentException("Invalid month: " + month + ". Month must be between 1 and 12.");
+        }
+
+        YearMonth yearMonth = YearMonth.of(year, month);
+        LocalDateTime startOfMonth = yearMonth.atDay(1).atStartOfDay();
+        LocalDateTime endOfMonth = yearMonth.atEndOfMonth().atTime(LocalTime.MAX);
+        
+        // Assuming findByTransactionDateBetween exists in TransactionRepository
+        return transactionRepository.findByTransactionDateBetween(startOfMonth, endOfMonth);
+    }
+
     /**
      * Splits a parent transaction into two specified amounts.
      * Creates one new sub-transaction and updates the parent transaction's amount.

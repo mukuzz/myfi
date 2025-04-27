@@ -1,8 +1,12 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction, AnyAction } from '@reduxjs/toolkit';
 import * as apiService from '../../services/apiService';
-import { Transaction, Page, Tag } from '../../types';
+import { Transaction, Page } from '../../types';
 import { deleteAccount } from '../slices/accountsSlice'; // Import the action from accountsSlice
 import { RootState } from '../store'; // Import RootState
+
+// Helper function to sort transactions by date descending
+const sortTransactionsByDateDesc = (a: Transaction, b: Transaction) =>
+    new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime();
 
 // Define the shape of the transactions state
 interface TransactionsState {
@@ -13,9 +17,6 @@ interface TransactionsState {
     hasMore: boolean;
     status: 'idle' | 'loading' | 'loadingMore' | 'succeeded' | 'failed';
     error: string | null;
-    currentMonthTransactions: Transaction[]; // Keep this for SpendingSummary specific data
-    currentMonthStatus: 'idle' | 'loading' | 'succeeded' | 'failed'; // Separate status for monthly fetch
-    currentMonthError: string | null;
     mutationStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
     mutationError: string | null;
 }
@@ -28,9 +29,6 @@ const initialState: TransactionsState = {
     hasMore: true,
     status: 'idle',
     error: null,
-    currentMonthTransactions: [],
-    currentMonthStatus: 'idle',
-    currentMonthError: null,
     mutationStatus: 'idle',
     mutationError: null,
 };
@@ -70,6 +68,22 @@ interface DeleteTransactionArgs {
     transactionId: number;
 }
 
+// Define arguments for fetching transactions for a specific month
+interface FetchTransactionsForMonthArgs {
+    year: number;
+    month: number; // Expecting 1-indexed month (Jan=1, Feb=2, ...)
+}
+
+// Define a type that includes the meta property for thunk actions
+interface AsyncThunkAction<Payload, Arg> extends AnyAction {
+    payload: Payload;
+    meta: {
+        arg: Arg;
+        requestId: string;
+        requestStatus: 'pending' | 'fulfilled' | 'rejected';
+    };
+}
+
 // Async thunk for fetching ALL transactions
 export const fetchTransactions = createAsyncThunk<
     Page<Transaction>,
@@ -102,28 +116,32 @@ export const fetchTransactions = createAsyncThunk<
     }
 );
 
-// Async thunk for fetching CURRENT MONTH transactions
-export const fetchCurrentMonthTransactions = createAsyncThunk<
+// Async thunk for fetching transactions for a SPECIFIC month and year
+export const fetchTransactionsForMonth = createAsyncThunk<
     Transaction[],
-    void,
+    FetchTransactionsForMonthArgs, // Use the new args interface
     { state: RootState, rejectValue: string }
 >(
-    'transactions/fetchCurrentMonthTransactions',
-    async (_, { rejectWithValue }): Promise<Transaction[]> => {
+    'transactions/fetchTransactionsForMonth', // Rename the action type
+    async ({ year, month }, { rejectWithValue }): Promise<Transaction[]> => {
         try {
-            const response = await apiService.fetchCurrentMonthTransactions();
+            // Assume apiService has a function that takes year and month
+            // Month is expected to be 1-indexed by the backend here
+            const response = await apiService.fetchTransactionsForMonth(year, month);
             return response;
         } catch (error: any) {
-            const message = error instanceof Error ? error.message : 'Failed to fetch current month transactions';
+            const message = error instanceof Error ? error.message : 'Failed to fetch transactions for the selected month';
             throw rejectWithValue(message);
         }
     },
     {
-        condition: (_, { getState }) => {
+        condition: ({ year, month }, { getState }) => {
           const state = getState() as RootState;
-          const { currentMonthStatus } = state.transactions;
-          // Prevent fetch if already loading or succeeded
-          if (currentMonthStatus === 'loading' || currentMonthStatus === 'succeeded') {
+          // Use the main status field
+          const { status } = state.transactions;
+          // TODO: Potentially add logic to check if data for this specific year/month is already loaded
+          // Prevent fetch if already loading
+          if (status === 'loading' || status === 'loadingMore') {
             return false;
           }
           return true;
@@ -272,9 +290,11 @@ const transactionsSlice = createSlice({
             .addCase(fetchTransactions.fulfilled, (state, action: PayloadAction<Page<Transaction>>) => {
                 const pageData = action.payload;
                 if (pageData.number > 0) {
-                    state.transactions = [...state.transactions, ...pageData.content];
+                    // Append new transactions and then sort
+                    state.transactions = [...state.transactions, ...pageData.content].sort(sortTransactionsByDateDesc);
                 } else {
-                    state.transactions = pageData.content;
+                    // Replace transactions and sort
+                    state.transactions = [...pageData.content].sort(sortTransactionsByDateDesc);
                 }
                 state.transactionPage = pageData;
                 state.currentPage = pageData.number;
@@ -285,18 +305,55 @@ const transactionsSlice = createSlice({
                 state.status = 'failed';
                 state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Unknown error fetching transactions';
             })
-            // --- Handlers for fetchCurrentMonthTransactions ---
-            .addCase(fetchCurrentMonthTransactions.pending, (state) => {
-                state.currentMonthStatus = 'loading';
-                state.currentMonthError = null;
+            // --- Handlers for fetchTransactionsForMonth ---
+            .addCase(fetchTransactionsForMonth.pending, (state) => {
+                state.status = 'loading'; // Use main status field
+                state.error = null; // Clear main error field
             })
-            .addCase(fetchCurrentMonthTransactions.fulfilled, (state, action: PayloadAction<Transaction[]>) => {
-                state.currentMonthStatus = 'succeeded';
-                state.currentMonthTransactions = action.payload;
+            .addCase(fetchTransactionsForMonth.fulfilled, (state, action: PayloadAction<Transaction[]>) => {
+                state.status = 'succeeded'; // Use main status field
+                const fetchedTransactions = action.payload;
+                
+                // Cast action to include meta
+                const thunkAction = action as AsyncThunkAction<Transaction[], FetchTransactionsForMonthArgs>;
+
+                // Safely determine the year and month
+                let year: number | undefined;
+                let month: number | undefined; // 1-indexed
+                
+                if (thunkAction.meta?.arg) {
+                    year = thunkAction.meta.arg.year;
+                    month = thunkAction.meta.arg.month;
+                } else if (fetchedTransactions.length > 0) {
+                    // Fallback: Infer from the first transaction if meta is unavailable
+                    const firstTxDate = new Date(fetchedTransactions[0].transactionDate);
+                    year = firstTxDate.getFullYear();
+                    month = firstTxDate.getMonth() + 1; // Adjust 0-indexed month
+                }
+
+                // Proceed only if year and month could be determined
+                if (year !== undefined && month !== undefined) {
+                    // Filter out existing transactions for the fetched month/year
+                    state.transactions = state.transactions.filter(tx => {
+                        const txDate = new Date(tx.transactionDate);
+                        const txYear = txDate.getFullYear();
+                        const txMonth = txDate.getMonth() + 1; // getMonth is 0-indexed, adjust to 1-indexed
+                        return !(txYear === year && txMonth === month);
+                    });
+
+                    // Add the newly fetched transactions
+                    state.transactions.push(...fetchedTransactions);
+                    // Sort transactions by date descending after update
+                    state.transactions.sort(sortTransactionsByDateDesc);
+                } else {
+                    // Handle the case where year/month couldn't be determined (e.g., empty payload and no meta.arg)
+                    console.warn('Could not determine year/month for fetched transactions. State not updated.');
+                    // Optionally set an error state here
+                }
             })
-            .addCase(fetchCurrentMonthTransactions.rejected, (state, action) => {
-                state.currentMonthStatus = 'failed';
-                state.currentMonthError = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Unknown error fetching monthly transactions';
+            .addCase(fetchTransactionsForMonth.rejected, (state, action) => {
+                state.status = 'failed'; // Use main status field
+                state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Unknown error fetching selected month transactions'; // Use main error field
             })
             // --- Handlers for createTransaction ---
             .addCase(createTransaction.pending, (state) => {
@@ -306,18 +363,7 @@ const transactionsSlice = createSlice({
             .addCase(createTransaction.fulfilled, (state, action: PayloadAction<Transaction>) => {
                 state.mutationStatus = 'succeeded';
                 state.transactions.unshift(action.payload);
-                // Add the new transaction to currentMonthTransactions if it belongs to the current month
-                const now = new Date();
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
-                
-                const txDate = new Date(action.payload.transactionDate);
-                const txMonth = txDate.getMonth();
-                const txYear = txDate.getFullYear();
-                
-                if (txMonth === currentMonth && txYear === currentYear) {
-                    state.currentMonthTransactions.unshift(action.payload);
-                }
+                state.transactions.sort(sortTransactionsByDateDesc); // Sort after adding
                 if (state.transactionPage) {
                     state.transactionPage.totalElements += 1;
                 }
@@ -357,9 +403,7 @@ const transactionsSlice = createSlice({
 
                 // Update in the main transactions list
                 updateTransactionInList(state.transactions);
-
-                // Update in the current month transactions list
-                updateTransactionInList(state.currentMonthTransactions);
+                state.transactions.sort(sortTransactionsByDateDesc); // Sort after update
             })
             .addCase(updateTransactionTag.rejected, (state, action) => {
                 state.mutationStatus = 'failed';
@@ -396,7 +440,7 @@ const transactionsSlice = createSlice({
                 };
 
                 updateTransactionInList(state.transactions);
-                updateTransactionInList(state.currentMonthTransactions);
+                state.transactions.sort(sortTransactionsByDateDesc); // Sort after update
             })
             .addCase(updateTransactionAsync.rejected, (state, action) => {
                 state.mutationStatus = 'failed';
@@ -432,9 +476,9 @@ const transactionsSlice = createSlice({
                     return list; // Return the modified list
                 };
 
-                // Update both main and current month lists
+                // Update both main and selected month lists
                 state.transactions = updateListWithSplit(state.transactions);
-                state.currentMonthTransactions = updateListWithSplit(state.currentMonthTransactions);
+                state.transactions.sort(sortTransactionsByDateDesc); // Sort after split
 
                 state.mutationStatus = 'succeeded';
                 state.mutationError = null;
@@ -468,12 +512,7 @@ const transactionsSlice = createSlice({
                     state.transactions.push(updatedParent);
                 }
 
-                // Remove child and update parent in current month list as well
-                state.currentMonthTransactions = state.currentMonthTransactions.filter(tx => tx.id !== mergedChildId);
-                const monthParentIndex = state.currentMonthTransactions.findIndex(tx => tx.id === updatedParent.id);
-                if (monthParentIndex !== -1) {
-                    state.currentMonthTransactions[monthParentIndex] = updatedParent;
-                }
+                state.transactions.sort(sortTransactionsByDateDesc); // Sort after merge
 
                 state.mutationStatus = 'succeeded';
                 state.mutationError = null;
@@ -490,9 +529,8 @@ const transactionsSlice = createSlice({
             .addCase(deleteTransactionAsync.fulfilled, (state, action: PayloadAction<number>) => {
                 state.mutationStatus = 'succeeded';
                 const deletedId = action.payload;
-                // Remove from both lists
-                state.transactions = state.transactions.filter(t => t.id !== deletedId);
-                state.currentMonthTransactions = state.currentMonthTransactions.filter(t => t.id !== deletedId);
+                // Remove from main list (sorting isn't strictly necessary after removal, but doesn't hurt)
+                state.transactions = state.transactions.filter(t => t.id !== deletedId).sort(sortTransactionsByDateDesc);
                 // Adjust total elements if page data exists
                 if (state.transactionPage) {
                     state.transactionPage.totalElements -= 1;
@@ -508,13 +546,14 @@ const transactionsSlice = createSlice({
                 // Remove transactions associated with the deleted account
                 state.transactions = state.transactions.filter(
                     (tx) => tx.account?.id.toString() !== deletedAccountId
-                );
-                // Also update current month transactions if they exist
-                state.currentMonthTransactions = state.currentMonthTransactions.filter(
-                    (tx) => tx.account?.id.toString() !== deletedAccountId
-                );
-                // Optional: Update pagination info if necessary, though removing from the main list might be sufficient
-                // Recalculating totalElements could be complex here
+                ).sort(sortTransactionsByDateDesc); // Sort after removal
+                // Adjust total elements if page data exists
+                if (state.transactionPage) {
+                    // This count adjustment might be slightly off if sub-transactions were counted before.
+                    // Recalculating count based on the filtered list length might be more robust.
+                    // state.transactionPage.totalElements = state.transactions.filter(tx => !tx.parentId).length; // Example: Count only parents
+                     state.transactionPage.totalElements = state.transactions.length; // Or simply update with current length if total includes sub-tx
+                }
             });
     },
 });

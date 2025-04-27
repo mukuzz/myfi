@@ -134,4 +134,21 @@ public class TransactionController {
         List<Transaction> transactions = transactionService.getTransactionsForCurrentMonth();
         return ResponseEntity.ok(transactions);
     }
+
+    @GetMapping("/month")
+    public ResponseEntity<List<Transaction>> getTransactionsForMonth(
+            @RequestParam int year,
+            @RequestParam int month) {
+        // Assuming month is 1-indexed (Jan=1, Feb=2, ...)
+        try {
+            List<Transaction> transactions = transactionService.getTransactionsForMonth(year, month);
+            return ResponseEntity.ok(transactions);
+        } catch (IllegalArgumentException e) {
+            // Handle cases like invalid month/year range if needed in the service
+            return ResponseEntity.badRequest().body(null); // Or return an error message
+        } catch (Exception e) {
+            log.error("Error fetching transactions for year={} month={}", year, month, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 } 

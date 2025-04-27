@@ -281,6 +281,22 @@ export async function fetchCurrentMonthTransactions(): Promise<Transaction[]> {
   return response.json();
 }
 
+// Fetches transactions for a specific month and year
+export async function fetchTransactionsForMonth(year: number, month: number): Promise<Transaction[]> {
+  // Month is expected to be 1-indexed (Jan=1, Feb=2, ...)
+  const response = await fetch(`${API_BASE_URL}/transactions/month?year=${year}&month=${month}`);
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {}
+    console.error(`Failed to fetch transactions for ${year}-${month}:`, errorMessage);
+    throw new Error(`Failed to fetch transactions for selected month: ${errorMessage}`);
+  }
+  return response.json();
+}
+
 // Fetches all tags
 export async function fetchTags(): Promise<Tag[]> {
   const response = await fetch(`${API_BASE_URL}/tags`);

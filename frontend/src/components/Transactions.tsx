@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { FiFilter, FiSearch } from 'react-icons/fi';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import {
-    fetchTransactions,
-    updateTransactionTag
+    fetchTransactionsForMonth,
+    updateTransactionTag,
 } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
 import { fetchAccounts } from '../store/slices/accountsSlice';
@@ -23,18 +23,24 @@ const getMonthYear = (dateString: string): string => {
 function Transactions() {
     const dispatch = useAppDispatch();
 
+    const today = useMemo(() => new Date(), []);
+    const initialYear = today.getFullYear();
+    const initialMonth = today.getMonth() + 1;
+
+    const [oldestLoadedYear, setOldestLoadedYear] = useState<number>(initialYear);
+    const [oldestLoadedMonth, setOldestLoadedMonth] = useState<number>(initialMonth);
+    const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+    const [hasOlderMonths, setHasOlderMonths] = useState<boolean>(true);
+
     const {
         transactions,
         status: transactionStatus,
         error: transactionError,
-        currentPage,
-        hasMore
     } = useAppSelector((state) => state.transactions);
     const { tags, status: tagsStatus, error: tagsError } = useAppSelector((state) => state.tags);
     const { accounts, status: accountsStatus, error: accountsError } = useAppSelector((state) => state.accounts);
 
     const isLoadingInitial = transactionStatus === 'loading' && transactions.length === 0;
-    const isLoadingMore = transactionStatus === 'loadingMore';
     const overallError = transactionError || tagsError || accountsError;
 
     const [isTagSelectorOpen, setIsTagSelectorOpen] = useState<boolean>(false);
@@ -47,8 +53,8 @@ function Transactions() {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (transactionStatus === 'idle') {
-            dispatch(fetchTransactions());
+        if (transactionStatus === 'idle' && transactions.length === 0) {
+            dispatch(fetchTransactionsForMonth({ year: initialYear, month: initialMonth }));
         }
         if (tagsStatus === 'idle') {
             dispatch(fetchTags());
@@ -56,7 +62,13 @@ function Transactions() {
         if (accountsStatus === 'idle') {
             dispatch(fetchAccounts());
         }
-    }, [dispatch, transactionStatus, tagsStatus, accountsStatus]);
+    }, [dispatch, transactionStatus, tagsStatus, accountsStatus, initialYear, initialMonth, transactions.length]);
+
+    useEffect(() => {
+        if (transactionStatus !== 'loading') {
+            setIsLoadingMore(false);
+        }
+    }, [transactionStatus]);
 
     const tagMap = useMemo((): TagMap => {
         if (tagsStatus !== 'succeeded') return {};
@@ -67,15 +79,42 @@ function Transactions() {
         return map;
     }, [tags, tagsStatus]);
 
-    const handleScroll = useCallback(() => {
+    const handleScroll = useCallback(async () => {
         const container = scrollContainerRef.current;
-        if (container && transactionStatus !== 'loadingMore' && hasMore && transactionStatus !== 'loading') {
+        if (container && !isLoadingMore && hasOlderMonths && transactionStatus !== 'loading') {
             const { scrollTop, scrollHeight, clientHeight } = container;
             if (scrollHeight - scrollTop - clientHeight < 500) {
-                dispatch(fetchTransactions({ page: currentPage + 1 }));
+                setIsLoadingMore(true);
+
+                let previousMonth = oldestLoadedMonth - 1;
+                let previousYear = oldestLoadedYear;
+                if (previousMonth < 1) {
+                    previousMonth = 12;
+                    previousYear -= 1;
+                }
+
+                setOldestLoadedMonth(previousMonth);
+                setOldestLoadedYear(previousYear);
+
+                try {
+                    const resultAction = await dispatch(fetchTransactionsForMonth({ year: previousYear, month: previousMonth }));
+
+                    if (fetchTransactionsForMonth.fulfilled.match(resultAction)) {
+                        if (resultAction.payload.length === 0) {
+                            setHasOlderMonths(false);
+                        }
+                    }
+                    if (fetchTransactionsForMonth.rejected.match(resultAction)) {
+                        console.error("Failed to fetch older month:", resultAction.payload || resultAction.error.message);
+                    }
+                } catch (error) {
+                    console.error("Error dispatching fetchTransactionsForMonth:", error);
+                } finally {
+                    setIsLoadingMore(false);
+                }
             }
         }
-    }, [transactionStatus, hasMore, currentPage, dispatch]);
+    }, [dispatch, isLoadingMore, hasOlderMonths, oldestLoadedMonth, oldestLoadedYear, transactionStatus]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -154,16 +193,18 @@ function Transactions() {
                     <FiSearch className="absolute left-6 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                     <input
                         type="text"
-                        placeholder="Search transactions"
+                        placeholder={`Search transactions...`}
                         className="w-full bg-input border border-input rounded-lg pl-8 pr-4 py-1 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary"
                     />
                 </div>
             </div>
 
             <div ref={scrollContainerRef} className="flex-grow overflow-y-auto thin-scrollbar px-2">
-                {isLoadingInitial && <p className="text-center p-8 text-muted-foreground">Loading transactions...</p>}
+                {isLoadingInitial && <p className="text-center p-8 text-muted-foreground">Loading initial transactions...</p>}
                 {overallError && <p className="text-center text-destructive">Error: {overallError}</p>}
-                {!isLoadingInitial && !overallError && transactions.length === 0 && <p className="text-center text-muted-foreground">No transactions found.</p>}
+                {!isLoadingInitial && !overallError && transactions.length === 0 && transactionStatus === 'succeeded' && (
+                    <p className="text-center p-8 text-muted-foreground">No transactions found.</p>
+                )}
 
                 {transactions.length > 0 && (
                     <ul className="space-y-2 px-2">
@@ -204,7 +245,7 @@ function Transactions() {
                                                         <div className="bg-background text-sm font-medium text-secondary-foreground pr-2">
                                                             {tx.subTransactions?.length} split{tx.subTransactions?.length === 1 ? "" : "s"}
                                                         </div>
-                                                        {">"}
+                                                        {" > "}
                                                     </div>
                                                 </button>
                                             )}
@@ -230,7 +271,6 @@ function Transactions() {
                                                     ))}
                                                 </>
                                             )}
-
                                         </div>
                                     </li>
                                 </React.Fragment>
@@ -241,7 +281,7 @@ function Transactions() {
 
                 <div className="h-10 flex justify-center items-center">
                     {isLoadingMore && <p className="text-sm text-muted-foreground">Loading more...</p>}
-                    {!isLoadingMore && !hasMore && transactions.length > 0 && <p className="text-sm text-muted-foreground">End of transactions.</p>}
+                    {!isLoadingMore && !hasOlderMonths && transactions.length > 0 && <p className="text-sm text-muted-foreground">End of transactions.</p>}
                 </div>
             </div>
 

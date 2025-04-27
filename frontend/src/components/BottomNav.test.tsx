@@ -1,8 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import BottomNav from './BottomNav'; // Adjust path if needed
-import { Tab } from '../types'; // Adjust path if needed
-import '@testing-library/jest-dom'; // For extended matchers
+import { MemoryRouter } from 'react-router-dom'; // Import MemoryRouter
+import BottomNav from './BottomNav';
+// Remove Tab import if not needed
+import '@testing-library/jest-dom';
 
 // Mock react-icons to avoid rendering actual SVGs
 jest.mock('react-icons/fi', () => ({
@@ -20,63 +21,49 @@ jest.mock('react-icons/fi', () => ({
 //   RiFileListFill: () => <svg data-testid="transactions-icon-fill" />,
 // }));
 
-
 describe('BottomNav Component', () => {
-  const mockSetActiveTab = jest.fn();
+  // Helper function to render with Router context
+  const renderWithRouter = (initialEntries = ['/']) => {
+    return render(
+      <MemoryRouter initialEntries={initialEntries}>
+        <BottomNav />
+      </MemoryRouter>
+    );
+  };
 
-  beforeEach(() => {
-    // Clear mock calls before each test
-    mockSetActiveTab.mockClear();
-  });
-
-  test('renders navigation items', () => {
-    render(<BottomNav activeTab="Home" setActiveTab={mockSetActiveTab} />);
-    expect(screen.getByRole('button', { name: /home/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /transactions/i })).toBeInTheDocument();
-    // Check if icons are rendered (using test IDs from mock)
+  test('renders navigation links', () => {
+    renderWithRouter();
+    expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /transactions/i })).toBeInTheDocument();
+    // Check if icons are rendered
     expect(screen.getByTestId('home-icon')).toBeInTheDocument();
     expect(screen.getByTestId('list-icon')).toBeInTheDocument();
   });
 
   test('highlights the active tab (Home)', () => {
-    render(<BottomNav activeTab="Home" setActiveTab={mockSetActiveTab} />);
-    const homeButton = screen.getByRole('button', { name: /home/i });
-    const transactionsButton = screen.getByRole('button', { name: /transactions/i });
+    renderWithRouter(['/']); // Start at the root path
+    const homeLink = screen.getByRole('link', { name: /home/i });
+    const transactionsLink = screen.getByRole('link', { name: /transactions/i });
 
-    // Check for the correct classes based on the actual implementation
-    expect(homeButton).toHaveClass('accent-secondary-foreground');
-    expect(homeButton).not.toHaveClass('text-muted-foreground'); 
-    expect(transactionsButton).toHaveClass('text-muted-foreground');
-    expect(transactionsButton).not.toHaveClass('accent-secondary-foreground');
+    expect(homeLink).toHaveClass('accent-secondary-foreground');
+    expect(homeLink).not.toHaveClass('text-muted-foreground');
+    expect(transactionsLink).toHaveClass('text-muted-foreground');
+    expect(transactionsLink).not.toHaveClass('accent-secondary-foreground');
   });
 
   test('highlights the active tab (Transactions)', () => {
-    render(<BottomNav activeTab="Transactions" setActiveTab={mockSetActiveTab} />);
-    const homeButton = screen.getByRole('button', { name: /home/i });
-    const transactionsButton = screen.getByRole('button', { name: /transactions/i });
+    renderWithRouter(['/transactions']); // Start at the transactions path
+    const homeLink = screen.getByRole('link', { name: /home/i });
+    const transactionsLink = screen.getByRole('link', { name: /transactions/i });
 
-    expect(homeButton).toHaveClass('text-muted-foreground');
-    expect(homeButton).not.toHaveClass('accent-secondary-foreground');
-    expect(transactionsButton).toHaveClass('accent-secondary-foreground');
-    expect(transactionsButton).not.toHaveClass('text-muted-foreground');
+    expect(homeLink).toHaveClass('text-muted-foreground');
+    expect(homeLink).not.toHaveClass('accent-secondary-foreground');
+    expect(transactionsLink).toHaveClass('accent-secondary-foreground');
+    expect(transactionsLink).not.toHaveClass('text-muted-foreground');
   });
 
-  test('calls setActiveTab with "Home" when Home tab is clicked', () => {
-    render(<BottomNav activeTab="Transactions" setActiveTab={mockSetActiveTab} />);
-    const homeButton = screen.getByRole('button', { name: /home/i });
-    fireEvent.click(homeButton);
-    expect(mockSetActiveTab).toHaveBeenCalledTimes(1);
-    expect(mockSetActiveTab).toHaveBeenCalledWith('Home'); 
-  });
-
-  test('calls setActiveTab with "Transactions" when Transactions tab is clicked', () => {
-    render(<BottomNav activeTab="Home" setActiveTab={mockSetActiveTab} />);
-    const transactionsButton = screen.getByRole('button', { name: /transactions/i });
-    fireEvent.click(transactionsButton);
-    expect(mockSetActiveTab).toHaveBeenCalledTimes(1);
-    expect(mockSetActiveTab).toHaveBeenCalledWith('Transactions');
-  });
-
-  // Removed the test for not calling setActiveTab when clicking the active tab, as the component allows it.
+  // Remove tests checking setActiveTab mock calls
+  // Optional: Add tests to check if clicking links changes the location 
+  // if needed, but MemoryRouter handles this inherently.
 
 }); 

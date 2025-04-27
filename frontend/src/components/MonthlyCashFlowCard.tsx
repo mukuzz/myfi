@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import Card from './Card';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { fetchCurrentMonthTransactions } from '../store/slices/transactionsSlice';
+import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
 import { Transaction } from '../types'; // Import Transaction type
 import { FiMoreHorizontal } from 'react-icons/fi'; // Import icon
 import CurrencyDisplay from './AmountDisplay';
@@ -10,29 +10,42 @@ import CurrencyDisplay from './AmountDisplay';
 const MonthlyCashFlowCard: React.FC = () => {
   const dispatch = useAppDispatch();
   const { 
-    currentMonthTransactions,
-    currentMonthStatus: transactionsStatus,
-    currentMonthError: transactionsError 
+    transactions, // Use main transactions list
+    status,       // Use main status
+    error         // Use main error
   } = useAppSelector((state) => state.transactions);
 
-  const isLoading = transactionsStatus === 'loading';
-  const error = transactionsError;
+  const isLoading = status === 'loading';
 
   useEffect(() => {
-    if (transactionsStatus === 'idle') {
-      dispatch(fetchCurrentMonthTransactions());
+    if (status === 'idle' || status === 'failed') {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1; // Month is 1-indexed for the API
+      dispatch(fetchTransactionsForMonth({ year: currentYear, month: currentMonth }));
     }
-  }, [dispatch, transactionsStatus]);
+  }, [status, dispatch]);
 
   const { incoming, outgoing, invested } = useMemo(() => {
-    if (transactionsStatus !== 'succeeded') {
+    if (status !== 'succeeded') {
       return { incoming: 0, outgoing: 0, invested: 0 };
     }
+    
+    // Filter transactions for the current month
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-indexed
+
+    const currentMonthTransactions = transactions.filter(tx => {
+        const txDate = new Date(tx.transactionDate);
+        return txDate.getFullYear() === currentYear && txDate.getMonth() === currentMonth;
+    });
 
     let incomingTotal = 0;
     let outgoingTotal = 0;
     let investedTotal = 0; // Placeholder for investment logic
 
+    // Use the filtered transactions
     currentMonthTransactions.forEach((tx: Transaction) => {
       if (tx.excludeFromAccounting) return; // Skip excluded transactions
 
@@ -48,7 +61,7 @@ const MonthlyCashFlowCard: React.FC = () => {
 
     return { incoming: incomingTotal, outgoing: outgoingTotal, invested: investedTotal };
 
-  }, [currentMonthTransactions, transactionsStatus]);
+  }, [transactions, status]); // Depend on main transactions and status
 
   const currentDate = new Date();
   const monthYear = `${currentDate.toLocaleString('default', { month: 'long' }).toUpperCase()} ${currentDate.getFullYear()}`;
@@ -70,8 +83,7 @@ const MonthlyCashFlowCard: React.FC = () => {
         </div>
 
         {isLoading && <p className="text-muted-foreground text-center">Loading...</p>}
-        {error && <p className="text-destructive text-center">Error: {error}</p>}
-        {!isLoading && !error && (
+        {!isLoading && (
           <div className="space-y-2 font-medium"> 
             <div className="flex justify-between">
               <span>Incoming</span>

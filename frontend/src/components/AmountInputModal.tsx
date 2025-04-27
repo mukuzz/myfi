@@ -112,7 +112,7 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
                 return; // Prevent exceeding max amount
             }
         }
-        transaction.amount = parseFloat(nextAmountString);
+        // transaction.amount = parseFloat(nextAmountString); // Removed: Mutates prop/state directly
         setAmountString(nextAmountString);
     };
 

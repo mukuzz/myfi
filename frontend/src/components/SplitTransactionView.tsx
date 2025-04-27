@@ -4,7 +4,7 @@ import { LuPackageOpen } from 'react-icons/lu'; // Icon for split into following
 import { Transaction, TagMap } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { useAppDispatch, useAppSelector } from '../store/hooks'; // Import Redux hooks
-import { splitTransaction, resetMutationStatus, mergeTransaction, fetchCurrentMonthTransactions } from '../store/slices/transactionsSlice'; // Import Redux action
+import { splitTransaction, resetMutationStatus, mergeTransaction, fetchTransactionsForMonth } from '../store/slices/transactionsSlice'; // Import Redux action
 import TransactionCard from './TransactionCard';
 import AmountInputModal from './AmountInputModal';
 
@@ -174,7 +174,10 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
             try {
                 console.log(`Dispatching merge action for Child Tx ID ${childTransaction.id}`);
                 await dispatch(mergeTransaction(childTransaction.id)).unwrap();
-                dispatch(fetchCurrentMonthTransactions());
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1; // 1-indexed month
+                dispatch(fetchTransactionsForMonth({ year: currentYear, month: currentMonth }));
                 console.log("Transaction merged successfully via Redux.");
                 // State updates automatically via Redux store changes -> re-render
                 // Potentially close the view if the parent becomes the only transaction?

@@ -7,7 +7,7 @@ import { decryptCredentials, EncryptedCredentialData } from '../utils/cryptoUtil
 import PassphraseModal from './PassphraseModal';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store/store';
-import { fetchTransactions, fetchCurrentMonthTransactions } from '../store/slices/transactionsSlice';
+import { fetchTransactions, fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
 import AccountProgressItem from './AccountProgressItem';
 
 
@@ -91,7 +91,10 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
             setComponentStatus('success');
             setErrorMessage(null); // Clear previous errors
             dispatch(fetchTransactions() as any);
-            dispatch(fetchCurrentMonthTransactions() as any);
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1; // 1-indexed month
+            dispatch(fetchTransactionsForMonth({ year: currentYear, month: currentMonth }) as any);
             onRefreshSuccess(); // Notify parent of success
           }
 
@@ -116,7 +119,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
     pollFn(); // Run immediately
     pollIntervalRef.current = setInterval(pollFn, 5000); // Poll every 5 seconds
 
-  }, [stopPolling, dispatch, onRefreshSuccess, onClose]);
+  }, [stopPolling, dispatch, onRefreshSuccess, componentStatus]);
 
   // --- Initial Status Fetch ---
   useEffect(() => {
