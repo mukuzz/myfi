@@ -151,4 +151,23 @@ public class TransactionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
+    @GetMapping("/range")
+    public ResponseEntity<List<Transaction>> getTransactionsForRange(
+            @RequestParam int startYear,
+            @RequestParam int startMonth,
+            @RequestParam int endYear,
+            @RequestParam int endMonth) {
+        try {
+            List<Transaction> transactions = transactionService.getTransactionsForRange(startYear, startMonth, endYear, endMonth);
+            return ResponseEntity.ok(transactions);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid range specified: {}-{} to {}-{}", startYear, startMonth, endYear, endMonth, e);
+            // Return bad request for invalid arguments (e.g., month out of 1-12 range)
+            return ResponseEntity.badRequest().body(null); // Or return an error message like: .body(List.of(e.getMessage()))
+        } catch (Exception e) {
+            log.error("Error fetching transactions for range {}-{} to {}-{}", startYear, startMonth, endYear, endMonth, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 } 

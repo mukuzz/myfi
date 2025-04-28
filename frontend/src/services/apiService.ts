@@ -283,16 +283,40 @@ export async function fetchCurrentMonthTransactions(): Promise<Transaction[]> {
 
 // Fetches transactions for a specific month and year
 export async function fetchTransactionsForMonth(year: number, month: number): Promise<Transaction[]> {
-  // Month is expected to be 1-indexed (Jan=1, Feb=2, ...)
+  // Fetch all transactions for a given month and year (without pagination)
   const response = await fetch(`${API_BASE_URL}/transactions/month?year=${year}&month=${month}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch transactions for ${year}-${month}`);
+  }
+  return response.json();
+}
+
+/**
+ * Fetches transactions for a specific range of months.
+ * @param startYear The starting year.
+ * @param startMonth The starting month (1-indexed).
+ * @param endYear The ending year.
+ * @param endMonth The ending month (1-indexed).
+ * @returns An array of transactions within the specified range.
+ * @throws Error if the fetch fails.
+ */
+export async function fetchTransactionsForRange(
+  startYear: number,
+  startMonth: number,
+  endYear: number,
+  endMonth: number
+): Promise<Transaction[]> {
+  const url = `${API_BASE_URL}/transactions/range?startYear=${startYear}&startMonth=${startMonth}&endYear=${endYear}&endMonth=${endMonth}`;
+  const response = await fetch(url);
   if (!response.ok) {
     let errorMessage = `HTTP error! status: ${response.status}`;
     try {
       const errorBody = await response.json();
       errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
-    } catch (e) {}
-    console.error(`Failed to fetch transactions for ${year}-${month}:`, errorMessage);
-    throw new Error(`Failed to fetch transactions for selected month: ${errorMessage}`);
+    } catch (e) {
+      // Ignore
+    }
+    throw new Error(`Failed to fetch transactions for range ${startYear}-${startMonth} to ${endYear}-${endMonth}: ${errorMessage}`);
   }
   return response.json();
 }

@@ -33,6 +33,13 @@ const initialState: TransactionsState = {
     mutationError: null,
 };
 
+// Helper function to merge transactions without duplicates
+const mergeTransactions = (existing: Transaction[], incoming: Transaction[]): Transaction[] => {
+    const existingIds = new Set(existing.map(tx => tx.id));
+    const uniqueIncoming = incoming.filter(tx => !existingIds.has(tx.id));
+    return [...existing, ...uniqueIncoming].sort(sortTransactionsByDateDesc);
+};
+
 // Define arguments for fetchTransactions thunk
 interface FetchTransactionsArgs {
     page?: number;
@@ -72,6 +79,14 @@ interface DeleteTransactionArgs {
 interface FetchTransactionsForMonthArgs {
     year: number;
     month: number; // Expecting 1-indexed month (Jan=1, Feb=2, ...)
+}
+
+// Define arguments for fetching transactions for a specific range of months
+interface FetchTransactionRangeArgs {
+    startYear: number;
+    startMonth: number; // 1-indexed
+    endYear: number;
+    endMonth: number; // 1-indexed
 }
 
 // Define a type that includes the meta property for thunk actions
@@ -145,6 +160,37 @@ export const fetchTransactionsForMonth = createAsyncThunk<
             return false;
           }
           return true;
+        },
+    }
+);
+
+// Async thunk for fetching transactions for a RANGE of months
+export const fetchTransactionRange = createAsyncThunk<
+    Transaction[], // Expecting an array of transactions for the range
+    FetchTransactionRangeArgs,
+    { state: RootState, rejectValue: string }
+>(
+    'transactions/fetchTransactionRange',
+    async ({ startYear, startMonth, endYear, endMonth }, { rejectWithValue }): Promise<Transaction[]> => {
+        try {
+            // Assume apiService has a function that takes the range
+            const response = await apiService.fetchTransactionsForRange(startYear, startMonth, endYear, endMonth);
+            return response;
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to fetch transactions for the specified range';
+            throw rejectWithValue(message);
+        }
+    },
+    {
+        condition: (args, { getState }) => {
+            const state = getState() as RootState;
+            // TODO: Implement more sophisticated condition check if needed,
+            // e.g., check if data for the specific range is already being fetched or partially exists.
+            const { status } = state.transactions;
+            if (status === 'loading' || status === 'loadingMore') {
+                return false; // Don't fetch if already busy
+            }
+            return true;
         },
     }
 );
@@ -313,47 +359,46 @@ const transactionsSlice = createSlice({
             .addCase(fetchTransactionsForMonth.fulfilled, (state, action: PayloadAction<Transaction[]>) => {
                 state.status = 'succeeded'; // Use main status field
                 const fetchedTransactions = action.payload;
-                
-                // Cast action to include meta
-                const thunkAction = action as AsyncThunkAction<Transaction[], FetchTransactionsForMonthArgs>;
 
-                // Safely determine the year and month
-                let year: number | undefined;
-                let month: number | undefined; // 1-indexed
-                
-                if (thunkAction.meta?.arg) {
-                    year = thunkAction.meta.arg.year;
-                    month = thunkAction.meta.arg.month;
-                } else if (fetchedTransactions.length > 0) {
-                    // Fallback: Infer from the first transaction if meta is unavailable
-                    const firstTxDate = new Date(fetchedTransactions[0].transactionDate);
-                    year = firstTxDate.getFullYear();
-                    month = firstTxDate.getMonth() + 1; // Adjust 0-indexed month
-                }
+                // Create a Set of existing transaction IDs for efficient duplicate checking
+                const existingIds = new Set(state.transactions.map(tx => tx.id));
 
-                // Proceed only if year and month could be determined
-                if (year !== undefined && month !== undefined) {
-                    // Filter out existing transactions for the fetched month/year
-                    state.transactions = state.transactions.filter(tx => {
-                        const txDate = new Date(tx.transactionDate);
-                        const txYear = txDate.getFullYear();
-                        const txMonth = txDate.getMonth() + 1; // getMonth is 0-indexed, adjust to 1-indexed
-                        return !(txYear === year && txMonth === month);
-                    });
+                // Filter out fetched transactions that are already in the state
+                const newUniqueTransactions = fetchedTransactions.filter(tx => !existingIds.has(tx.id));
 
-                    // Add the newly fetched transactions
-                    state.transactions.push(...fetchedTransactions);
+                // Add only the new unique transactions to the state
+                if (newUniqueTransactions.length > 0) {
+                    state.transactions.push(...newUniqueTransactions);
                     // Sort transactions by date descending after update
                     state.transactions.sort(sortTransactionsByDateDesc);
-                } else {
-                    // Handle the case where year/month couldn't be determined (e.g., empty payload and no meta.arg)
-                    console.warn('Could not determine year/month for fetched transactions. State not updated.');
-                    // Optionally set an error state here
                 }
+
+                // Note: The previous logic that filtered out existing transactions for the month has been removed.
+                // The state now accumulates all fetched transactions.
             })
             .addCase(fetchTransactionsForMonth.rejected, (state, action) => {
                 state.status = 'failed'; // Use main status field
                 state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Unknown error fetching selected month transactions'; // Use main error field
+            })
+            // --- Handlers for fetchTransactionRange ---
+            .addCase(fetchTransactionRange.pending, (state, action) => {
+                // Check if already loading to avoid redundant state changes
+                if (state.status !== 'loading') {
+                    state.status = 'loading';
+                    state.error = null;
+                }
+            })
+            .addCase(fetchTransactionRange.fulfilled, (state, action: PayloadAction<Transaction[]>) => {
+                // Merge new transactions, avoiding duplicates
+                state.transactions = mergeTransactions(state.transactions, action.payload);
+                state.status = 'succeeded';
+                state.error = null;
+                // Note: This doesn't handle pagination logic like fetchTransactions
+                // It assumes fetchTransactionRange gets all transactions for the given range.
+            })
+            .addCase(fetchTransactionRange.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = typeof action.payload === 'string' ? action.payload : 'Failed to fetch transactions for range';
             })
             // --- Handlers for createTransaction ---
             .addCase(createTransaction.pending, (state) => {

@@ -170,6 +170,36 @@ public class TransactionService {
     }
 
     /**
+     * Retrieves transactions within a specified date range, inclusive.
+     *
+     * @param startYear The starting year of the range.
+     * @param startMonth The starting month (1-indexed) of the range.
+     * @param endYear The ending year of the range.
+     * @param endMonth The ending month (1-indexed) of the range.
+     * @return A list of transactions within the specified range.
+     * @throws IllegalArgumentException if the month values are invalid.
+     */
+    @Transactional(readOnly = true)
+    public List<Transaction> getTransactionsForRange(int startYear, int startMonth, int endYear, int endMonth) {
+        // Validate months
+        if (startMonth < 1 || startMonth > 12 || endMonth < 1 || endMonth > 12) {
+            throw new IllegalArgumentException("Invalid month specified. Months must be between 1 and 12.");
+        }
+        // Basic validation for year order (can be more sophisticated if needed)
+        if (startYear > endYear || (startYear == endYear && startMonth > endMonth)) {
+            throw new IllegalArgumentException("Start date cannot be after end date.");
+        }
+
+        YearMonth startYearMonth = YearMonth.of(startYear, startMonth);
+        YearMonth endYearMonth = YearMonth.of(endYear, endMonth);
+
+        LocalDateTime rangeStart = startYearMonth.atDay(1).atStartOfDay();
+        LocalDateTime rangeEnd = endYearMonth.atEndOfMonth().atTime(LocalTime.MAX);
+
+        return transactionRepository.findByTransactionDateBetween(rangeStart, rangeEnd);
+    }
+
+    /**
      * Splits a parent transaction into two specified amounts.
      * Creates one new sub-transaction and updates the parent transaction's amount.
      * Implement the detailed logic for validation, creation, and update here.

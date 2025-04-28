@@ -1,12 +1,10 @@
-import { useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'; // Import useLocation
-import { Tab } from './types'; // Import Tab type
 import Home from './components/Home';
 import Transactions from './components/Transactions';
 import SpendingDetails from './components/SpendingDetails'; // Import SpendingDetails
 import BottomNav from './components/BottomNav';
 import { useIsMobile } from './hooks/useIsMobile'; // Import the hook
-import RefreshBar from './components/RefreshBar'; // Import the unified component
+import CashFlowDetailsScreen from './screens/CashFlowDetailsScreen';
 
 
 function DesktopAppHome() {
@@ -37,6 +35,7 @@ function AppContent() {
               <Route path="/" element={<Home />} />
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/spending-summary" element={<SpendingDetails />} />
+              <Route path="/cash-flow" element={<CashFlowDetailsScreen />} />
             </Routes>
           </main>
           {/* Conditionally render RefreshBar and BottomNav */} 
@@ -47,13 +46,12 @@ function AppContent() {
           )}
         </>
       ) : (
-        <>
           <Routes>
             <Route path="/" element={<DesktopAppHome />} />
             <Route path="/transactions" element={<DesktopAppHome />} />
             <Route path="/spending-summary" element={<SpendingDetails />} />
+            <Route path="/cash-flow" element={<CashFlowDetailsScreen />} />
           </Routes>
-        </>
       )}
     </div>
   );
