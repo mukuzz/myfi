@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchTransactionsForMonth, fetchTransactionRange } from '../store/slices/transactionsSlice';
@@ -77,6 +77,11 @@ const getMonthAbbr = (month: number) => {
     return new Date(2000, month - 1, 1).toLocaleString('default', { month: 'short' });
 }
 
+// Helper function to get full month name
+const getMonthName = (year: number, month: number) => {
+     return new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+}
+
 const CashFlowDetailsScreen: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -88,23 +93,24 @@ const CashFlowDetailsScreen: React.FC = () => {
     const initialYear = initialState?.year ?? new Date().getFullYear();
     const initialMonth = initialState?.month ?? new Date().getMonth() + 1; // Ensure month is 1-indexed
 
-    // Use state to manage the currently viewed month/year
+    // Use state to manage the currently *selected* month/year (for data display)
     const [selectedYear, setSelectedYear] = useState<number>(initialYear);
     const [selectedMonth, setSelectedMonth] = useState<number>(initialMonth);
 
-    // Define the range for the chart (e.g., 5 months centered on selected)
-    const chartMonthsCount = 5; // Use an odd number for centering
-    const chartDateRange = useMemo(() => {
+    // Define the range for fetching data (e.g., 12 months centered on selected)
+    // Increased range to ensure we usually have enough data loaded for smooth scrolling
+    const dataFetchMonthsCount = 12;
+    const dataFetchDateRange = useMemo(() => {
         const selectedDate = new Date(selectedYear, selectedMonth - 1, 1);
-        const monthsBefore = Math.floor(chartMonthsCount / 2);
-        const monthsAfter = Math.floor(chartMonthsCount / 2);
+        const monthsBefore = Math.ceil(dataFetchMonthsCount / 2);
+        const monthsAfter = Math.floor(dataFetchMonthsCount / 2);
 
         const startDate = new Date(selectedDate);
         startDate.setMonth(startDate.getMonth() - monthsBefore);
 
         const endDate = new Date(selectedDate);
         endDate.setMonth(endDate.getMonth() + monthsAfter);
-        
+
         return {
             startYear: startDate.getFullYear(),
             startMonth: startDate.getMonth() + 1, // Convert back to 1-indexed
@@ -120,11 +126,12 @@ const CashFlowDetailsScreen: React.FC = () => {
         return { prevYear: date.getFullYear(), prevMonth: date.getMonth() + 1 };
     }, [selectedYear, selectedMonth]); // Depend on state vars
 
-    // Track if fetches for the current keys have been initiated in this render cycle
-    const fetchInitiatedRef = useRef<{ rangeKey?: string; prevKey?: string; range?: boolean; prev?: boolean }>({}); 
+    // Track if fetches for the current keys have been initiated
+    const fetchInitiatedRef = useRef<{ rangeKey?: string; prevKey?: string; range?: boolean; prev?: boolean }>({});
 
+    // Effect to fetch data for the required range and previous month
     useEffect(() => {
-        const { startYear, startMonth, endYear, endMonth } = chartDateRange;
+        const { startYear, startMonth, endYear, endMonth } = dataFetchDateRange;
         const rangeKey = `${startYear}-${startMonth}-${endYear}-${endMonth}`;
         const prevKey = `${prevYear}-${prevMonth}`;
 
@@ -172,10 +179,42 @@ const CashFlowDetailsScreen: React.FC = () => {
     // Dependencies: Only re-run when the core date definitions change.
     // We explicitly read `status` and `transactions` inside the effect from the closure
     // instead of adding them as dependencies to prevent loops caused by their updates.
-    }, [dispatch, chartDateRange, prevYear, prevMonth]); 
+    }, [dispatch, dataFetchDateRange, prevYear, prevMonth]); 
 
-    const currentMonthTotals = useMemo(() => {
-        // Calculate based on selectedYear/selectedMonth
+    // Prepare data for the chart - use the wider fetch range
+    const chartData = useMemo(() => {
+        const data: { year: number; month: number; monthAbbr: string; incoming: number; outgoing: number; invested: number }[] = [];
+        const { startYear, startMonth, endYear, endMonth } = dataFetchDateRange;
+
+        let current = new Date(startYear, startMonth - 1, 1);
+        const end = new Date(endYear, endMonth - 1, 1);
+
+        // Iterate through the *entire* fetch range
+        while (current <= end) {
+            const year = current.getFullYear();
+            const month = current.getMonth() + 1;
+            // Only add if data exists, otherwise chart might show gaps wrongly
+             if (doesMonthDataExist(transactions, year, month)) {
+                const totals = calculateTotals(transactions, year, month);
+                data.push({
+                    year: year,
+                    month: month,
+                    monthAbbr: getMonthAbbr(month), // Use short month name
+                    incoming: totals.incoming,
+                    outgoing: totals.outgoing,
+                    invested: totals.invested,
+                });
+            }
+            // Move to the next month
+            current.setMonth(current.getMonth() + 1);
+        }
+        // Sort data chronologically just in case iteration order isn't guaranteed
+        data.sort((a, b) => new Date(a.year, a.month - 1).getTime() - new Date(b.year, b.month - 1).getTime());
+        return data;
+    }, [transactions, dataFetchDateRange]); // Depend on the fetch range
+
+    // Calculate totals for the *currently selected* month for display
+     const currentMonthTotals = useMemo(() => {
         return calculateTotals(transactions, selectedYear, selectedMonth);
     }, [transactions, selectedYear, selectedMonth]);
 
@@ -189,38 +228,8 @@ const CashFlowDetailsScreen: React.FC = () => {
     const investedChange = calculatePercentageChange(currentMonthTotals.invested, previousMonthTotals.invested);
     const outgoingChange = calculatePercentageChange(currentMonthTotals.outgoing, previousMonthTotals.outgoing);
 
-    const isLoading = status === 'loading'; // Keep this simple loading indicator for now
-    const currentMonthName = new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long' });
-
-    // Prepare data for the chart
-    const chartData = useMemo(() => {
-        const data: { month: string; incoming: number; outgoing: number; invested: number }[] = [];
-        const { startYear, startMonth } = chartDateRange;
-        // The 'end' for iteration should be the selected month itself
-        const endIterationDate = new Date(selectedYear, selectedMonth - 1, 1);
-
-        let current = new Date(startYear, startMonth - 1, 1);
-
-        // Iterate from the start date up to the endIterationDate (inclusive)
-        while (current <= endIterationDate) {
-            const year = current.getFullYear();
-            const month = current.getMonth() + 1;
-            const totals = calculateTotals(transactions, year, month);
-            data.push({
-                month: getMonthAbbr(month), // Use short month name
-                incoming: totals.incoming,
-                outgoing: totals.outgoing,
-                invested: totals.invested,
-            });
-            // Move to the next month
-            current.setMonth(current.getMonth() + 1);
-        }
-        return data;
-        // Depend on selectedYear/Month as well now, because the end point depends on them
-    }, [transactions, chartDateRange, selectedYear, selectedMonth]);
-
-    // Get the abbreviation for the selected month to pass to the chart
-    const selectedMonthAbbr = getMonthAbbr(selectedMonth);
+    const isLoading = status === 'loading' || status === 'loadingMore';
+    const currentMonthName = getMonthName(selectedYear, selectedMonth);
 
     return (
         <div className="flex flex-col h-screen bg-background text-foreground">
@@ -234,77 +243,101 @@ const CashFlowDetailsScreen: React.FC = () => {
             </header>
 
             {/* Main Content */}
-            <main className="flex-grow p-4 overflow-y-auto">
-                <div className="p-4 bg-card mb-4">
+            <main className="flex-grow overflow-y-auto">
+                <div className="bg-card mb-4">
                     {/* Top Section (Month, Percentages, Totals) */}
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start p-8 pb-0 mb-4">
                         <div>
                             {/* Month/Year Title - Use state variables */}
                             <h2 className="text-xl font-bold">{currentMonthName} {selectedYear}</h2>
                             {/* Percentage Changes */}
                             <div className="text-xs text-muted-foreground mt-1 space-x-4 flex items-center">
-                                {incomingChange !== null && (
-                                    <span className={`flex items-center text-destructive`}>
+                                {incomingChange !== null && incomingChange !== undefined && ( // Added undefined check
+                                    <span className={`flex items-center ${incomingChange >= 0 ? 'text-green-600' : 'text-destructive'}`}> {/* Dynamic Color */}
                                         <span className="w-2 h-2 rounded-full bg-green-600 mr-1"></span>
                                         {Math.abs(incomingChange).toFixed(1)}% {incomingChange >= 0 ? 'more' : 'less'}
                                     </span>
                                 )}
-                                {investedChange !== null && (
-                                    <span className={`flex items-center text-destructive`}>
+                                 {/* Invested Change - Placeholder logic still */}
+                                {investedChange !== null && investedChange !== undefined && ( // Added undefined check
+                                    <span className={`flex items-center text-blue-600`}> {/* Default blue */}
                                         <span className="w-2 h-2 rounded-full bg-blue-600 mr-1"></span>
                                         {Math.abs(investedChange).toFixed(1)}% {investedChange >= 0 ? 'more' : 'less'}
                                     </span>
                                 )}
-                                {outgoingChange !== null && (
-                                    <span className={`flex items-center text-destructive`}>
+                                {outgoingChange !== null && outgoingChange !== undefined && ( // Added undefined check
+                                    <span className={`flex items-center ${outgoingChange <= 0 ? 'text-green-600' : 'text-destructive'}`}> {/* Inverted Color Logic for Outgoing */}
                                         <span className="w-2 h-2 rounded-full bg-red-600 mr-1"></span>
                                         {Math.abs(outgoingChange).toFixed(1)}% {outgoingChange >= 0 ? 'more' : 'less'}
                                     </span>
                                 )}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">As compared to last month</p>
+                             <p className="text-xs text-muted-foreground mt-1">
+                                {previousMonthTotals.incoming !== 0 || previousMonthTotals.outgoing !== 0 ? `As compared to ${getMonthName(prevYear, prevMonth)}` : `No data for previous month (${getMonthName(prevYear, prevMonth)})`}
+                            </p>
                         </div>
                     </div>
 
                     {/* Current Month Totals */}
-                    {isLoading && chartData.length === 0 ? (
-                         <p className="text-muted-foreground text-center py-4">Loading chart data...</p>
+                     {isLoading && chartData.length === 0 ? (
+                         <p className="text-muted-foreground text-center py-4">Loading data...</p>
                     ) : (
                         <div className="flex flex-row justify-center">
                             <div className="flex justify-center space-x-2 items-center text-center bg-input rounded-2xl p-2">
                                 <div className="flex flex-col items-center rounded-lg ">
-                                    <span className="text-xs block text-white p-1 rounded-t-md bg-green-600">Incoming</span>
-                                <div className="text-green-800 bg-green-200 px-3 py-.5 rounded-xl min-w-[100px] flex items-center justify-center">
-                                    <CurrencyDisplay amount={currentMonthTotals.incoming} className="font-bold text-lg" type="CREDIT" showFraction={false} />
+                                    <span className="text-xs block text-white p-1 px-2 rounded-t-md bg-green-600">Incoming</span>
+                                    <div className="text-green-800 bg-green-200 px-3 py-.5 rounded-xl min-w-[100px] flex items-center justify-center">
+                                        <CurrencyDisplay amount={currentMonthTotals.incoming} className="font-bold text-lg" type="CREDIT" showFraction={false} />
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex flex-col items-center rounded-lg">
-                                <span className="text-xs block text-white bg-blue-600 p-1 rounded-t-md">Invested</span>
-                                <div className="text-blue-800 bg-blue-200 px-3 py-.5 rounded-xl min-w-[100px] flex items-center justify-center">
-                                    <CurrencyDisplay amount={currentMonthTotals.invested} className="font-bold text-lg" showType={false} showFraction={false} />
+                                <div className="flex flex-col items-center rounded-lg">
+                                    <span className="text-xs block text-white bg-blue-600 p-1 px-2 rounded-t-md">Invested</span>
+                                    <div className="text-blue-800 bg-blue-200 px-3 py-.5 rounded-xl min-w-[100px] flex items-center justify-center">
+                                        <CurrencyDisplay amount={currentMonthTotals.invested} className="font-bold text-lg" showType={false} showFraction={false} />
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex flex-col items-center rounded-lg">
-                                <span className="text-xs block text-white bg-red-600 p-1 rounded-t-md">Outgoing</span>
-                                <div className="text-red-800 bg-red-200 px-3 py-.5 rounded-xl min-w-[100px] flex items-center justify-center">
-                                    <CurrencyDisplay amount={currentMonthTotals.outgoing} className="font-bold text-lg" type="DEBIT" showFraction={false} />
+                                <div className="flex flex-col items-center rounded-lg">
+                                    <span className="text-xs block text-white bg-red-600 p-1 px-2 rounded-t-md">Outgoing</span>
+                                    <div className="text-red-800 bg-red-200 px-3 py-.5 rounded-xl min-w-[100px] flex items-center justify-center">
+                                        <CurrencyDisplay amount={currentMonthTotals.outgoing} className="font-bold text-lg" type="DEBIT" showFraction={false} />
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
                     )}
 
-                    {/* Line Chart */} 
-                    <div className="w-full h-[250px] mt-6 relative"> 
-                        {/* Render the new chart component */}
-                        <CashFlowChart 
-                            data={chartData} 
-                            selectedMonthAbbr={selectedMonthAbbr} 
-                            isLoading={isLoading}
-                        />
+                    {/* Line Chart Container - Now with Ref and Scroll Handler */}
+                    <div
+                        className="w-full flex flex-row overflow-x-auto relative mt-4"
+                    >
+                        {isLoading && chartData.length === 0 ? (
+                            <div className="h-48 flex items-center justify-center text-muted-foreground w-screen"> {/* Placeholder */}
+                                Loading chart...
+                            </div>
+                        ) : chartData.length > 0 ? (
+                            <CashFlowChart
+                                data={chartData.map(d => ({ // Map data to expected structure
+                                    month: d.monthAbbr, // Use monthAbbr for the 'month' prop
+                                    incoming: d.incoming,
+                                    outgoing: d.outgoing,
+                                    invested: d.invested,
+                                    // Include year and numeric month if needed by chart internally
+                                    // or for data attributes within the chart component itself
+                                    year: d.year,
+                                    numericMonth: d.month
+                                }))}
+                                selectedYear={selectedYear}
+                                selectedMonth={selectedMonth}
+                                isLoading={isLoading}
+                                className="" // Add any necessary styling classes
+                            />
+                        ) : (
+                             <div className="h-48 flex items-center justify-center text-muted-foreground w-screen"> {/* Placeholder */}
+                                No chart data available for this range.
+                            </div>
+                        )}
                     </div>
                 </div>
-
             </main>
         </div>
     );

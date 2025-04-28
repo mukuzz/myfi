@@ -135,7 +135,7 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
         </button>
       </header>
 
-      <div className="flex-grow overflow-x-auto p-3 flex whitespace-nowrap">
+      <div className="flex-grow overflow-x-auto p-3 flex whitespace-nowrap" style={{ scrollbarWidth: 'none' }}>
         {status === 'loading' && (
           <div className="flex justify-center items-center py-2 flex-shrink-0" style={{ width: '100%' }}>
             <p className="text-muted-foreground">Loading accounts...</p>

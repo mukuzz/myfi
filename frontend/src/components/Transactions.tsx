@@ -199,7 +199,7 @@ function Transactions() {
                 </div>
             </div>
 
-            <div ref={scrollContainerRef} className="flex-grow overflow-y-auto thin-scrollbar px-2">
+            <div ref={scrollContainerRef} className="flex-grow overflow-y-auto thin-scrollbar px-2" style={{ scrollbarWidth: 'none' }}>
                 {isLoadingInitial && <p className="text-center p-8 text-muted-foreground">Loading initial transactions...</p>}
                 {overallError && <p className="text-center text-destructive">Error: {overallError}</p>}
                 {!isLoadingInitial && !overallError && transactions.length === 0 && transactionStatus === 'succeeded' && (
