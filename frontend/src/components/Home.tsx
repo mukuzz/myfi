@@ -22,8 +22,8 @@ function Home() {
         {/* Column 1 */}
         <div className="lg:w-1/2 flex flex-col gap-4">
           <TotalBalanceCard />
-          <SpendingSummary />
           <MonthlyCashFlowCard />
+          <SpendingSummary />
         </div>
 
         {/* Column 2 */}
