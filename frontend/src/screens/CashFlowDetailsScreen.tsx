@@ -97,19 +97,17 @@ const CashFlowDetailsScreen: React.FC = () => {
     const [selectedYear, setSelectedYear] = useState<number>(initialYear);
     const [selectedMonth, setSelectedMonth] = useState<number>(initialMonth);
 
-    // Define the range for fetching data (e.g., 12 months centered on selected)
-    // Increased range to ensure we usually have enough data loaded for smooth scrolling
-    const dataFetchMonthsCount = 12;
+    // Define the range for fetching data (e.g., 24 months ending on selected)
+    const dataFetchMonthsCount = 24; // Updated to 24 months
     const dataFetchDateRange = useMemo(() => {
         const selectedDate = new Date(selectedYear, selectedMonth - 1, 1);
-        const monthsBefore = Math.ceil(dataFetchMonthsCount / 2);
-        const monthsAfter = Math.floor(dataFetchMonthsCount / 2);
 
-        const startDate = new Date(selectedDate);
-        startDate.setMonth(startDate.getMonth() - monthsBefore);
-
+        // End date is the selected month
         const endDate = new Date(selectedDate);
-        endDate.setMonth(endDate.getMonth() + monthsAfter);
+
+        // Start date is 23 months before the selected month (total 24 months including end)
+        const startDate = new Date(selectedDate);
+        startDate.setMonth(startDate.getMonth() - (dataFetchMonthsCount - 1));
 
         return {
             startYear: startDate.getFullYear(),
@@ -117,7 +115,7 @@ const CashFlowDetailsScreen: React.FC = () => {
             endYear: endDate.getFullYear(),
             endMonth: endDate.getMonth() + 1, // Convert back to 1-indexed
         };
-    }, [selectedYear, selectedMonth]);
+    }, [dispatch]);
 
     // Calculate previous month based on selected state
     const { prevYear, prevMonth } = useMemo(() => {
@@ -261,21 +259,21 @@ const CashFlowDetailsScreen: React.FC = () => {
                             {/* Percentage Changes */}
                             <div className="text-xs text-muted-foreground mt-1 space-x-4 flex items-center">
                                 {incomingChange !== null && incomingChange !== undefined && ( // Added undefined check
-                                    <span className={`flex items-center ${incomingChange >= 0 ? 'text-green-600' : 'text-destructive'}`}> {/* Dynamic Color */}
-                                        <span className="w-2 h-2 rounded-full bg-green-600 mr-1"></span>
+                                    <span className={`flex items-center text-primary`}> {/* 80% opacity */}
+                                        <span className="w-2 h-2 rounded-full bg-green-400 mr-1"></span> {/* 80% opacity */}
                                         {Math.abs(incomingChange).toFixed(1)}% {incomingChange >= 0 ? 'more' : 'less'}
                                     </span>
                                 )}
                                 {/* Invested Change - Placeholder logic still */}
                                 {investedChange !== null && investedChange !== undefined && ( // Added undefined check
-                                    <span className={`flex items-center text-blue-600`}> {/* Default blue */}
-                                        <span className="w-2 h-2 rounded-full bg-blue-600 mr-1"></span>
+                                    <span className={`flex items-center text-primary`}> {/* 80% opacity */}
+                                        <span className="w-2 h-2 rounded-full bg-blue-400 mr-1"></span> {/* 80% opacity */}
                                         {Math.abs(investedChange).toFixed(1)}% {investedChange >= 0 ? 'more' : 'less'}
                                     </span>
                                 )}
                                 {outgoingChange !== null && outgoingChange !== undefined && ( // Added undefined check
-                                    <span className={`flex items-center ${outgoingChange <= 0 ? 'text-green-600' : 'text-destructive'}`}> {/* Inverted Color Logic for Outgoing */}
-                                        <span className="w-2 h-2 rounded-full bg-red-600 mr-1"></span>
+                                    <span className={`flex items-center text-primary`}> {/* 80% opacity */}
+                                        <span className="w-2 h-2 rounded-full bg-red-400 mr-1"></span> {/* 80% opacity */}
                                         {Math.abs(outgoingChange).toFixed(1)}% {outgoingChange >= 0 ? 'more' : 'less'}
                                     </span>
                                 )}
@@ -291,22 +289,22 @@ const CashFlowDetailsScreen: React.FC = () => {
                         <p className="text-muted-foreground text-center py-4">Loading data...</p>
                     ) : (
                         <div className="flex flex-row justify-center">
-                            <div className="flex justify-center space-x-2 items-center text-center bg-gray-300 rounded-2xl p-2">
+                            <div className="flex justify-center space-x-2 items-center text-center bg-gray-300/80 rounded-2xl p-2"> {/* Added opacity to container */}
                                 <div className="flex flex-col items-center rounded-lg ">
-                                    <span className="text-xs block text-white p-1 px-1 rounded-t-md bg-green-600">Incoming</span>
-                                    <div className="text-green-800 bg-green-200 px-2 py-.5 rounded-xl min-w-[100px] flex items-center justify-center">
+                                    <span className="text-xs block text-white p-1 px-1 rounded-t-md bg-green-400">Incoming</span> {/* 80% opacity */}
+                                    <div className="bg-green-200 px-2 py-.5 rounded-md min-w-[80px] flex items-center justify-center"> {/* 80% opacity */}
                                         <CurrencyDisplay amount={currentMonthTotals.incoming} className="font-bold text-md" type="CREDIT" showFraction={false} />
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-center rounded-lg">
-                                    <span className="text-xs block text-white bg-blue-600 p-1 px-1 rounded-t-md">Invested</span>
-                                    <div className="text-blue-800 bg-blue-200 px-2 py-.5 rounded-xl min-w-[80px] flex items-center justify-center">
+                                    <span className="text-xs block text-white bg-blue-400 p-1 px-1 rounded-t-md">Invested</span> {/* 80% opacity */}
+                                    <div className="bg-blue-200 px-2 py-.5 rounded-md min-w-[80px] flex items-center justify-center"> {/* 80% opacity */}
                                         <CurrencyDisplay amount={currentMonthTotals.invested} className="font-bold text-md" showType={false} showFraction={false} />
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-center rounded-lg">
-                                    <span className="text-xs block text-white bg-red-600 p-1 px-1 rounded-t-md">Outgoing</span>
-                                    <div className="text-red-800 bg-red-200 px-2 py-.5 rounded-xl min-w-[100px] flex items-center justify-center">
+                                    <span className="text-xs block text-white bg-red-400 p-1 px-1 rounded-t-md">Outgoing</span> {/* 80% opacity */}
+                                    <div className="bg-red-200 px-2 py-.5 rounded-md min-w-[80px] flex items-center justify-center"> {/* 80% opacity */}
                                         <CurrencyDisplay amount={currentMonthTotals.outgoing} className="font-bold text-md" type="DEBIT" showFraction={false} />
                                     </div>
                                 </div>

@@ -340,19 +340,19 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({
                                     <>
                                         <polyline
                                             fill="none"
-                                            stroke="#10B981" // green-500
+                                            stroke="rgba(16, 185, 129, 0.8)" // Green with 80% opacity
                                             strokeWidth="4"
                                             points={incomingPoints}
                                         />
                                         <polyline
                                             fill="none"
-                                            stroke="#3B82F6" // blue-500
+                                            stroke="rgba(59, 130, 246, 0.8)" // Blue with 80% opacity
                                             strokeWidth="4"
                                             points={investedPoints}
                                         />
                                         <polyline
                                             fill="none"
-                                            stroke="#EF4444" // red-500
+                                            stroke="rgba(239, 68, 68, 0.8)" // Red with 80% opacity
                                             strokeWidth="4"
                                             points={outgoingPoints}
                                         />
@@ -380,9 +380,9 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({
                                             </text>
 
                                             {/* Data Points (Circles) - Render within the group */}
-                                            <circle key={`inc-${i}`} cx={xPos} cy={yScale(d.incoming)} r="8" fill="#10B981" />
-                                            <circle key={`inv-${i}`} cx={xPos} cy={yScale(d.invested)} r="8" fill="#3B82F6" />
-                                            <circle key={`out-${i}`} cx={xPos} cy={yScale(d.outgoing)} r="8" fill="#EF4444" />
+                                            <circle key={`inc-${i}`} cx={xPos} cy={yScale(d.incoming)} r="8" fill="rgba(16, 185, 129, 0.8)" /* Green with 80% opacity */ />
+                                            <circle key={`inv-${i}`} cx={xPos} cy={yScale(d.invested)} r="8" fill="rgba(59, 130, 246, 0.8)" /* Blue with 80% opacity */ />
+                                            <circle key={`out-${i}`} cx={xPos} cy={yScale(d.outgoing)} r="8" fill="rgba(239, 68, 68, 0.8)" /* Red with 80% opacity */ />
 
                                             <circle key={`inc-${i}`} cx={xPos} cy={yScale(d.incoming)} r="4" fill="black" />
                                             <circle key={`inv-${i}`} cx={xPos} cy={yScale(d.invested)} r="4" fill="black" />
@@ -390,6 +390,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({
                                             {/* Optional: Highlight selected points */}
                                             {isSelected && (
                                                 <>
+                                                    {/* Highlights remain fully opaque for emphasis */}
                                                     <circle cx={xPos} cy={yScale(d.incoming)} r="5" fill="#10B981" />
                                                     <circle cx={xPos} cy={yScale(d.invested)} r="5" fill="#3B82F6" />
                                                     <circle cx={xPos} cy={yScale(d.outgoing)} r="5" fill="#EF4444" />
