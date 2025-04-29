@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { fetchTransactionsForMonth, fetchTransactionRange } from '../store/slices/transactionsSlice';
+import { fetchTransactionRange } from '../store/slices/transactionsSlice';
 import { Transaction } from '../types';
 import CurrencyDisplay from '../components/AmountDisplay';
 import { FiChevronLeft } from 'react-icons/fi'; // Back and Fullscreen icons
@@ -84,15 +84,16 @@ const getMonthName = (year: number, month: number) => {
 
 // New helper functions checking Redux state
 const doesMonthDataExistInStore = (
-    availableMonths: { [year: string]: Set<number> },
+    availableMonths: { [year: string]: { [month: number]: boolean } },
     year: number,
     month: number
 ): boolean => {
-    return availableMonths[String(year)]?.has(month) ?? false;
+    // Check if year exists and month is true
+    return availableMonths[String(year)]?.[month] === true;
 };
 
 const robustDoesRangeDataExistInStore = (
-    availableMonths: { [year: string]: Set<number> },
+    availableMonths: { [year: string]: { [month: number]: boolean } },
     startYear: number,
     startMonth: number,
     endYear: number,

@@ -7,19 +7,6 @@ import TagSelector from './TagSelector';
 import CurrencyDisplay from './AmountDisplay';
 
 
-// Format date for display in input area
-const formatDateForDisplay = (date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const inputDate = new Date(date);
-    inputDate.setHours(0, 0, 0, 0);
-
-    if (inputDate.getTime() === today.getTime()) {
-        return `Today, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-    }
-    return formatDateUtil ? formatDateUtil(date.toISOString()) : date.toLocaleDateString();
-};
-
 interface AmountInputModalProps {
     onClose: () => void;
     transaction: Transaction;

@@ -17,8 +17,8 @@ interface TransactionsState {
     hasMore: boolean;
     status: 'idle' | 'loading' | 'loadingMore' | 'succeeded' | 'failed';
     error: string | null;
-    // Track successfully fetched months: { '2024': Set([1, 2, 3]), '2023': Set([12]) }
-    availableMonths: { [year: string]: Set<number> };
+    // Track successfully fetched months: { '2024': { 1: true, 2: true } }
+    availableMonths: { [year: string]: { [month: number]: boolean } };
     mutationStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
     mutationError: string | null;
 }
@@ -377,10 +377,12 @@ const transactionsSlice = createSlice({
                     state.transactions.sort(sortTransactionsByDateDesc);
                 }
 
-                // Update availableMonths
+                // Update availableMonths using nested objects
                 const yearStr = String(year);
-                state.availableMonths[yearStr] = state.availableMonths[yearStr] || new Set();
-                state.availableMonths[yearStr].add(month);
+                if (!state.availableMonths[yearStr]) {
+                    state.availableMonths[yearStr] = {};
+                }
+                state.availableMonths[yearStr][month] = true;
 
             })
             .addCase(fetchTransactionsForMonth.rejected, (state, action) => {
@@ -401,7 +403,7 @@ const transactionsSlice = createSlice({
                 state.status = 'succeeded';
                 state.error = null;
 
-                // Update availableMonths based on the requested range
+                // Update availableMonths based on the requested range using nested objects
                 const { startYear, startMonth, endYear, endMonth } = action.meta.arg;
                 let current = new Date(startYear, startMonth - 1, 1);
                 const end = new Date(endYear, endMonth - 1, 1);
@@ -410,8 +412,10 @@ const transactionsSlice = createSlice({
                     const year = current.getFullYear();
                     const month = current.getMonth() + 1; // 1-indexed month
                     const yearStr = String(year);
-                    state.availableMonths[yearStr] = state.availableMonths[yearStr] || new Set();
-                    state.availableMonths[yearStr].add(month);
+                    if (!state.availableMonths[yearStr]) {
+                        state.availableMonths[yearStr] = {};
+                    }
+                    state.availableMonths[yearStr][month] = true;
                     // Move to the next month
                     current.setMonth(current.getMonth() + 1);
                 }

@@ -387,9 +387,10 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({
                                             <circle key={`inv-${i}`} cx={xPos} cy={yScale(d.invested)} r="8" fill="rgba(59, 130, 246, 0.8)" /* Blue with 80% opacity */ />
                                             <circle key={`out-${i}`} cx={xPos} cy={yScale(d.outgoing)} r="8" fill="rgba(239, 68, 68, 0.8)" /* Red with 80% opacity */ />
 
-                                            <circle key={`inc-${i}`} cx={xPos} cy={yScale(d.incoming)} r="4" fill="black" />
-                                            <circle key={`inv-${i}`} cx={xPos} cy={yScale(d.invested)} r="4" fill="black" />
-                                            <circle key={`out-${i}`} cx={xPos} cy={yScale(d.outgoing)} r="4" fill="black" />
+                                            {/* Add unique keys for the inner circles */}
+                                            <circle key={`inc-${i}-inner`} cx={xPos} cy={yScale(d.incoming)} r="4" fill="black" />
+                                            <circle key={`inv-${i}-inner`} cx={xPos} cy={yScale(d.invested)} r="4" fill="black" />
+                                            <circle key={`out-${i}-inner`} cx={xPos} cy={yScale(d.outgoing)} r="4" fill="black" />
                                             {/* Optional: Highlight selected points */}
                                             {isSelected && (
                                                 <>

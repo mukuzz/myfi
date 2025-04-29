@@ -1,14 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { enableMapSet } from 'immer'; // Import the plugin
 
 // Import slice reducers
 import transactionsReducer from './slices/transactionsSlice';
 import tagsReducer from './slices/tagsSlice';
 import accountsReducer from './slices/accountsSlice';
 import supportedAccountsReducer from './slices/supportedAccountsSlice';
-
-// Enable Immer plugin for Map and Set
-enableMapSet();
 
 export const store = configureStore({
   reducer: {
