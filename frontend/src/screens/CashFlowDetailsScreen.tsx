@@ -82,11 +82,41 @@ const getMonthName = (year: number, month: number) => {
     return new Date(year, month - 1).toLocaleString('default', { month: 'long' });
 }
 
+// New helper functions checking Redux state
+const doesMonthDataExistInStore = (
+    availableMonths: { [year: string]: Set<number> },
+    year: number,
+    month: number
+): boolean => {
+    return availableMonths[String(year)]?.has(month) ?? false;
+};
+
+const robustDoesRangeDataExistInStore = (
+    availableMonths: { [year: string]: Set<number> },
+    startYear: number,
+    startMonth: number,
+    endYear: number,
+    endMonth: number
+): boolean => {
+    let current = new Date(startYear, startMonth - 1, 1);
+    const end = new Date(endYear, endMonth - 1, 1);
+
+    while (current <= end) {
+        const year = current.getFullYear();
+        const month = current.getMonth() + 1;
+        if (!doesMonthDataExistInStore(availableMonths, year, month)) {
+            return false;
+        }
+        current.setMonth(current.getMonth() + 1);
+    }
+    return true;
+};
+
 const CashFlowDetailsScreen: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-    const { transactions, status } = useAppSelector((state) => state.transactions);
+    const { transactions, status, availableMonths } = useAppSelector((state) => state.transactions);
 
     // Get initial year/month from location state, fallback to current month/year
     const initialState = location.state as { year: number; month: number } | undefined;
@@ -97,15 +127,15 @@ const CashFlowDetailsScreen: React.FC = () => {
     const [selectedYear, setSelectedYear] = useState<number>(initialYear);
     const [selectedMonth, setSelectedMonth] = useState<number>(initialMonth);
 
-    // Define the range for fetching data (e.g., 24 months ending on selected)
-    const dataFetchMonthsCount = 24; // Updated to 24 months
+    // Define the range for fetching data (e.g., 12 months ending on selected)
+    const dataFetchMonthsCount = 12; // Updated to 12 months
     const dataFetchDateRange = useMemo(() => {
         const selectedDate = new Date(selectedYear, selectedMonth - 1, 1);
 
         // End date is the selected month
         const endDate = new Date(selectedDate);
 
-        // Start date is 23 months before the selected month (total 24 months including end)
+        // Start date is 11 months before the selected month (total 12 months including end)
         const startDate = new Date(selectedDate);
         startDate.setMonth(startDate.getMonth() - (dataFetchMonthsCount - 1));
 
@@ -130,52 +160,30 @@ const CashFlowDetailsScreen: React.FC = () => {
     // Effect to fetch data for the required range and previous month
     useEffect(() => {
         const { startYear, startMonth, endYear, endMonth } = dataFetchDateRange;
-        const rangeKey = `${startYear}-${startMonth}-${endYear}-${endMonth}`;
-        const prevKey = `${prevYear}-${prevMonth}`;
+        // const rangeKey = `${startYear}-${startMonth}-${endYear}-${endMonth}`; // No longer needed
+        // const prevKey = `${prevYear}-${prevMonth}`; // No longer needed
 
-        // Check if the keys have changed since the last run
-        const rangeChanged = fetchInitiatedRef.current.rangeKey !== rangeKey;
-        const prevChanged = fetchInitiatedRef.current.prevKey !== prevKey;
+        // Removed key tracking logic
 
-        // If range key changed, reset its initiated flag
-        if (rangeChanged) {
-            fetchInitiatedRef.current.rangeKey = rangeKey;
-            fetchInitiatedRef.current.range = false;
-        }
-        // If prev key changed, reset its initiated flag
-        if (prevChanged) {
-            fetchInitiatedRef.current.prevKey = prevKey;
-            fetchInitiatedRef.current.prev = false;
-        }
-
-        // Read current status and transactions directly here
+        // Read current status directly here
         const currentStatus = status; // Get status from closure
-        const currentTransactions = transactions; // Get transactions from closure
+        // Note: availableMonths is now selected directly via useAppSelector
 
-        // Check and Fetch Range Data (if not already initiated for this specific range key)
+        // Check and Fetch Range Data using the new store check
         if (!fetchInitiatedRef.current.range &&
             currentStatus !== 'loading' &&
             currentStatus !== 'loadingMore' &&
-            !robustDoesRangeDataExist(currentTransactions, startYear, startMonth, endYear, endMonth)) {
-            console.log(`EFFECT: Dispatching fetchTransactionRange for range: ${rangeKey}`);
+            !robustDoesRangeDataExistInStore(availableMonths, startYear, startMonth, endYear, endMonth)) {
+            console.log(`EFFECT: Dispatching fetchTransactionRange for range: ${startYear}-${startMonth} to ${endYear}-${endMonth}`);
             dispatch(fetchTransactionRange({ startYear, startMonth, endYear, endMonth }));
             fetchInitiatedRef.current.range = true; // Mark as initiated for this range key
         }
 
-        // Check and Fetch Previous Month Data (if not already initiated for this specific prev key)
-        if (!fetchInitiatedRef.current.prev &&
-            currentStatus !== 'loading' &&
-            currentStatus !== 'loadingMore' &&
-            !doesMonthDataExist(currentTransactions, prevYear, prevMonth)) {
-            console.log(`EFFECT: Dispatching fetchTransactionsForMonth for prev: ${prevKey}`);
-            dispatch(fetchTransactionsForMonth({ year: prevYear, month: prevMonth }));
-            fetchInitiatedRef.current.prev = true; // Mark as initiated for this prev key
-        }
+        // Removed redundant previous month check
 
-        // Dependencies: Only re-run when the core date definitions change.
-        // We explicitly read `status` and `transactions` inside the effect from the closure
-        // instead of adding them as dependencies to prevent loops caused by their updates.
-    }, [dispatch, dataFetchDateRange, prevYear, prevMonth]);
+    // Dependencies: Only re-run when the core date definitions change, or if status changes.
+    // availableMonths is included so the check re-evaluates when it updates.
+    }, [dispatch, dataFetchDateRange, prevYear, prevMonth, status, availableMonths]); // Updated dependencies
 
     // Prepare data for the chart - use the wider fetch range
     const chartData = useMemo(() => {
@@ -185,29 +193,38 @@ const CashFlowDetailsScreen: React.FC = () => {
         let current = new Date(startYear, startMonth - 1, 1);
         const end = new Date(endYear, endMonth - 1, 1);
 
-        // Iterate through the *entire* fetch range
+        // 1. Generate data for all available months in the range
         while (current <= end) {
             const year = current.getFullYear();
             const month = current.getMonth() + 1;
-            // Only add if data exists, otherwise chart might show gaps wrongly
-            if (doesMonthDataExist(transactions, year, month)) {
+            if (doesMonthDataExistInStore(availableMonths, year, month)) {
                 const totals = calculateTotals(transactions, year, month);
                 data.push({
                     year: year,
                     month: month,
-                    monthAbbr: getMonthAbbr(month), // Use short month name
+                    monthAbbr: getMonthAbbr(month),
                     incoming: totals.incoming,
                     outgoing: totals.outgoing,
                     invested: totals.invested,
                 });
             }
-            // Move to the next month
             current.setMonth(current.getMonth() + 1);
         }
-        // Sort data chronologically just in case iteration order isn't guaranteed
-        data.sort((a, b) => new Date(a.year, a.month - 1).getTime() - new Date(b.year, b.month - 1).getTime());
-        return data;
-    }, [transactions, dataFetchDateRange]); // Depend on the fetch range
+
+        // 2. Find the index of the first month with any non-zero total
+        const firstMonthWithActivityIndex = data.findIndex(d =>
+            d.incoming > 0 || d.outgoing > 0 || d.invested > 0
+        );
+
+        // 3. If a month with activity is found, slice the array from that index onwards
+        if (firstMonthWithActivityIndex !== -1) {
+            return data.slice(firstMonthWithActivityIndex);
+        } else {
+            // 4. Otherwise, return an empty array (or potentially the last month if needed? For now, empty)
+            return [];
+        }
+
+    }, [transactions, dataFetchDateRange, availableMonths]); // Depend on transactions for totals, and availableMonths/dataFetchDateRange for filtering
 
     // Calculate totals for the *currently selected* month for display
     const currentMonthTotals = useMemo(() => {
@@ -316,7 +333,7 @@ const CashFlowDetailsScreen: React.FC = () => {
                     <div
                         className="w-full relative"
                     >
-                        {isLoading && chartData.length === 0 ? (
+                        {isLoading ? (
                             <div className="h-48 flex items-center justify-center text-muted-foreground w-screen"> {/* Placeholder */}
                                 Loading chart...
                             </div>

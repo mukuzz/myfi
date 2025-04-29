@@ -17,6 +17,8 @@ interface TransactionsState {
     hasMore: boolean;
     status: 'idle' | 'loading' | 'loadingMore' | 'succeeded' | 'failed';
     error: string | null;
+    // Track successfully fetched months: { '2024': Set([1, 2, 3]), '2023': Set([12]) }
+    availableMonths: { [year: string]: Set<number> };
     mutationStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
     mutationError: string | null;
 }
@@ -29,6 +31,7 @@ const initialState: TransactionsState = {
     hasMore: true,
     status: 'idle',
     error: null,
+    availableMonths: {}, // Initialize as empty object
     mutationStatus: 'idle',
     mutationError: null,
 };
@@ -356,9 +359,10 @@ const transactionsSlice = createSlice({
                 state.status = 'loading'; // Use main status field
                 state.error = null; // Clear main error field
             })
-            .addCase(fetchTransactionsForMonth.fulfilled, (state, action: PayloadAction<Transaction[]>) => {
+            .addCase(fetchTransactionsForMonth.fulfilled, (state, action) => {
                 state.status = 'succeeded'; // Use main status field
                 const fetchedTransactions = action.payload;
+                const { year, month } = action.meta.arg; // Get year/month from thunk args
 
                 // Create a Set of existing transaction IDs for efficient duplicate checking
                 const existingIds = new Set(state.transactions.map(tx => tx.id));
@@ -373,8 +377,11 @@ const transactionsSlice = createSlice({
                     state.transactions.sort(sortTransactionsByDateDesc);
                 }
 
-                // Note: The previous logic that filtered out existing transactions for the month has been removed.
-                // The state now accumulates all fetched transactions.
+                // Update availableMonths
+                const yearStr = String(year);
+                state.availableMonths[yearStr] = state.availableMonths[yearStr] || new Set();
+                state.availableMonths[yearStr].add(month);
+
             })
             .addCase(fetchTransactionsForMonth.rejected, (state, action) => {
                 state.status = 'failed'; // Use main status field
@@ -388,13 +395,27 @@ const transactionsSlice = createSlice({
                     state.error = null;
                 }
             })
-            .addCase(fetchTransactionRange.fulfilled, (state, action: PayloadAction<Transaction[]>) => {
+            .addCase(fetchTransactionRange.fulfilled, (state, action) => {
                 // Merge new transactions, avoiding duplicates
                 state.transactions = mergeTransactions(state.transactions, action.payload);
                 state.status = 'succeeded';
                 state.error = null;
-                // Note: This doesn't handle pagination logic like fetchTransactions
-                // It assumes fetchTransactionRange gets all transactions for the given range.
+
+                // Update availableMonths based on the requested range
+                const { startYear, startMonth, endYear, endMonth } = action.meta.arg;
+                let current = new Date(startYear, startMonth - 1, 1);
+                const end = new Date(endYear, endMonth - 1, 1);
+
+                while (current <= end) {
+                    const year = current.getFullYear();
+                    const month = current.getMonth() + 1; // 1-indexed month
+                    const yearStr = String(year);
+                    state.availableMonths[yearStr] = state.availableMonths[yearStr] || new Set();
+                    state.availableMonths[yearStr].add(month);
+                    // Move to the next month
+                    current.setMonth(current.getMonth() + 1);
+                }
+
             })
             .addCase(fetchTransactionRange.rejected, (state, action) => {
                 state.status = 'failed';

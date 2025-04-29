@@ -298,7 +298,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({
             ref={scrollContainerRef}
             // Height class removed by user, let parent control height or use svgHeight directly?
             // Re-add h-[300px] for consistency unless intended otherwise.
-            className={`overflow-x-auto scrollbar-hide relative ${className}`}
+            className={`overflow-x-auto scrollbar-hide w-full relative ${className}`}
             style={{ scrollbarWidth: 'none' }}
         // Attach the throttled scroll handler
         // onScroll={throttledScrollHandler} // Event listener is added via useEffect now
@@ -306,10 +306,13 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({
             {/* Centered Vertical Indicator Line - REMOVED FROM HERE */}
             {/* <div className="absolute top-0 bottom-0 left-1/2 transform -translate-x-1/2 w-px bg-primary z-10"></div> */}
 
-            {isLoading && data.length === 0 ? (
-                <p className="text-muted-foreground text-center absolute inset-0 flex items-center justify-center">Loading chart...</p>
-            ) : data.length > 0 ? (
-                // Adjust SVG width dynamically, keep height fixed
+            {/* Conditional Rendering: Check loading, data length, AND containerWidth */}
+            {isLoading || data.length === 0 || containerWidth <= 0 ? (
+                <p className="text-muted-foreground text-center absolute inset-0 flex items-center justify-center">
+                    {isLoading ? 'Loading chart...' : 'No chart data available.'}
+                </p>
+            ) : (
+                // Render SVG only if not loading, data exists, and container width is known
                 <svg
                     width={calculatedSvgWidth}
                     height={svgHeight}
@@ -403,8 +406,6 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({
                         );
                     })()}
                 </svg>
-            ) : (
-                !isLoading && <p className="text-muted-foreground text-center absolute inset-0 flex items-center justify-center">No chart data available.</p>
             )}
         </div>
     );
