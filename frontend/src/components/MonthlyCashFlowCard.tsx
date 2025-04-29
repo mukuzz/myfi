@@ -80,7 +80,7 @@ const MonthlyCashFlowCard: React.FC = () => {
     return (
         // Make the Card itself clickable
         <Card
-            className="flex flex-col cursor-pointer hover:shadow-md transition-shadow"
+            className="flex flex-col cursor-pointer"
             onClick={handleCardClick}
         >
             <header className="pl-4 pr-2 border-b border-border flex items-center justify-between flex-shrink-0">
