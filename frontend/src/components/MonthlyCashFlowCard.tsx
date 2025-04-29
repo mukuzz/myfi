@@ -85,7 +85,7 @@ const MonthlyCashFlowCard: React.FC = () => {
         >
             <header className="pl-4 pr-2 border-b border-border flex items-center justify-between flex-shrink-0">
                 {/* Display only Month Name in the header */}
-                <h1 className="text-xs font-bold">Cash Flow - {monthName}</h1>
+                <h1 className="text-xs font-bold">Cash Flow</h1>
                 <button
                     className="text-muted-foreground p-2"
                     onClick={(e) => {

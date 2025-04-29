@@ -1,12 +1,18 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'; // Import useLocation
+import {
+  createBrowserRouter,
+  RouterProvider,
+  useLocation,
+  Outlet,
+} from 'react-router-dom'; // Updated imports
 import Home from './components/Home';
 import Transactions from './components/Transactions';
-import SpendingDetails from './components/SpendingDetails'; // Import SpendingDetails
+import SpendingDetails from './components/SpendingDetails';
 import BottomNav from './components/BottomNav';
-import { useIsMobile } from './hooks/useIsMobile'; // Import the hook
+import { useIsMobile } from './hooks/useIsMobile';
 import CashFlowDetailsScreen from './screens/CashFlowDetailsScreen';
 
 
+// Keep DesktopAppHome as it's used in conditional rendering below
 function DesktopAppHome() {
   return (
     <main className="flex-grow overflow-y-auto flex flex-row h-full no-scrollbar">
@@ -16,54 +22,76 @@ function DesktopAppHome() {
   );
 }
 
-// Component to handle conditional layout
-function AppContent() {
-  const isMobile = useIsMobile();
-  const location = useLocation(); // Get location
+// --- New Components for Data Router ---
 
-  // Check if the current route is the details page
+// Component to conditionally render Home or DesktopAppHome
+function HomeRouteElement() {
+  const isMobile = useIsMobile();
+  return isMobile ? <Home /> : <DesktopAppHome />;
+}
+
+// Component to conditionally render Transactions or DesktopAppHome
+function TransactionsRouteElement() {
+  const isMobile = useIsMobile();
+  return isMobile ? <Transactions /> : <DesktopAppHome />;
+}
+
+// Root layout component incorporating logic from old AppContent
+function RootLayout() {
+  const isMobile = useIsMobile();
+  const location = useLocation(); // Get location for BottomNav logic
+
+  // Check if the current route needs the bottom nav visible
+  // Note: With nested routes, pathname might include parent paths. Adjust if needed.
   const isBottomNavNeeded = location.pathname === '/transactions' || location.pathname === '/';
 
   return (
     <div className="flex flex-col h-screen bg-background fixed bottom-0 w-full">
-      {isMobile ? (
-        <>
-          {/* Mobile: Main Content Area using Routes */}
-          {/* Let main take full height if details page, otherwise leave space for nav/refresh */}
-          <main className={`flex-grow overflow-y-auto flex flex-col ${isBottomNavNeeded ? 'h-full' : 'h-[calc(100%-theme(spacing.20))]'} `}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/transactions" element={<Transactions />} />
-              <Route path="/spending-summary" element={<SpendingDetails />} />
-              <Route path="/cash-flow" element={<CashFlowDetailsScreen />} />
-            </Routes>
-          </main>
-          {/* Conditionally render RefreshBar and BottomNav */} 
-          {isBottomNavNeeded && (
-            <>
-              <BottomNav />
-            </>
-          )}
-        </>
-      ) : (
-          <Routes>
-            <Route path="/" element={<DesktopAppHome />} />
-            <Route path="/transactions" element={<DesktopAppHome />} />
-            <Route path="/spending-summary" element={<SpendingDetails />} />
-            <Route path="/cash-flow" element={<CashFlowDetailsScreen />} />
-          </Routes>
-      )}
+      {/* ScrollRestoration manages scroll position for navigations */}
+      
+      <main className={`flex-grow overflow-y-auto flex flex-col ${isBottomNavNeeded ? 'h-full' : 'h-[calc(100%-theme(spacing.20))]'} `}>
+        {/* Child routes will render here */}
+        <Outlet />
+      </main>
+      {/* Conditionally render BottomNav based on mobile and route */}
+      {isMobile && isBottomNavNeeded && <BottomNav />}
     </div>
   );
 }
 
-// Main App component wraps content with Router
+// --- Data Router Configuration ---
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />, // Use RootLayout for all routes
+    children: [
+      {
+        index: true, // Root path "/"
+        element: <HomeRouteElement />,
+      },
+      {
+        path: "transactions",
+        element: <TransactionsRouteElement />,
+      },
+      {
+        path: "spending-summary",
+        element: <SpendingDetails />,
+      },
+      {
+        path: "cash-flow",
+        element: <CashFlowDetailsScreen />,
+      },
+    ],
+  },
+]);
+
+
+// --- Main App Component ---
+
+// Main App component now uses RouterProvider
 function App() {
-  return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;
