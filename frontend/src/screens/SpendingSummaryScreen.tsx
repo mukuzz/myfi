@@ -478,7 +478,6 @@ const SpendingSummaryScreen: React.FC = () => {
              >
                 {/* Pass filtered transactions to TransactionList */} 
                 <TransactionList
-                    headerHeight={0} // Pass 0 for header height as it's inside a sheet
                     transactions={transactionsForSelectedTag}
                 />
             </DraggableBottomSheet>

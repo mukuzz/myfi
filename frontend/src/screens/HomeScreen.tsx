@@ -1,8 +1,7 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import SpendingSummary from '../components/SpendingSummary';
 import TotalBalanceCard from '../components/TotalBalanceCard';
 import AccountsDisplayCard from '../components/AccountsDisplayCard';
-import { FiUser } from 'react-icons/fi';
 import MonthlyCashFlowCard from '../components/MonthlyCashFlowCard';
 import RefreshBar from '../components/RefreshBar';
 import { useIsMobile } from '../hooks/useIsMobile';

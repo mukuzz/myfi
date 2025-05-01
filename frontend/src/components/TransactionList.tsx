@@ -15,12 +15,10 @@ const getMonthYear = (dateString: string): string => {
 };
 
 interface TransactionListProps {
-  headerHeight: number;
   transactions: Transaction[];
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
-  headerHeight,
   transactions,
 }) => {
   const dispatch = useAppDispatch();
@@ -94,7 +92,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
     <div
       ref={scrollContainerRef}
       className="flex-grow overflow-y-auto thin-scrollbar px-2"
-      style={{ scrollbarWidth: 'none', paddingTop: `${headerHeight}px` }}
+      style={{ scrollbarWidth: 'none' }}
     >
 
       {transactions.length > 0 && (

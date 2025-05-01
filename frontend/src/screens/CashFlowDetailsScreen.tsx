@@ -396,7 +396,6 @@ const CashFlowDetailsScreen: React.FC = () => {
             >
                 {sheetTransactions.length > 0 ? (
                     <TransactionList
-                        headerHeight={0} // No header offset needed inside the sheet
                         transactions={sheetTransactions}
                     />
                 ) : (

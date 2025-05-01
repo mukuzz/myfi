@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiHome, FiList } from 'react-icons/fi';
 
 // Define tabs with paths
@@ -10,6 +10,7 @@ const tabs = [
 
 function BottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   return (
     <nav className="fixed border-t border-border bg-secondary w-full bottom-0 h-[80px] z-20">
@@ -17,16 +18,16 @@ function BottomNav() {
         {tabs.map((tab) => {
           const isActive = location.pathname === tab.path;
           return (
-            <Link
+            <button
               key={tab.name}
-              to={tab.path}
+              onClick={() => navigate(tab.path)}
               className={`flex-1 py-3 flex flex-col items-center justify-center focus:outline-none ${
                 isActive ? 'accent-secondary-foreground' : 'text-muted-foreground'
               }`}
               aria-label={tab.name}
             >
               {tab.icon}
-            </Link>
+            </button>
           );
         })}
       </div>

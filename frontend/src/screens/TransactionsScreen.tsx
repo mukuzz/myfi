@@ -26,10 +26,7 @@ function TransactionsScreen() {
   const overallError = tagsError || accountsError || transactionError;
 
   const headerRef = useRef<HTMLDivElement>(null);
-  const [headerHeight, setHeaderHeight] = useState(0);
   const parentRef = useRef<HTMLDivElement>(null);
-  const [parentWidth, setParentWidth] = useState<number | null>(null);
-  const isMobile = useIsMobile();
   const loadingRef = useRef(false);
 
   useEffect(() => {
@@ -82,7 +79,6 @@ function TransactionsScreen() {
       <div
         ref={headerRef}
         className={`bg-background pt-4 z-10`}
-        style={{ width: parentWidth ? `${parentWidth}px` : '100%' }}
       >
         <div className="flex justify-between items-start px-2">
           <h1 className="text-3xl font-bold pl-2">Transactions</h1>
@@ -98,25 +94,24 @@ function TransactionsScreen() {
       </div>
 
       {overallError && !isLoadingInitial && (
-        <div style={{ paddingTop: `${headerHeight}px` }} className="p-4 text-center text-destructive">
+        <div className="p-4 text-center text-destructive">
           Error loading data: {overallError}
         </div>
       )}
 
       {isLoadingInitial && (
-        <div style={{ paddingTop: `${headerHeight}px` }} className="p-8 text-center text-muted-foreground">
+        <div className="p-8 text-center text-muted-foreground">
           Loading transactions...
         </div>
       )}
 
       {!isLoadingInitial && !overallError && transactions.length === 0 && transactionStatus === 'succeeded' && (
-        <div style={{ paddingTop: `${headerHeight}px` }} className="p-8 text-center text-muted-foreground">
+        <div className="p-8 text-center text-muted-foreground">
           No transactions found.
         </div>
       )}
 
       <TransactionList
-        headerHeight={headerHeight}
         transactions={transactions}
       />
 
