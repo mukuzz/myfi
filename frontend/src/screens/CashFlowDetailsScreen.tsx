@@ -128,15 +128,15 @@ const CashFlowDetailsScreen: React.FC = () => {
     const [selectedYear, setSelectedYear] = useState<number>(initialYear);
     const [selectedMonth, setSelectedMonth] = useState<number>(initialMonth);
 
-    // Define the range for fetching data (e.g., 12 months ending on selected)
-    const dataFetchMonthsCount = 12; // Updated to 12 months
+    // Define the range for fetching data (e.g., 24 months ending on selected)
+    const dataFetchMonthsCount = 24; // Updated to 24 months
     const dataFetchDateRange = useMemo(() => {
         const selectedDate = new Date(selectedYear, selectedMonth - 1, 1);
 
         // End date is the selected month
         const endDate = new Date(selectedDate);
 
-        // Start date is 11 months before the selected month (total 12 months including end)
+        // Start date is 23 months before the selected month (total 24 months including end)
         const startDate = new Date(selectedDate);
         startDate.setMonth(startDate.getMonth() - (dataFetchMonthsCount - 1));
 
