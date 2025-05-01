@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { FiFilter, FiSearch } from 'react-icons/fi';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import {
-    fetchTransactionsForMonth,
+    fetchTransactions,
     updateTransactionTag,
 } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
@@ -23,24 +23,18 @@ const getMonthYear = (dateString: string): string => {
 function Transactions() {
     const dispatch = useAppDispatch();
 
-    const today = useMemo(() => new Date(), []);
-    const initialYear = today.getFullYear();
-    const initialMonth = today.getMonth() + 1;
-
-    const [oldestLoadedYear, setOldestLoadedYear] = useState<number>(initialYear);
-    const [oldestLoadedMonth, setOldestLoadedMonth] = useState<number>(initialMonth);
-    const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
-    const [hasOlderMonths, setHasOlderMonths] = useState<boolean>(true);
-
     const {
         transactions,
         status: transactionStatus,
         error: transactionError,
+        currentPage,
+        hasMore,
     } = useAppSelector((state) => state.transactions);
     const { tags, status: tagsStatus, error: tagsError } = useAppSelector((state) => state.tags);
     const { accounts, status: accountsStatus, error: accountsError } = useAppSelector((state) => state.accounts);
 
     const isLoadingInitial = transactionStatus === 'loading' && transactions.length === 0;
+    const isLoadingMore = transactionStatus === 'loadingMore';
     const overallError = transactionError || tagsError || accountsError;
 
     const [isTagSelectorOpen, setIsTagSelectorOpen] = useState<boolean>(false);
@@ -53,8 +47,10 @@ function Transactions() {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (transactionStatus === 'idle' && transactions.length === 0) {
-            dispatch(fetchTransactionsForMonth({ year: initialYear, month: initialMonth }));
+        console.log("transactionStatus", transactionStatus);
+        if (transactions.length === 0) {
+            console.log("Fetching transactions");
+            dispatch(fetchTransactions({ page: 0 }));
         }
         if (tagsStatus === 'idle') {
             dispatch(fetchTags());
@@ -62,13 +58,7 @@ function Transactions() {
         if (accountsStatus === 'idle') {
             dispatch(fetchAccounts());
         }
-    }, [dispatch, transactionStatus, tagsStatus, accountsStatus, initialYear, initialMonth, transactions.length]);
-
-    useEffect(() => {
-        if (transactionStatus !== 'loading') {
-            setIsLoadingMore(false);
-        }
-    }, [transactionStatus]);
+    }, [dispatch, transactionStatus, tagsStatus, accountsStatus, transactions.length]);
 
     const tagMap = useMemo((): TagMap => {
         if (tagsStatus !== 'succeeded') return {};
@@ -81,40 +71,13 @@ function Transactions() {
 
     const handleScroll = useCallback(async () => {
         const container = scrollContainerRef.current;
-        if (container && !isLoadingMore && hasOlderMonths && transactionStatus !== 'loading') {
+        if (container && !isLoadingMore && hasMore && transactionStatus !== 'loading') {
             const { scrollTop, scrollHeight, clientHeight } = container;
             if (scrollHeight - scrollTop - clientHeight < 500) {
-                setIsLoadingMore(true);
-
-                let previousMonth = oldestLoadedMonth - 1;
-                let previousYear = oldestLoadedYear;
-                if (previousMonth < 1) {
-                    previousMonth = 12;
-                    previousYear -= 1;
-                }
-
-                setOldestLoadedMonth(previousMonth);
-                setOldestLoadedYear(previousYear);
-
-                try {
-                    const resultAction = await dispatch(fetchTransactionsForMonth({ year: previousYear, month: previousMonth }));
-
-                    if (fetchTransactionsForMonth.fulfilled.match(resultAction)) {
-                        if (resultAction.payload.length === 0) {
-                            setHasOlderMonths(false);
-                        }
-                    }
-                    if (fetchTransactionsForMonth.rejected.match(resultAction)) {
-                        console.error("Failed to fetch older month:", resultAction.payload || resultAction.error.message);
-                    }
-                } catch (error) {
-                    console.error("Error dispatching fetchTransactionsForMonth:", error);
-                } finally {
-                    setIsLoadingMore(false);
-                }
+                dispatch(fetchTransactions({ page: currentPage + 1 }));
             }
         }
-    }, [dispatch, isLoadingMore, hasOlderMonths, oldestLoadedMonth, oldestLoadedYear, transactionStatus]);
+    }, [dispatch, isLoadingMore, hasMore, currentPage, transactionStatus]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -281,7 +244,7 @@ function Transactions() {
 
                 <div className="h-10 flex justify-center items-center">
                     {isLoadingMore && <p className="text-sm text-muted-foreground">Loading more...</p>}
-                    {!isLoadingMore && !hasOlderMonths && transactions.length > 0 && <p className="text-sm text-muted-foreground">End of transactions.</p>}
+                    {!isLoadingMore && !hasMore && transactions.length > 0 && <p className="text-sm text-muted-foreground">End of transactions.</p>}
                 </div>
             </div>
 

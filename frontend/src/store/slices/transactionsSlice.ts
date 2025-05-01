@@ -27,7 +27,7 @@ interface TransactionsState {
 const initialState: TransactionsState = {
     transactions: [],
     transactionPage: null,
-    currentPage: 0,
+    currentPage: -1, // Start at -1, indicating no page loaded yet via pagination
     hasMore: true,
     status: 'idle',
     error: null,
@@ -123,12 +123,31 @@ export const fetchTransactions = createAsyncThunk<
     {
         condition: (args, { getState }) => {
             const state = getState() as RootState;
-            const { status } = state.transactions;
-            const isFetchingFirstPage = !args || args.page === undefined || args.page === 0;
-            // Prevent fetch if already loading/loadingMore or succeeded (for first page)
-            if (status === 'loading' || status === 'loadingMore' || (isFetchingFirstPage && status === 'succeeded')) {
+            const { status, currentPage, hasMore } = state.transactions;
+            const requestedPage = args?.page ?? 0;
+            const isInitialPaginatedFetch = requestedPage === 0 && currentPage === -1;
+
+            // Prevent fetching if no more pages exist AND we are requesting beyond the current page
+            if (!hasMore && requestedPage > currentPage) {
+                console.log(`[fetchTransactions condition] Blocked: No more pages (requested: ${requestedPage}, current: ${currentPage}, hasMore: ${hasMore})`);
                 return false;
             }
+
+            // Prevent fetching pages lower than or equal to the last successfully fetched paginated page
+            // This check correctly handles the initial state (currentPage = -1)
+            if (requestedPage <= currentPage) {
+                 console.log(`[fetchTransactions condition] Blocked: Already fetched (requested: ${requestedPage}, current: ${currentPage})`);
+                return false;
+            }
+
+            // Prevent fetching if status is 'loading' or 'loadingMore',
+            // UNLESS it's the very first paginated fetch (page 0, currentPage is -1)
+            if ((status === 'loading' || status === 'loadingMore') && !isInitialPaginatedFetch) {
+                 console.log(`[fetchTransactions condition] Blocked: Status is '${status}' and not initial fetch (requested: ${requestedPage}, current: ${currentPage})`);
+                 return false;
+            }
+
+            console.log(`[fetchTransactions condition] Allowed: (requested: ${requestedPage}, current: ${currentPage}, status: ${status}, isInitial: ${isInitialPaginatedFetch})`);
             return true;
         },
     }
@@ -329,34 +348,43 @@ const transactionsSlice = createSlice({
         builder
             // --- Handlers for fetchTransactions ---
             .addCase(fetchTransactions.pending, (state, action) => {
-                if (action.meta.arg?.page && action.meta.arg.page > 0) {
+                const requestedPage = action.meta.arg?.page ?? 0;
+                // Set status based on whether it's the first page or subsequent pages for pagination
+                if (requestedPage > 0) {
                     state.status = 'loadingMore';
                 } else {
-                    state.status = 'loading';
+                    // Only set to loading if not already loading (e.g., from a month fetch)
+                    // If it's loading from something else, the condition logic handles blocking/allowing
+                    if (state.status !== 'loading' && state.status !== 'loadingMore') {
+                        state.status = 'loading';
+                    }
                 }
+                // Clear error on new fetch attempt, but maybe only if status changes?
+                // Clearing it here is generally safe.
                 state.error = null;
             })
             .addCase(fetchTransactions.fulfilled, (state, action: PayloadAction<Page<Transaction>>) => {
                 const pageData = action.payload;
-                if (pageData.number > 0) {
-                    // Append new transactions and then sort
-                    state.transactions = [...state.transactions, ...pageData.content].sort(sortTransactionsByDateDesc);
-                } else {
-                    // Replace transactions and sort
-                    state.transactions = [...pageData.content].sort(sortTransactionsByDateDesc);
-                }
+                state.transactions = mergeTransactions(state.transactions, pageData.content);
                 state.transactionPage = pageData;
-                state.currentPage = pageData.number;
+                state.currentPage = pageData.number; // Update currentPage to the fetched page number
                 state.hasMore = !pageData.last;
                 state.status = 'succeeded';
+                state.error = null; // Clear error on success
             })
             .addCase(fetchTransactions.rejected, (state, action) => {
+                // Reset status appropriately. If it was 'loadingMore', maybe revert to 'succeeded'?
+                // Simplest is to set to 'failed' to indicate the last operation failed.
                 state.status = 'failed';
                 state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Unknown error fetching transactions';
             })
             // --- Handlers for fetchTransactionsForMonth ---
             .addCase(fetchTransactionsForMonth.pending, (state) => {
-                state.status = 'loading'; // Use main status field
+                if (Object.keys(state.availableMonths).length === 0) {
+                    state.status = 'loading'; // Use main status field
+                } else {
+                    state.status = 'loadingMore';
+                }
                 state.error = null; // Clear main error field
             })
             .addCase(fetchTransactionsForMonth.fulfilled, (state, action) => {
@@ -391,11 +419,12 @@ const transactionsSlice = createSlice({
             })
             // --- Handlers for fetchTransactionRange ---
             .addCase(fetchTransactionRange.pending, (state, action) => {
-                // Check if already loading to avoid redundant state changes
-                if (state.status !== 'loading') {
-                    state.status = 'loading';
-                    state.error = null;
+                if (Object.keys(state.availableMonths).length === 0) {
+                    state.status = 'loading'; // Use main status field
+                } else {
+                    state.status = 'loadingMore';
                 }
+                state.error = null; // Clear main error field
             })
             .addCase(fetchTransactionRange.fulfilled, (state, action) => {
                 // Merge new transactions, avoiding duplicates

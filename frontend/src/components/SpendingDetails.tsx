@@ -19,8 +19,8 @@ const SpendingDetails: React.FC = () => {
 
     // --- State for Filters ---
     const [isMonthFilterOpen, setIsMonthFilterOpen] = useState(false);
-    const [selectedMonth, setSelectedMonth] = useState<string>('April'); // Default to April
-    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()); // Default to current year
+    const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toLocaleString('en-IN', { month: 'long', timeZone: 'Asia/Kolkata' }));
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().toLocaleString('en-IN', { year: 'numeric', timeZone: 'Asia/Kolkata' }) as unknown as number);
     // --- State for temporary selections within the filter sheet ---
     const [filterMonth, setFilterMonth] = useState<string>(selectedMonth);
     const [filterYear, setFilterYear] = useState<number>(selectedYear);
