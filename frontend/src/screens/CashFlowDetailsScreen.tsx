@@ -46,37 +46,6 @@ const calculatePercentageChange = (current: number, previous: number): number | 
     return ((current - previous) / previous) * 100;
 };
 
-// Helper function to check if data for a given month/year exists in the store
-const doesMonthDataExist = (transactions: Transaction[], year: number, month: number): boolean => {
-    // Month is 1-indexed here, Date month is 0-indexed
-    return transactions.some(tx => {
-        const txDate = new Date(tx.transactionDate);
-        return txDate.getFullYear() === year && txDate.getMonth() === month - 1;
-    });
-};
-
-// More robust helper to check if data for the entire range exists
-const robustDoesRangeDataExist = (transactions: Transaction[], startYear: number, startMonth: number, endYear: number, endMonth: number): boolean => {
-    let current = new Date(startYear, startMonth - 1, 1);
-    const end = new Date(endYear, endMonth - 1, 1);
-
-    while (current <= end) {
-        const year = current.getFullYear();
-        const month = current.getMonth() + 1;
-        // Use the existing helper for individual months
-        if (!doesMonthDataExist(transactions, year, month)) {
-            // If data for any month in the range is missing, return false
-            // console.log(`Data missing for ${year}-${month}`); // Debug log
-            return false;
-        }
-        // Move to the next month
-        current.setMonth(current.getMonth() + 1);
-    }
-    // If all months checked and data exists, return true
-    // console.log(`Data exists for range ${startYear}-${startMonth} to ${endYear}-${endMonth}`); // Debug log
-    return true;
-};
-
 // Helper function to get month name abbreviation
 const getMonthAbbr = (month: number) => {
     return new Date(2000, month - 1, 1).toLocaleString('default', { month: 'short' });
@@ -95,27 +64,6 @@ const doesMonthDataExistInStore = (
 ): boolean => {
     // Check if year exists and month is true
     return availableMonths[String(year)]?.[month] === true;
-};
-
-const robustDoesRangeDataExistInStore = (
-    availableMonths: { [year: string]: { [month: number]: boolean } },
-    startYear: number,
-    startMonth: number,
-    endYear: number,
-    endMonth: number
-): boolean => {
-    let current = new Date(startYear, startMonth - 1, 1);
-    const end = new Date(endYear, endMonth - 1, 1);
-
-    while (current <= end) {
-        const year = current.getFullYear();
-        const month = current.getMonth() + 1;
-        if (!doesMonthDataExistInStore(availableMonths, year, month)) {
-            return false;
-        }
-        current.setMonth(current.getMonth() + 1);
-    }
-    return true;
 };
 
 const CashFlowDetailsScreen: React.FC = () => {
@@ -178,8 +126,7 @@ const CashFlowDetailsScreen: React.FC = () => {
         // Check and Fetch Range Data using the new store check
         if (!fetchInitiatedRef.current.range &&
             currentStatus !== 'loading' &&
-            currentStatus !== 'loadingMore' &&
-            !robustDoesRangeDataExistInStore(availableMonths, startYear, startMonth, endYear, endMonth)) {
+            currentStatus !== 'loadingMore') {
             console.log(`EFFECT: Dispatching fetchTransactionRange for range: ${startYear}-${startMonth} to ${endYear}-${endMonth}`);
             dispatch(fetchTransactionRange({ startYear, startMonth, endYear, endMonth }));
             fetchInitiatedRef.current.range = true; // Mark as initiated for this range key

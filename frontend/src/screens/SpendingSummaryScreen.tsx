@@ -1,12 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { FiSliders, FiCalendar, FiCheck, FiX } from 'react-icons/fi'; // Added FiCheck, FiX
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
+import { fetchTransactionsForMonth, fetchTransactionRange } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
 import { Transaction, Tag } from '../types';
 import CurrencyDisplay from '../components/AmountDisplay';
 import DraggableBottomSheet from '../components/DraggableBottomSheet'; // Import the bottom sheet
 import ScreenContainer from '../components/ScreenContainer';
+import TransactionList from '../components/TransactionList'; // Import TransactionList
 
 interface TagSpending {
     name: string;
@@ -20,10 +21,10 @@ const SpendingSummaryScreen: React.FC = () => {
     const [isMonthFilterOpen, setIsMonthFilterOpen] = useState(false);
     const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toLocaleString('en-IN', { month: 'long', timeZone: 'Asia/Kolkata' }));
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-    // --- State for temporary selections within the filter sheet ---
-    const [filterMonth, setFilterMonth] = useState<string>(selectedMonth);
-    const [filterYear, setFilterYear] = useState<number>(selectedYear);
-    // --- End Temporary State ---
+    // --- NEW State for Transaction List Sheet ---
+    const [isTransactionListOpen, setIsTransactionListOpen] = useState(false);
+    const [selectedTagForList, setSelectedTagForList] = useState<string | null>(null);
+    // --- End Transaction List Sheet State ---
 
     const availableMonths = useMemo(() => {
         // TODO: Replace with dynamic logic based on available data/year
@@ -93,12 +94,19 @@ const SpendingSummaryScreen: React.FC = () => {
 
         let filteredTransactions = transactions;
         if (selectedMonthValue && selectedMonthValue !== 0) {
+            // Filter by specific month and year
             filteredTransactions = transactions.filter(tx => {
                 const txDate = new Date(tx.transactionDate);
                 // Compare year and 1-indexed month
                 return txDate.getFullYear() === selectedYear && (txDate.getMonth() + 1) === selectedMonthValue;
             });
-        } // If selectedMonthValue is 0 ('All Months'), use all transactions
+        } else if (selectedMonth === 'All Months') {
+            // Filter only by year when 'All Months' is selected
+             filteredTransactions = transactions.filter(tx => {
+                const txDate = new Date(tx.transactionDate);
+                return txDate.getFullYear() === selectedYear;
+            });
+        } // If neither condition is met (e.g., initial load or error), use all transactions (though this shouldn't happen with default state)
 
         const tagMap = new Map<number, string>();
         const tagParentMap = new Map<number, number | null>();
@@ -171,68 +179,162 @@ const SpendingSummaryScreen: React.FC = () => {
     }, [spendingByTag]);
 
     const handleMonthButtonClick = () => {
-        // Reset temporary filters to current selection when opening
-        setFilterMonth(selectedMonth);
-        setFilterYear(selectedYear);
+        // Reset temporary filters to current selection when opening - No longer needed
+        // setFilterMonth(selectedMonth);
+        // setFilterYear(selectedYear);
         setIsMonthFilterOpen(true);
     };
 
-    const handleMonthSelect = (month: string) => {
-        setFilterMonth(month); // Update temporary filter month
-        // Optionally close the sheet immediately on selection,
-        // or wait for the checkmark confirmation.
-        // setIsMonthFilterOpen(false); // Example: Close immediately
+    const handleMonthSelect = (monthName: string) => {
+        // Update main state directly
+        setSelectedMonth(monthName);
+
+        // Apply filter logic immediately
+        const monthObject = availableMonths.find(m => m.name === monthName);
+        const monthValue = monthObject?.value;
+
+        if (monthName === 'All Months') {
+            // Dispatch fetchTransactionRange for the entire selected year
+            dispatch(fetchTransactionRange({ 
+                startYear: selectedYear, 
+                startMonth: 1, 
+                endYear: selectedYear, 
+                endMonth: 12 
+            }));
+        } else if (monthValue && monthValue !== 0) { // Ensure a specific month is selected
+            dispatch(fetchTransactionsForMonth({ year: selectedYear, month: monthValue }));
+        } else {
+            console.warn("Invalid month selection or value");
+        }
+
+        // Optionally close the sheet immediately on selection
+        // setIsMonthFilterOpen(false);
     };
 
     // --- New handler for year selection ---
     const handleYearSelect = (year: number) => {
-        setFilterYear(year); // Update temporary filter year
+        // Update main state directly
+        setSelectedYear(year);
+
+        // Apply filter logic immediately
+        const monthObject = availableMonths.find(m => m.name === selectedMonth);
+        const monthValue = monthObject?.value;
+
+        if (selectedMonth === 'All Months') {
+            // If 'All Months' is selected, fetch the range for the new year
+            dispatch(fetchTransactionRange({ 
+                startYear: year, 
+                startMonth: 1, 
+                endYear: year, 
+                endMonth: 12 
+            }));
+        } else if (monthValue && monthValue !== 0) { // Ensure a specific month is selected
+            // Fetch specific month for the newly selected year
+            dispatch(fetchTransactionsForMonth({ year: year, month: monthValue }));
+        } else {
+            // This case might not be relevant if a month is always selected, but kept for safety
+            console.warn("No valid month selected for filtering when changing year");
+        }
+
+        // Optionally close the sheet immediately on selection
+        // setIsMonthFilterOpen(false);
     };
     // --- End new handler ---
 
-    const handleFilterConfirm = () => {
-        // Apply temporary selections to the main state
-        setSelectedMonth(filterMonth);
-        setSelectedYear(filterYear);
+    // --- NEW: Helper to get all descendant IDs --- Recursive helper
+    const getAllDescendantIds = useCallback((
+        tagId: number | null,
+        childTagMap: Map<number | null, number[]>
+    ): number[] => {
+        if (tagId === null || !childTagMap.has(tagId)) return []; // Base case: no children or null tag
 
-        const monthObject = availableMonths.find(m => m.name === filterMonth);
-        const monthValue = monthObject?.value;
+        const directChildren = childTagMap.get(tagId) || [];
+        let allDescendants: number[] = [...directChildren];
 
-        if (monthValue && monthValue !== 0) { // Ensure a specific month is selected
-            dispatch(fetchTransactionsForMonth({ year: filterYear, month: monthValue }));
-        } else if (filterMonth === 'All Months') {
-            // TODO: Handle "All Months" case - e.g., fetch all transactions for the selected year
-            console.log(`Handle 'All Months' filter for year ${filterYear}`);
-        } else {
-            console.warn("No valid month selected for filtering");
+        directChildren.forEach(childId => {
+            allDescendants = allDescendants.concat(getAllDescendantIds(childId, childTagMap));
+        });
+
+        return allDescendants;
+    }, []); // No dependencies needed as it's a pure function based on args
+
+    // --- NEW: Filtered Transactions for Selected Tag --- 
+    const transactionsForSelectedTag = useMemo((): Transaction[] => {
+        if (!selectedTagForList || transactionsStatus !== 'succeeded' || tagsStatus !== 'succeeded') {
+            return [];
         }
 
-        setIsMonthFilterOpen(false);
+        // Reuse logic from spendingByTag to build maps (can be optimized later if needed)
+        const tagMap = new Map<number, string>();
+        const childTagMap = new Map<number | null, number[]>();
+        tags.forEach((tag: Tag) => {
+            if (tag.id !== undefined) {
+                tagMap.set(tag.id, tag.name);
+                const parentId = tag.parentTagId ?? null;
+                if (!childTagMap.has(parentId)) {
+                    childTagMap.set(parentId, []);
+                }
+                childTagMap.get(parentId)?.push(tag.id);
+            }
+        });
+        tagMap.set(0, "Untagged"); // Add "Untagged" pseudo-tag
+
+        // Find the ID of the selected tag name
+        let clickedTagId: number | null = null;
+        if (selectedTagForList === "Untagged") {
+            clickedTagId = 0;
+        } else {
+            const foundTag = tags.find(tag => tag.name === selectedTagForList);
+            if (foundTag && foundTag.id !== undefined) {
+                clickedTagId = foundTag.id;
+            } else {
+                console.warn(`Tag ID not found for name: ${selectedTagForList}`);
+                return []; // Tag not found, return empty
+            }
+        }
+
+        // Get all descendant IDs using the helper
+        const descendantIds = getAllDescendantIds(clickedTagId, childTagMap);
+        const relevantTagIds = new Set<number | null>([clickedTagId, ...descendantIds]);
+
+        // Filter transactions based on selected month/year (same as spendingByTag)
+        const selectedMonthObject = availableMonths.find(m => m.name === selectedMonth);
+        const selectedMonthValue = selectedMonthObject?.value;
+
+        let dateFilteredTransactions = transactions;
+        if (selectedMonthValue && selectedMonthValue !== 0) {
+            dateFilteredTransactions = transactions.filter(tx => {
+                const txDate = new Date(tx.transactionDate);
+                return txDate.getFullYear() === selectedYear && (txDate.getMonth() + 1) === selectedMonthValue;
+            });
+        } else if (selectedMonth === 'All Months') {
+            dateFilteredTransactions = transactions.filter(tx => {
+                const txDate = new Date(tx.transactionDate);
+                return txDate.getFullYear() === selectedYear;
+            });
+        }
+
+        // Filter by relevant tag IDs
+        const finalFilteredTransactions = dateFilteredTransactions.filter(tx => {
+            const tagId = tx.tagId ?? 0; // Treat null tagId as 0 ("Untagged")
+            return relevantTagIds.has(tagId);
+        });
+
+        // Transactions are already sorted by date in the slice
+        return finalFilteredTransactions;
+
+    }, [selectedTagForList, transactions, tags, transactionsStatus, tagsStatus, selectedMonth, selectedYear, availableMonths, getAllDescendantIds]);
+
+    // --- NEW: Click Handler for Tag Item ---
+    const handleTagItemClick = (tagName: string) => {
+        setSelectedTagForList(tagName);
+        setIsTransactionListOpen(true);
     };
 
-    const handleFilterReset = () => {
-        // Reset temporary filters to current real month/year
-        const currentRealMonth = new Date().getMonth() + 1; // JS month is 0-indexed
-        const currentRealYear = new Date().getFullYear();
-        const currentMonthName = availableMonths.find(m => m.value === currentRealMonth)?.name || 'All Months';
-
-        setFilterMonth(currentMonthName);
-        setFilterYear(currentRealYear);
-        // Apply the reset immediately to the main state as well
-        setSelectedMonth(currentMonthName);
-        setSelectedYear(currentRealYear);
-
-        // Re-fetch data based on the reset values
-        if (currentMonthName !== 'All Months') {
-             dispatch(fetchTransactionsForMonth({ year: currentRealYear, month: currentRealMonth }));
-        } else {
-            // Handle fetching for 'All Months' if needed after reset
-            console.log(`Handle 'All Months' after reset for year ${currentRealYear}`);
-        }
-
-        console.log("Resetting filters to current month/year and applying");
-        // We might keep the sheet open or close it on reset, depending on desired UX
-        // setIsMonthFilterOpen(false);
+    // --- NEW: Close Handler for Transaction List Sheet ---
+    const closeTransactionListSheet = () => {
+        setIsTransactionListOpen(false);
+        setSelectedTagForList(null); // Clear selection on close
     };
 
     // --- UI Rendering --- //
@@ -278,7 +380,11 @@ const SpendingSummaryScreen: React.FC = () => {
                         const percentage = totalSpending > 0 ? ((item.amount / totalSpending) * 100).toFixed(1) : '0.0';
                         const barWidthPercentage = totalSpending > 0 ? (item.amount / totalSpending) * 100 : 0;
                         return (
-                            <div key={index} className="flex bg-card p-4 rounded-xl overflow-hidden shadow-sm relative bg-input border-[1px] border-input">
+                            <div
+                                key={index}
+                                className="flex bg-card p-4 rounded-xl overflow-hidden shadow-sm relative bg-input border-[1px] border-input cursor-pointer hover:bg-muted/50" // Added cursor, hover
+                                onClick={() => handleTagItemClick(item.name)} // Added onClick handler
+                            >
                                 <div className="flex w-full justify-between items-end space-x-4" style={{ zIndex: 2 }}>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium truncate text-card-foreground">{item.name}</p>
@@ -310,27 +416,10 @@ const SpendingSummaryScreen: React.FC = () => {
                 onClose={() => setIsMonthFilterOpen(false)}
                 title="Filter" // Add title to the sheet
             >
-                <div className="flex flex-col h-full px-4 pb-4">
-                    {/* Header inside Sheet */}
-                    <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                        <button
-                            onClick={handleFilterReset}
-                            className="flex items-center space-x-1 px-3 py-1.5 bg-destructive/10 text-destructive rounded-lg text-sm font-medium"
-                        >
-                            <FiX size={16} className="mr-1"/>
-                            <span>Reset</span>
-                        </button>
-                        {/* Title is now handled by the DraggableBottomSheet prop */}
-                        <button
-                            onClick={handleFilterConfirm}
-                            className="p-2 text-primary" // Use primary color for confirm
-                        >
-                            <FiCheck size={24} />
-                        </button>
-                    </div>
+                <div className="flex flex-col h-full px-4 py-4">
 
                     {/* Filter Content Area - Now uses Flexbox */}
-                    <div className="flex-grow overflow-y-auto space-x-4 flex"> 
+                    <div className="flex-grow overflow-y-auto space-x-4 flex">
                         {/* Month Section */}
                         <div className="flex-1 space-y-4">
                             <h3 className="text-base font-semibold text-muted-foreground mb-2 px-1">Month</h3>
@@ -339,14 +428,14 @@ const SpendingSummaryScreen: React.FC = () => {
                                     <button
                                         key={month.name}
                                         onClick={() => handleMonthSelect(month.name)}
-                                        className={`w-full flex justify-between items-center p-3 rounded-lg text-left ${filterMonth === month.name ? 'bg-muted' : 'hover:bg-muted/50'
+                                        className={`w-full flex justify-between items-center p-3 rounded-lg text-left ${selectedMonth === month.name ? 'bg-muted' : 'hover:bg-muted/50' // Use selectedMonth
                                             }`}
                                     >
                                         <span className="text-sm font-medium text-foreground">{month.name}</span>
                                         {/* Custom Radio Button */}
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${filterMonth === month.name ? 'border-primary bg-primary' : 'border-muted-foreground'
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedMonth === month.name ? 'border-primary bg-primary' : 'border-muted-foreground' // Use selectedMonth
                                             }`}>
-                                            {filterMonth === month.name && <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>}
+                                            {selectedMonth === month.name && <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>}
                                         </div>
                                     </button>
                                 ))}
@@ -361,14 +450,14 @@ const SpendingSummaryScreen: React.FC = () => {
                                     <button
                                         key={year}
                                         onClick={() => handleYearSelect(year)}
-                                        className={`w-full flex justify-between items-center p-3 rounded-lg text-left ${filterYear === year ? 'bg-muted' : 'hover:bg-muted/50'
+                                        className={`w-full flex justify-between items-center p-3 rounded-lg text-left ${selectedYear === year ? 'bg-muted' : 'hover:bg-muted/50' // Use selectedYear
                                             }`}
                                     >
                                         <span className="text-sm font-medium text-foreground">{year}</span>
                                         {/* Custom Radio Button */}
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${filterYear === year ? 'border-primary bg-primary' : 'border-muted-foreground'
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedYear === year ? 'border-primary bg-primary' : 'border-muted-foreground' // Use selectedYear
                                             }`}>
-                                            {filterYear === year && <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>}
+                                            {selectedYear === year && <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>}
                                         </div>
                                     </button>
                                 ))}
@@ -380,6 +469,20 @@ const SpendingSummaryScreen: React.FC = () => {
                     </div>
                 </div>
             </DraggableBottomSheet>
+
+             {/* Transaction List Bottom Sheet */} 
+             <DraggableBottomSheet
+                isOpen={isTransactionListOpen}
+                onClose={closeTransactionListSheet}
+                title={`${selectedTagForList || ''}`}
+             >
+                {/* Pass filtered transactions to TransactionList */} 
+                <TransactionList
+                    headerHeight={0} // Pass 0 for header height as it's inside a sheet
+                    transactions={transactionsForSelectedTag}
+                />
+            </DraggableBottomSheet>
+
         </ScreenContainer>
     );
 };

@@ -43,6 +43,38 @@ const mergeTransactions = (existing: Transaction[], incoming: Transaction[]): Tr
     return [...existing, ...uniqueIncoming].sort(sortTransactionsByDateDesc);
 };
 
+// --- NEW: Helper functions to check if data exists in the store --- //
+const doesMonthDataExistInStore = (
+    availableMonths: { [year: string]: { [month: number]: boolean } },
+    year: number,
+    month: number
+): boolean => {
+    const yearStr = String(year);
+    return !!(availableMonths[yearStr] && availableMonths[yearStr][month]);
+};
+
+const robustDoesRangeDataExistInStore = (
+    availableMonths: { [year: string]: { [month: number]: boolean } },
+    startYear: number,
+    startMonth: number,
+    endYear: number,
+    endMonth: number
+): boolean => {
+    let current = new Date(startYear, startMonth - 1, 1);
+    const end = new Date(endYear, endMonth - 1, 1);
+
+    while (current <= end) {
+        const year = current.getFullYear();
+        const month = current.getMonth() + 1;
+        if (!doesMonthDataExistInStore(availableMonths, year, month)) {
+            return false;
+        }
+        current.setMonth(current.getMonth() + 1);
+    }
+    return true;
+};
+// --- END NEW HELPER FUNCTIONS --- //
+
 // Define arguments for fetchTransactions thunk
 interface FetchTransactionsArgs {
     page?: number;
@@ -174,13 +206,22 @@ export const fetchTransactionsForMonth = createAsyncThunk<
     {
         condition: ({ year, month }, { getState }) => {
           const state = getState() as RootState;
-          // Use the main status field
-          const { status } = state.transactions;
-          // TODO: Potentially add logic to check if data for this specific year/month is already loaded
+          // Use the main status field and availableMonths
+          const { status, availableMonths } = state.transactions;
+          
           // Prevent fetch if already loading
           if (status === 'loading' || status === 'loadingMore') {
+            console.log(`[fetchMonth condition] Blocked: Status is '${status}'`);
             return false;
           }
+          
+          // Prevent fetch if data for this specific year/month is already loaded
+          if (doesMonthDataExistInStore(availableMonths, year, month)) {
+            console.log(`[fetchMonth condition] Blocked: Data for ${year}-${month} already exists.`);
+            return false;
+          }
+
+          console.log(`[fetchMonth condition] Allowed: Fetching data for ${year}-${month}.`);
           return true;
         },
     }
@@ -206,12 +247,22 @@ export const fetchTransactionRange = createAsyncThunk<
     {
         condition: (args, { getState }) => {
             const state = getState() as RootState;
-            // TODO: Implement more sophisticated condition check if needed,
-            // e.g., check if data for the specific range is already being fetched or partially exists.
-            const { status } = state.transactions;
+            const { status, availableMonths } = state.transactions;
+            const { startYear, startMonth, endYear, endMonth } = args;
+            
+            // Prevent fetch if already loading
             if (status === 'loading' || status === 'loadingMore') {
+                console.log(`[fetchRange condition] Blocked: Status is '${status}'`);
                 return false; // Don't fetch if already busy
             }
+            
+            // Prevent fetch if data for the specific range already exists.
+            if (robustDoesRangeDataExistInStore(availableMonths, startYear, startMonth, endYear, endMonth)) {
+                 console.log(`[fetchRange condition] Blocked: Data for range ${startYear}-${startMonth} to ${endYear}-${endMonth} already exists.`);
+                return false;
+            }
+            
+            console.log(`[fetchRange condition] Allowed: Fetching data for range ${startYear}-${startMonth} to ${endYear}-${endMonth}.`);
             return true;
         },
     }
