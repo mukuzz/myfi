@@ -111,7 +111,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({
                 left: scrollLeft,
                 behavior: 'auto' // Use smooth scrolling
             });
-            container.style.visibility = 'visible';
+            container.style.opacity = '1';
         }
         // Dependencies: scroll when selection, container size, scale function, or data changes
     }, [containerWidth]); // Added data dependency
@@ -179,7 +179,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({
             // Height class removed by user, let parent control height or use svgHeight directly?
             // Re-add h-[300px] for consistency unless intended otherwise.
             className={`overflow-x-auto scrollbar-hide w-full relative snap-x snap-mandatory ${className}`}
-            style={{ scrollbarWidth: 'none', visibility: 'hidden' }}
+            style={{ scrollbarWidth: 'none', opacity: 0 }}
         >
             {/* Centered Vertical Indicator Line - REMOVED */}
 
