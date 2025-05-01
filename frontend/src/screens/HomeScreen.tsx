@@ -43,9 +43,9 @@ function HomeScreen() {
     <div className="bg-background text-foreground flex flex-col flex-grow space-y-4 p-4 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold">Home</h1>
-        <button className="p-2 rounded-full bg-secondary">
+        {/* <button className="p-2 rounded-full bg-secondary">
           <FiUser size={24} />
-        </button>
+        </button> */}
       </div>
 
       {/* Mobile: Single column stack (default flow + space-y on parent) */}

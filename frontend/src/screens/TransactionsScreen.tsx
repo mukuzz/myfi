@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FiFilter, FiSearch } from 'react-icons/fi';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchTags, selectTagMap } from '../store/slices/tagsSlice';
 import { fetchAccounts } from '../store/slices/accountsSlice';
@@ -46,39 +45,6 @@ function TransactionsScreen() {
     }
   }, [dispatch, tagsStatus, accountsStatus, transactionStatus, transactions.length]);
 
-  useEffect(() => {
-    const updateHeaderHeight = () => {
-      if (headerRef.current) {
-        setHeaderHeight(headerRef.current.offsetHeight);
-      }
-    };
-
-    updateHeaderHeight();
-    window.addEventListener('resize', updateHeaderHeight);
-
-    return () => window.removeEventListener('resize', updateHeaderHeight);
-  }, []);
-
-  useEffect(() => {
-    const parentElement = parentRef.current;
-    if (!parentElement) return;
-
-    const resizeObserver = new ResizeObserver(entries => {
-      for (let entry of entries) {
-        if (entry.target === parentElement && entry.target instanceof HTMLElement) {
-          setParentWidth(entry.target.offsetWidth);
-        }
-      }
-    });
-
-    resizeObserver.observe(parentElement);
-
-    setParentWidth(parentElement.offsetWidth);
-
-    return () => {
-      resizeObserver.unobserve(parentElement);
-    };
-  }, []);
 
   const handleScroll = useCallback(() => {
     if (!hasMore || loadingRef.current) return;
@@ -115,28 +81,19 @@ function TransactionsScreen() {
     <div ref={parentRef} className="text-foreground flex flex-col h-full bg-background relative">
       <div
         ref={headerRef}
-        className={`${isMobile ? 'fixed' : 'absolute'} top-0 bg-background pt-4 border-b border-border z-10`}
+        className={`bg-background pt-4 z-10`}
         style={{ width: parentWidth ? `${parentWidth}px` : '100%' }}
       >
-        <div className="flex justify-between items-start mb-4 px-2">
+        <div className="flex justify-between items-start px-2">
           <h1 className="text-3xl font-bold pl-2">Transactions</h1>
           <div className="flex">
-            <button className="text-muted-foreground hover:text-foreground p-2"><FiFilter size={20} /></button>
+            {/* <button className="text-muted-foreground hover:text-foreground p-2"><FiFilter size={20} /></button> */}
             <AddTransactionFlow
               accounts={accounts}
               tags={tags}
               tagMap={tagMap}
             />
           </div>
-        </div>
-
-        <div className="relative mb-4 px-4">
-          <FiSearch className="absolute left-6 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder={`Search transactions...`}
-            className="w-full bg-input border border-input rounded-lg pl-8 pr-4 py-1 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary"
-          />
         </div>
       </div>
 

@@ -111,7 +111,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
             return (
               <React.Fragment key={tx.id}>
                 {showMonthHeader && (
-                  <div className="flex justify-between items-center mb-2 px-2 pt-2">
+                  <div className="flex justify-between items-center mb-2 px-1 pt-2">
                     <h2 className="text-lg font-semibold text-foreground">{currentMonthYear}</h2>
                   </div>
                 )}
