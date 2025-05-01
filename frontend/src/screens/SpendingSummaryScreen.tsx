@@ -382,7 +382,7 @@ const SpendingSummaryScreen: React.FC = () => {
                         return (
                             <div
                                 key={index}
-                                className="flex bg-card p-4 rounded-xl overflow-hidden shadow-sm relative bg-input border-[1px] border-input cursor-pointer hover:bg-muted/50" // Added cursor, hover
+                                className="flex bg-card p-4 rounded-xl overflow-hidden shadow-sm relative bg-input border-[1px] border-input cursor-pointer"
                                 onClick={() => handleTagItemClick(item.name)} // Added onClick handler
                             >
                                 <div className="flex w-full justify-between items-end space-x-4" style={{ zIndex: 2 }}>
