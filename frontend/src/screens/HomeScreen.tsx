@@ -1,14 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
-import SpendingSummary from './SpendingSummary';
-import TotalBalanceCard from './TotalBalanceCard';
-import AccountsDisplayCard from './AccountsDisplayCard';
+import SpendingSummary from '../components/SpendingSummary';
+import TotalBalanceCard from '../components/TotalBalanceCard';
+import AccountsDisplayCard from '../components/AccountsDisplayCard';
 import { FiUser } from 'react-icons/fi';
-import MonthlyCashFlowCard from './MonthlyCashFlowCard';
-import RefreshBar from './RefreshBar';
+import MonthlyCashFlowCard from '../components/MonthlyCashFlowCard';
+import RefreshBar from '../components/RefreshBar';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useLocation } from 'react-router-dom';
 
-function Home() {
+function HomeScreen() {
   const parentRef = useRef<HTMLDivElement>(null);
   const [parentWidth, setParentWidth] = useState<number | null>(null);
 
@@ -83,4 +83,4 @@ function Home() {
   </div>
 }
 
-export default Home; 
+export default HomeScreen; 

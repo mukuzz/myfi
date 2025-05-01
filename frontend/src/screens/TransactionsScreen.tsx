@@ -4,11 +4,11 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchTags, selectTagMap } from '../store/slices/tagsSlice';
 import { fetchAccounts } from '../store/slices/accountsSlice';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
-import AddTransactionFlow from './AddTransactionFlow';
-import TransactionList from './TransactionList';
+import AddTransactionFlow from '../components/AddTransactionFlow';
+import TransactionList from '../components/TransactionList';
 import { useIsMobile } from '../hooks/useIsMobile';
 
-function Transactions() {
+function TransactionsScreen() {
   const dispatch = useAppDispatch();
 
   const { tags, status: tagsStatus, error: tagsError } = useAppSelector((state) => state.tags);
@@ -121,4 +121,4 @@ function Transactions() {
   );
 }
 
-export default Transactions; 
+export default TransactionsScreen; 

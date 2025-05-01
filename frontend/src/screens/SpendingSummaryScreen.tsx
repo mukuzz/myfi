@@ -1,27 +1,25 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiChevronLeft, FiSliders, FiCalendar, FiCheck, FiX } from 'react-icons/fi'; // Added FiCheck, FiX
+import { FiSliders, FiCalendar, FiCheck, FiX } from 'react-icons/fi'; // Added FiCheck, FiX
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
 import { Transaction, Tag } from '../types';
-import CurrencyDisplay from './AmountDisplay';
-import DraggableBottomSheet from './DraggableBottomSheet'; // Import the bottom sheet
-import ScreenContainer from './ScreenContainer';
+import CurrencyDisplay from '../components/AmountDisplay';
+import DraggableBottomSheet from '../components/DraggableBottomSheet'; // Import the bottom sheet
+import ScreenContainer from '../components/ScreenContainer';
 
 interface TagSpending {
     name: string;
     amount: number;
 }
 
-const SpendingDetails: React.FC = () => {
+const SpendingSummaryScreen: React.FC = () => {
     const dispatch = useAppDispatch();
-    const navigate = useNavigate();
 
     // --- State for Filters ---
     const [isMonthFilterOpen, setIsMonthFilterOpen] = useState(false);
     const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toLocaleString('en-IN', { month: 'long', timeZone: 'Asia/Kolkata' }));
-    const [selectedYear, setSelectedYear] = useState<number>(new Date().toLocaleString('en-IN', { year: 'numeric', timeZone: 'Asia/Kolkata' }) as unknown as number);
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     // --- State for temporary selections within the filter sheet ---
     const [filterMonth, setFilterMonth] = useState<string>(selectedMonth);
     const [filterYear, setFilterYear] = useState<number>(selectedYear);
@@ -72,6 +70,8 @@ const SpendingDetails: React.FC = () => {
         // Fetch data for the initially selected month/year if not loaded
         const initialMonthObject = availableMonths.find(m => m.name === selectedMonth);
         const initialMonthValue = initialMonthObject?.value;
+
+        
 
         if ((transactionsStatus === 'idle' || transactionsStatus === 'failed') && initialMonthValue && initialMonthValue !== 0) {
             dispatch(fetchTransactionsForMonth({ year: selectedYear, month: initialMonthValue }));
@@ -170,10 +170,6 @@ const SpendingDetails: React.FC = () => {
         return spendingByTag.reduce((sum, item) => sum + item.amount, 0);
     }, [spendingByTag]);
 
-    const handleBackClick = () => {
-        navigate(-1); // Go back to the previous screen
-    };
-
     const handleMonthButtonClick = () => {
         // Reset temporary filters to current selection when opening
         setFilterMonth(selectedMonth);
@@ -203,7 +199,6 @@ const SpendingDetails: React.FC = () => {
         const monthValue = monthObject?.value;
 
         if (monthValue && monthValue !== 0) { // Ensure a specific month is selected
-            console.log(`Fetching transactions for ${filterYear}-${monthValue}`);
             dispatch(fetchTransactionsForMonth({ year: filterYear, month: monthValue }));
         } else if (filterMonth === 'All Months') {
             // TODO: Handle "All Months" case - e.g., fetch all transactions for the selected year
@@ -242,7 +237,7 @@ const SpendingDetails: React.FC = () => {
 
     // --- UI Rendering --- //
     return (
-        <ScreenContainer title="Cash Flow">
+        <ScreenContainer title="Spending Summary">
 
             {/* Filters */}
             <div className="flex items-center justify-center p-4 space-x-2 flex-shrink-0">
@@ -389,4 +384,4 @@ const SpendingDetails: React.FC = () => {
     );
 };
 
-export default SpendingDetails; 
+export default SpendingSummaryScreen; 

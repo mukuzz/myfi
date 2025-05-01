@@ -5,20 +5,20 @@ import {
   Outlet,
   ScrollRestoration,
 } from 'react-router-dom';
-import Home from './components/Home';
-import Transactions from './components/Transactions';
-import SpendingDetails from './components/SpendingDetails';
 import BottomNav from './components/BottomNav';
 import { useIsMobile } from './hooks/useIsMobile';
 import CashFlowDetailsScreen from './screens/CashFlowDetailsScreen';
+import TransactionsScreen from './screens/TransactionsScreen';
+import HomeScreen from './screens/HomeScreen';
+import SpendingSummaryScreen from './screens/SpendingSummaryScreen';
 
 
 // Keep DesktopAppHome as it's used in conditional rendering below
 function DesktopAppHome() {
   return (
     <main className="flex-grow overflow-y-auto flex flex-row h-full no-scrollbar">
-      <div className="flex-1 overflow-y-auto"><Home /></div>
-      <div className="flex-1 overflow-y-auto max-w-[400px] border-l border-border"><Transactions /></div>
+      <div className="flex-1 overflow-y-auto"><HomeScreen /></div>
+      <div className="flex-1 overflow-y-auto max-w-[400px] border-l border-border"><TransactionsScreen /></div>
     </main>
   );
 }
@@ -28,13 +28,13 @@ function DesktopAppHome() {
 // Component to conditionally render Home or DesktopAppHome
 function HomeRouteElement() {
   const isMobile = useIsMobile();
-  return isMobile ? <Home /> : <DesktopAppHome />;
+  return isMobile ? <HomeScreen /> : <DesktopAppHome />;
 }
 
 // Component to conditionally render Transactions or DesktopAppHome
 function TransactionsRouteElement() {
   const isMobile = useIsMobile();
-  return isMobile ? <Transactions /> : <DesktopAppHome />;
+  return isMobile ? <TransactionsScreen /> : <DesktopAppHome />;
 }
 
 // Root layout component incorporating logic from old AppContent
@@ -73,7 +73,7 @@ const router = createBrowserRouter([
       },
       {
         path: "spending-summary",
-        element: <SpendingDetails />,
+        element: <SpendingSummaryScreen />,
       },
       {
         path: "cash-flow",
