@@ -7,6 +7,7 @@ import { fetchTags } from '../store/slices/tagsSlice';
 import { Transaction, Tag } from '../types';
 import CurrencyDisplay from './AmountDisplay';
 import DraggableBottomSheet from './DraggableBottomSheet'; // Import the bottom sheet
+import ScreenContainer from './ScreenContainer';
 
 interface TagSpending {
     name: string;
@@ -241,15 +242,7 @@ const SpendingDetails: React.FC = () => {
 
     // --- UI Rendering --- //
     return (
-        <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
-            {/* Header */}
-            <header className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
-                <button onClick={handleBackClick} className="p-2 -ml-2">
-                    <FiChevronLeft size={24} />
-                </button>
-                <h1 className="text-lg font-semibold">Spending Summary</h1>
-                <div className="w-8"></div> {/* Spacer */}
-            </header>
+        <ScreenContainer title="Cash Flow">
 
             {/* Filters */}
             <div className="flex items-center justify-center p-4 space-x-2 flex-shrink-0">
@@ -392,7 +385,7 @@ const SpendingDetails: React.FC = () => {
                     </div>
                 </div>
             </DraggableBottomSheet>
-        </div>
+        </ScreenContainer>
     );
 };
 

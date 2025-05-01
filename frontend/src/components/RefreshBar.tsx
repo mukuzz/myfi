@@ -5,7 +5,12 @@ import { getLastScrapeTime } from '../services/apiService'; // Import API servic
 import DraggableBottomSheet from './DraggableBottomSheet'; // Import the sheet
 import RefreshSheetContent from './RefreshSheetContent'; // Import sheet content
 
-const RefreshBar: React.FC = () => { // No props needed now
+interface RefreshBarProps {
+  className?: string;
+  style?: React.CSSProperties; // Add style prop
+}
+
+const RefreshBar: React.FC<RefreshBarProps> = ({ className, style }) => {
   const [isRefreshSheetOpen, setIsRefreshSheetOpen] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<number | null>(null);
   const [isLoadingTime, setIsLoadingTime] = useState<boolean>(true);
@@ -40,8 +45,9 @@ const RefreshBar: React.FC = () => { // No props needed now
     <>
       {/* The clickable bar */}
       <div 
-        className="sticky z-10 bottom-0 left-0 right-0 flex-shrink-0 px-4 py-2 bg-muted border-t border-border flex items-center justify-center cursor-pointer"
+        className={`z-10 flex-shrink-0 px-4 py-2 bg-muted border-t border-border flex items-center justify-center cursor-pointer ${className}`}
         onClick={openRefreshSheet}
+        style={style} // Apply the style prop
       >
         <FiRefreshCw className="mr-2 h-4 w-4" />
         <span className="text-xs font-normal">

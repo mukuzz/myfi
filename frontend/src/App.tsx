@@ -3,7 +3,8 @@ import {
   RouterProvider,
   useLocation,
   Outlet,
-} from 'react-router-dom'; // Updated imports
+  ScrollRestoration,
+} from 'react-router-dom';
 import Home from './components/Home';
 import Transactions from './components/Transactions';
 import SpendingDetails from './components/SpendingDetails';
@@ -43,19 +44,15 @@ function RootLayout() {
 
   // Check if the current route needs the bottom nav visible
   // Note: With nested routes, pathname might include parent paths. Adjust if needed.
-  const isBottomNavNeeded = location.pathname === '/transactions' || location.pathname === '/';
+  const isBottomNavNeeded = isMobile && (location.pathname === '/transactions' || location.pathname === '/');
 
   return (
-    <div className="flex flex-col h-screen bg-background fixed bottom-0 w-full">
-      {/* ScrollRestoration manages scroll position for navigations */}
-      
-      <main className={`flex-grow overflow-y-auto flex flex-col ${isBottomNavNeeded ? 'h-full' : 'h-[calc(100%-theme(spacing.20))]'} `}>
+      <div className={`h-full ${isBottomNavNeeded ? 'mb-[80px]' : ''} `}>
+        <ScrollRestoration />
         {/* Child routes will render here */}
         <Outlet />
-      </main>
-      {/* Conditionally render BottomNav based on mobile and route */}
-      {isMobile && isBottomNavNeeded && <BottomNav />}
-    </div>
+      {isBottomNavNeeded && <BottomNav />}
+      </div>
   );
 }
 

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { FiX } from 'react-icons/fi';
 
 interface DraggableBottomSheetProps {
   isOpen: boolean;
@@ -152,7 +153,7 @@ function DraggableBottomSheet({
   return (
     <div
       className={`fixed inset-0 bg-black
-        ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        ${isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
       style={{ opacity: 100, zIndex: zIndex }} // Apply z-index to background
       // Close on overlay click (optional, could be a prop)
       onClick={onClose}
@@ -186,6 +187,20 @@ function DraggableBottomSheet({
           </div>
 
           {title && <h2 className="text-lg font-semibold text-foreground pointer-events-none">{title}</h2>} {/* Display title if provided */}
+
+          {/* Close Button */}
+          <div className="absolute right-0 top-1 bottom-0 py-2 px-4 h-full flex items-center justify-center">
+            <div
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent triggering handle's pointer events
+              onClose();
+            }}
+            className="p-2 rounded-full cursor-pointer text-primary bg-input" // Positioned top right, interactive
+            aria-label="Close bottom sheet"
+          >
+              <FiX className="text-xl font-bold leading-none" /> {/* Simple text 'X' character */}
+            </div>
+          </div>
         </div>
 
         {/* Content Area - Added padding-top to avoid overlap with handle */}

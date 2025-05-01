@@ -1,11 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as apiService from '../../services/apiService';
-import { Tag } from '../../types';
+import { Tag, TagMap } from '../../types';
 import { RootState } from '../store'; // Import RootState
 
 // Define the shape of the tags state
 interface TagsState {
     tags: Tag[];
+    tagMap: TagMap;
     status: 'idle' | 'loading' | 'succeeded' | 'failed';
     error: string | null;
 }
@@ -13,6 +14,7 @@ interface TagsState {
 // Define the initial state
 const initialState: TagsState = {
     tags: [],
+    tagMap: {},
     status: 'idle',
     error: null,
 };
@@ -63,6 +65,12 @@ const tagsSlice = createSlice({
             .addCase(fetchTags.fulfilled, (state, action: PayloadAction<Tag[]>) => {
                 state.status = 'succeeded';
                 state.tags = action.payload;
+                // Calculate and store tagMap
+                const map: TagMap = {};
+                action.payload.forEach(tag => {
+                  map[tag.id] = tag;
+                });
+                state.tagMap = map;
             })
             .addCase(fetchTags.rejected, (state, action) => {
                 state.status = 'failed';
@@ -70,6 +78,9 @@ const tagsSlice = createSlice({
             });
     },
 });
+
+// Selector for tagMap
+export const selectTagMap = (state: RootState) => state.tags.tagMap;
 
 // Export the reducer
 export default tagsSlice.reducer; 
