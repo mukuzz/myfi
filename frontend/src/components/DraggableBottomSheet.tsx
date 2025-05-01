@@ -152,9 +152,9 @@ function DraggableBottomSheet({
 
   return (
     <div
-      className={`fixed inset-0 bg-black
-        ${isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
-      style={{ opacity: 100, zIndex: zIndex }} // Apply z-index to background
+      className={`fixed inset-0 bg-black 
+        ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
+      style={{ zIndex: zIndex }} // Apply z-index to background
       // Close on overlay click (optional, could be a prop)
       onClick={onClose}
       ref={modalBackgroundRef}
@@ -174,7 +174,7 @@ function DraggableBottomSheet({
         }}
         className={`fixed bottom-0 left-0 right-0 bg-background w-full max-w-lg mx-auto shadow-xl h-[95vh] flex flex-col rounded-t-xl
                    transition-transform duration-300 ease-in-out
-                   ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
+                   ${isOpen ? 'translate-y-0' : '-translate-y-[-150%]'}`}
         // Inline transform applied during drag
       >
         {/* Drag Handle Area - Now includes title */}
