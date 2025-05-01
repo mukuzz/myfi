@@ -71,7 +71,7 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
         />
       </div>
 
-      <div className="flex-grow overflow-y-auto pt-1 space-y-5 no-scrollbar p-4">
+      <div className="flex-grow overflow-y-auto pt-1 space-y-5 p-4">
 
         {filteredHierarchy.map(parentTag => (
           <div className="flex flex-col bg-secondary rounded-xl" key={parentTag.id}>
@@ -89,7 +89,7 @@ function TagSelector({ onSelectTag, availableTags, tagMap, currentTagId, transac
               </label>
             </div>
 
-            <div className="flex items-center space-x-2 overflow-x-auto whitespace-nowrap px-5 no-scrollbar pb-4">
+            <div className="flex items-center space-x-2 overflow-x-auto whitespace-nowrap px-5 pb-4">
               {parentTag.children && parentTag.children.map(childTag => {
                 const isSelected = selectedTagId === childTag.id;
                 return (

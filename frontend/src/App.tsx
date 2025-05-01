@@ -16,7 +16,7 @@ import SpendingSummaryScreen from './screens/SpendingSummaryScreen';
 // Keep DesktopAppHome as it's used in conditional rendering below
 function DesktopAppHome() {
   return (
-    <main className="flex-grow overflow-y-auto flex flex-row h-full no-scrollbar">
+    <main className="overflow-y-auto flex flex-row h-full">
       <div className="flex-1 overflow-y-auto"><HomeScreen /></div>
       <div className="flex-1 overflow-y-auto max-w-[400px] border-l border-border"><TransactionsScreen /></div>
     </main>

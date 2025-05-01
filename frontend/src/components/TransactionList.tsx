@@ -98,7 +98,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
     >
 
       {transactions.length > 0 && (
-        <ul className="space-y-2 px-2">
+        <ul className="space-y-2 p-2">
           {transactions.map((tx) => {
             if (tx.parentId) return null;
 

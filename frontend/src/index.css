@@ -22,8 +22,11 @@ code {
 }
 
 html {
-  scrollbar-width: none;
   background-color: #f8fafc;
+}
+
+* {
+  scrollbar-width: none;
 }
 
 html {

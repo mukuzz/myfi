@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { FiFilter, FiSearch } from 'react-icons/fi';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchTags, selectTagMap } from '../store/slices/tagsSlice';
@@ -17,9 +17,11 @@ function TransactionsScreen() {
   const {
     transactions,
     status: transactionStatus,
-    error: transactionError
+    error: transactionError,
+    hasMore
   } = useAppSelector((state) => state.transactions);
 
+  const [currentPage, setCurrentPage] = useState(0);
   const isLoadingInitial = transactionStatus === 'loading' && transactions.length === 0;
   const isLoadingMore = transactionStatus === 'loadingMore';
   const overallError = tagsError || accountsError || transactionError;
@@ -29,6 +31,8 @@ function TransactionsScreen() {
   const parentRef = useRef<HTMLDivElement>(null);
   const [parentWidth, setParentWidth] = useState<number | null>(null);
   const isMobile = useIsMobile();
+  const loadingRef = useRef(false);
+
   useEffect(() => {
     if (tagsStatus === 'idle') {
       dispatch(fetchTags());
@@ -36,10 +40,11 @@ function TransactionsScreen() {
     if (accountsStatus === 'idle') {
       dispatch(fetchAccounts());
     }
-    if (transactionStatus === 'idle') {
+    if (transactionStatus === 'idle' && transactions.length === 0) {
       dispatch(fetchTransactions({ page: 0 }));
+      setCurrentPage(0);
     }
-  }, [dispatch, tagsStatus, accountsStatus, transactionStatus]);
+  }, [dispatch, tagsStatus, accountsStatus, transactionStatus, transactions.length]);
 
   useEffect(() => {
     const updateHeaderHeight = () => {
@@ -75,6 +80,37 @@ function TransactionsScreen() {
     };
   }, []);
 
+  const handleScroll = useCallback(() => {
+    if (!hasMore || loadingRef.current) return;
+
+    const { scrollHeight, scrollTop } = document.documentElement;
+    const clientHeight = window.innerHeight;
+    const threshold = 250;
+
+    if (scrollTop + clientHeight >= scrollHeight - threshold) {
+      loadingRef.current = true;
+      const nextPage = currentPage + 1;
+      dispatch(fetchTransactions({ page: nextPage })).finally(() => {
+        loadingRef.current = false;
+      });
+      setCurrentPage(nextPage);
+    }
+  }, [dispatch, hasMore, currentPage]);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [handleScroll]);
+
+  useEffect(() => {
+    if (transactionStatus !== 'loadingMore') {
+      loadingRef.current = false;
+    }
+  }, [transactionStatus]);
+
   return (
     <div ref={parentRef} className="text-foreground flex flex-col h-full bg-background relative">
       <div
@@ -104,19 +140,32 @@ function TransactionsScreen() {
         </div>
       </div>
 
-      {isLoadingInitial && <p className="text-center p-8 text-muted-foreground">Loading transactions...</p>}
-      {overallError && <p className="text-center text-destructive">Error: {overallError}</p>}
-      {!isLoadingInitial && !overallError && transactions.length === 0 && transactionStatus === 'succeeded' && (
-        <p className="text-center p-8 text-muted-foreground">No transactions found.</p>
+      {overallError && !isLoadingInitial && (
+        <div style={{ paddingTop: `${headerHeight}px` }} className="p-4 text-center text-destructive">
+          Error loading data: {overallError}
+        </div>
       )}
 
-      {overallError && <p className="text-center text-destructive p-4">Error loading data: {overallError}</p>}
+      {isLoadingInitial && (
+        <div style={{ paddingTop: `${headerHeight}px` }} className="p-8 text-center text-muted-foreground">
+          Loading transactions...
+        </div>
+      )}
+
+      {!isLoadingInitial && !overallError && transactions.length === 0 && transactionStatus === 'succeeded' && (
+        <div style={{ paddingTop: `${headerHeight}px` }} className="p-8 text-center text-muted-foreground">
+          No transactions found.
+        </div>
+      )}
 
       <TransactionList
         headerHeight={headerHeight}
         transactions={transactions}
       />
 
+      {isLoadingMore && (
+        <p className="text-center p-4 text-muted-foreground">Loading more transactions...</p>
+      )}
     </div>
   );
 }
