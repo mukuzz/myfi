@@ -36,7 +36,7 @@ function TransactionsScreen() {
     if (accountsStatus === 'idle') {
       dispatch(fetchAccounts());
     }
-    if (transactionStatus === 'idle' && transactions.length === 0) {
+    if (transactionStatus === 'idle' || transactionStatus === 'succeeded' || transactionStatus === 'failed') {
       dispatch(fetchTransactions({ page: 0 }));
       setCurrentPage(0);
     }

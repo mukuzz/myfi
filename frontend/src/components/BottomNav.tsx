@@ -1,8 +1,6 @@
-import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FiHome, FiList } from 'react-icons/fi';
 
-// Define tabs with paths
 const tabs = [
   { name: 'Home', path: '/', icon: <FiHome size={32} /> },
   { name: 'Transactions', path: '/transactions', icon: <FiList size={32} /> }
@@ -20,7 +18,9 @@ function BottomNav() {
           return (
             <button
               key={tab.name}
-              onClick={() => navigate(tab.path)}
+              onClick={() => {
+                navigate(tab.path, { replace: true });
+              }}
               className={`flex-1 py-3 flex flex-col items-center justify-center focus:outline-none ${
                 isActive ? 'accent-secondary-foreground' : 'text-muted-foreground'
               }`}

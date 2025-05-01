@@ -25,6 +25,8 @@ function DraggableBottomSheet({
   const modalRef = useRef<HTMLDivElement>(null);
   const modalBackgroundRef = useRef<HTMLDivElement>(null);
 
+  const animationDuration = 300;
+
   // Reset state and manage inline styles based on isOpen
   useEffect(() => {
     const modalElement = modalRef.current;
@@ -80,6 +82,20 @@ function DraggableBottomSheet({
     };
   }, [isOpen]);
 
+
+  useEffect(() => {
+    const backgroundElement = modalBackgroundRef.current;
+    if (backgroundElement) {
+      if (isOpen) {
+        backgroundElement.style.visibility = 'visible';
+      } else {
+        setTimeout(() => {
+          backgroundElement.style.visibility = 'hidden';
+        }, animationDuration);
+      }
+    }
+  }, [isOpen]);
+
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     // Only allow dragging if the event target is the drag handle itself or within it
     const handleElement = e.currentTarget.querySelector('[data-drag-handle="true"]');
@@ -129,7 +145,7 @@ function DraggableBottomSheet({
         onClose();
         // No need to reset styles here; the main useEffect hook triggered
         // by the 'isOpen' change will now handle clearing inline styles.
-      }, 300); // Match transform animation duration
+      }, animationDuration); // Match transform animation duration
 
     } else {
       // Snap back to the open position (top)
@@ -145,14 +161,14 @@ function DraggableBottomSheet({
           modalElement.style.transform = '';
           modalElement.style.transition = '';
         }
-      }, 300); // Match snap-back animation duration
+      }, animationDuration); // Match snap-back animation duration
     }
     // No need to reset touchAction here, handled by style attribute binding
   }, [currentTranslateY, onClose, isOpen]); // Added isOpen dependency
 
   return (
     <div
-      className={`fixed inset-0 bg-black 
+      className={`fixed inset-0 bg-black invisible 
         ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
       style={{ zIndex: zIndex }} // Apply z-index to background
       // Close on overlay click (optional, could be a prop)
@@ -173,7 +189,7 @@ function DraggableBottomSheet({
           zIndex: zIndex + 10 // Make the sheet 10 higher than the background
         }}
         className={`fixed bottom-0 left-0 right-0 bg-background w-full max-w-lg mx-auto shadow-xl h-[95vh] flex flex-col rounded-t-xl
-                   transition-transform duration-300 ease-in-out
+                   transition-transform duration-${animationDuration} ease-in-out
                    ${isOpen ? 'translate-y-0' : '-translate-y-[-150%]'}`}
         // Inline transform applied during drag
       >
