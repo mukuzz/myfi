@@ -246,7 +246,7 @@ const CashFlowDetailsScreen: React.FC = () => {
         <ScreenContainer title="Cash Flow">
             <div className="bg-card mb-4">
                 {/* Top Section (Month, Percentages, Totals) */}
-                <div className="flex justify-between items-start p-8 pb-0 mb-4">
+                <div className="flex justify-between items-start p-8 pb-0">
                     <div>
                         {/* Month/Year Title - Use state variables */}
                         <h2 className="text-xl font-bold">{currentMonthName} {selectedYear}</h2>
@@ -278,77 +278,81 @@ const CashFlowDetailsScreen: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Current Month Totals */}
-                {isLoading && chartData.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">Loading data...</p>
-                ) : (
-                    <div className="flex flex-row justify-center">
-                        <div className="flex justify-center space-x-2 items-center text-center bg-gray-300/80 rounded-2xl p-2"> {/* Added opacity to container */}
-                            <div className="flex flex-col items-center rounded-lg ">
-                                <span className="text-xs block text-white p-1 px-1 rounded-t-md bg-green-400">Incoming</span> {/* 80% opacity */}
-                                <div className="bg-green-200 px-2 py-.5 rounded-md min-w-[80px] flex items-center justify-center"> {/* 80% opacity */}
-                                    <CurrencyDisplay amount={currentMonthTotals.incoming} className="font-bold text-md" type="CREDIT" showFraction={false} />
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-center rounded-lg">
-                                <span className="text-xs block text-white bg-blue-400 p-1 px-1 rounded-t-md">Invested</span> {/* 80% opacity */}
-                                <div className="bg-blue-200 px-2 py-.5 rounded-md min-w-[80px] flex items-center justify-center"> {/* 80% opacity */}
-                                    <CurrencyDisplay amount={currentMonthTotals.invested} className="font-bold text-md" showType={false} showFraction={false} />
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-center rounded-lg">
-                                <span className="text-xs block text-white bg-red-400 p-1 px-1 rounded-t-md">Outgoing</span> {/* 80% opacity */}
-                                <div className="bg-red-200 px-2 py-.5 rounded-md min-w-[80px] flex items-center justify-center"> {/* 80% opacity */}
-                                    <CurrencyDisplay amount={currentMonthTotals.outgoing} className="font-bold text-md" type="DEBIT" showFraction={false} />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <div className='flex h-[400px] flex-col justify-start pt-4'>
 
-                {/* Line Chart Container - Now with Ref and Scroll Handler */}
-                <div
-                    className="w-full relative"
-                >
-                    {isLoading ? (
-                        <div className="h-48 flex items-center justify-center text-muted-foreground w-screen"> {/* Placeholder */}
-                            Loading chart...
-                        </div>
-                    ) : chartData.length > 1 ? (
-                        <>
-                            <div className="absolute -top-1 h-4 left-1/2 transform -translate-x-1/2 w-4 rounded-full border-4 border-gray-100 bg-gray-400 z-1 pointer-events-none"></div>
-                            {/* Centered Vertical Indicator Line - ADDED HERE */}
-                            <div className="absolute top-0 bottom-0 mb-[26px] left-1/2 transform -translate-x-1/2 w-[2px] bg-gray-400 z-1 pointer-events-none"></div>
-                            <CashFlowChart
-                                data={chartData.map(d => ({ // Map data to expected structure
-                                    month: d.monthAbbr, // Use monthAbbr for the 'month' prop
-                                    incoming: d.incoming,
-                                    outgoing: d.outgoing,
-                                    invested: d.invested,
-                                    // Include year and numeric month if needed by chart internally
-                                    // or for data attributes within the chart component itself
-                                    year: d.year,
-                                    numericMonth: d.month
-                                }))}
-                                selectedYear={selectedYear}
-                                selectedMonth={selectedMonth}
-                                isLoading={isLoading}
-                                className=""
-                                onMonthSelect={handleMonthSelect}
-                            />
-                        </>
+                    {/* Current Month Totals */}
+                    {isLoading && chartData.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-4">Loading data...</p>
                     ) : (
-                        <div className="h-48 flex items-center justify-center text-muted-foreground w-screen"> {/* Placeholder */}
-                            No chart data available for this range.
+                        <div className="flex flex-row justify-center">
+                            <div className="flex justify-center space-x-2 items-center text-center bg-gray-300/80 rounded-2xl p-2"> {/* Added opacity to container */}
+                                <div className="flex flex-col items-center rounded-lg ">
+                                    <span className="text-xs block text-white p-1 px-1 rounded-t-md bg-green-400">Incoming</span> {/* 80% opacity */}
+                                    <div className="bg-green-200 px-2 py-.5 rounded-md min-w-[80px] flex items-center justify-center"> {/* 80% opacity */}
+                                        <CurrencyDisplay amount={currentMonthTotals.incoming} className="font-bold text-md" type="CREDIT" showFraction={false} />
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-center rounded-lg">
+                                    <span className="text-xs block text-white bg-blue-400 p-1 px-1 rounded-t-md">Invested</span> {/* 80% opacity */}
+                                    <div className="bg-blue-200 px-2 py-.5 rounded-md min-w-[80px] flex items-center justify-center"> {/* 80% opacity */}
+                                        <CurrencyDisplay amount={currentMonthTotals.invested} className="font-bold text-md" showType={false} showFraction={false} />
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-center rounded-lg">
+                                    <span className="text-xs block text-white bg-red-400 p-1 px-1 rounded-t-md">Outgoing</span> {/* 80% opacity */}
+                                    <div className="bg-red-200 px-2 py-.5 rounded-md min-w-[80px] flex items-center justify-center"> {/* 80% opacity */}
+                                        <CurrencyDisplay amount={currentMonthTotals.outgoing} className="font-bold text-md" type="DEBIT" showFraction={false} />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
+
+                    {/* Line Chart Container - Now with Ref and Scroll Handler */}
+                    <div
+                        className="w-full relative"
+                    >
+                        {isLoading ? (
+                            <div className="h-48 flex items-center justify-center text-muted-foreground w-screen"> {/* Placeholder */}
+                                Loading chart...
+                            </div>
+                        ) : chartData.length > 1 ? (
+                            <>
+                                <div className="absolute -top-1 h-4 left-1/2 transform -translate-x-1/2 w-4 rounded-full border-4 border-gray-100 bg-gray-400 z-1 pointer-events-none"></div>
+                                {/* Centered Vertical Indicator Line - ADDED HERE */}
+                                <div className="absolute top-0 bottom-0 mb-[26px] left-1/2 transform -translate-x-1/2 w-[2px] bg-gray-400 z-1 pointer-events-none"></div>
+                                <CashFlowChart
+                                    data={chartData.map(d => ({ // Map data to expected structure
+                                        month: d.monthAbbr, // Use monthAbbr for the 'month' prop
+                                        incoming: d.incoming,
+                                        outgoing: d.outgoing,
+                                        invested: d.invested,
+                                        // Include year and numeric month if needed by chart internally
+                                        // or for data attributes within the chart component itself
+                                        year: d.year,
+                                        numericMonth: d.month
+                                    }))}
+                                    selectedYear={selectedYear}
+                                    selectedMonth={selectedMonth}
+                                    isLoading={isLoading}
+                                    className=""
+                                    onMonthSelect={handleMonthSelect}
+                                />
+                            </>
+                        ) : (
+                            <div className="h-48 flex items-center justify-center text-muted-foreground w-screen"> {/* Placeholder */}
+                                No chart data available for this range.
+                            </div>
+                        )}
+                    </div>
+
                 </div>
 
 
             </div>
 
             {/* Updated Footer Section */}
-            <div className=" bg-background p-4 pt-8 space-y-3 flex flex-col items-center">
+            <div className=" bg-background p-4 pt-0 space-y-3 flex flex-col items-center">
                 {/* Incoming Transactions Card */}
                 <button
                     onClick={() => handleOpenSheet('Incoming')}
