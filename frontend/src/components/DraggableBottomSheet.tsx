@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { FiX } from 'react-icons/fi';
 
 interface DraggableBottomSheetProps {
@@ -186,7 +187,7 @@ function DraggableBottomSheet({
     // No need to reset touchAction here, handled by style attribute binding
   }, [currentTranslateY, onClose, isOpen, animationDuration]); // Added isOpen and animationDuration dependency
 
-  return (
+  return ReactDOM.createPortal(
     <div
       className={`fixed inset-0 bg-black transition-opacity duration-${animationDuration} ease-in-out
         ${isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-1'}`}
@@ -244,7 +245,8 @@ function DraggableBottomSheet({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

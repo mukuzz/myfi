@@ -5,7 +5,6 @@ import { fetchAccounts } from '../store/slices/accountsSlice';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
 import AddTransactionFlow from '../components/AddTransactionFlow';
 import TransactionList from '../components/TransactionList';
-import { useIsMobile } from '../hooks/useIsMobile';
 
 function TransactionsScreen() {
   const dispatch = useAppDispatch();
@@ -36,7 +35,7 @@ function TransactionsScreen() {
     if (accountsStatus === 'idle') {
       dispatch(fetchAccounts());
     }
-    if (transactionStatus === 'idle' || transactionStatus === 'succeeded' || transactionStatus === 'failed') {
+    if (transactionStatus === 'idle' || transactionStatus === 'succeeded') {
       dispatch(fetchTransactions({ page: 0 }));
       setCurrentPage(0);
     }
@@ -46,7 +45,7 @@ function TransactionsScreen() {
     const observer = new IntersectionObserver(
       (entries) => {
         const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && transactionStatus !== 'loadingMore') {
+        if (firstEntry.isIntersecting && hasMore && transactionStatus !== 'loadingMore' && transactionStatus !== 'failed') {
           const nextPage = currentPage + 1;
           dispatch(fetchTransactions({ page: nextPage }));
           setCurrentPage(nextPage);
@@ -85,12 +84,6 @@ function TransactionsScreen() {
           </div>
         </div>
       </div>
-
-      {overallError && !isLoadingInitial && (
-        <div className="p-4 text-center text-destructive">
-          Error loading data: {overallError}
-        </div>
-      )}
 
       {isLoadingInitial && (
         <div className="p-8 text-center text-muted-foreground">

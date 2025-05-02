@@ -80,7 +80,7 @@ const SpendingSummaryScreen: React.FC = () => {
         if (tagsStatus === 'idle' || tagsStatus === 'failed') {
             dispatch(fetchTags());
         }
-    }, [dispatch, transactionsStatus, tagsStatus, selectedMonth, selectedYear, availableMonths]);
+    }, [dispatch, selectedMonth, selectedYear, availableMonths]);
 
     // --- Spending Calculation Logic (Adapted from SpendingSummary) ---
     const spendingByTag = useMemo((): TagSpending[] => {
@@ -372,11 +372,10 @@ const SpendingSummaryScreen: React.FC = () => {
                 {/* Spending List */}
                 <div className="flex-grow p-4 space-y-3">
                     {isLoading && <p className="text-muted-foreground text-center pt-10">Loading...</p>}
-                    {error && <p className="text-destructive text-center pt-10">Error: {error}</p>}
-                    {!isLoading && !error && spendingByTag.length === 0 && (
+                    {!isLoading && spendingByTag.length === 0 && (
                         <p className="text-muted-foreground text-center pt-10">No spending data for this period.</p>
                     )}
-                    {!isLoading && !error && spendingByTag.map((item, index) => {
+                    {!isLoading && spendingByTag.map((item, index) => {
                         const percentage = totalSpending > 0 ? ((item.amount / totalSpending) * 100).toFixed(1) : '0.0';
                         const barWidthPercentage = totalSpending > 0 ? (item.amount / totalSpending) * 100 : 0;
                         return (

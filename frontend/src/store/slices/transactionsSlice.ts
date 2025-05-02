@@ -431,7 +431,7 @@ const transactionsSlice = createSlice({
             })
             // --- Handlers for fetchTransactionsForMonth ---
             .addCase(fetchTransactionsForMonth.pending, (state) => {
-                if (Object.keys(state.availableMonths).length === 0) {
+                if (state.transactions.length === 0) {
                     state.status = 'loading'; // Use main status field
                 } else {
                     state.status = 'loadingMore';
@@ -470,7 +470,7 @@ const transactionsSlice = createSlice({
             })
             // --- Handlers for fetchTransactionRange ---
             .addCase(fetchTransactionRange.pending, (state, action) => {
-                if (Object.keys(state.availableMonths).length === 0) {
+                if (state.transactions.length === 0) {
                     state.status = 'loading'; // Use main status field
                 } else {
                     state.status = 'loadingMore';

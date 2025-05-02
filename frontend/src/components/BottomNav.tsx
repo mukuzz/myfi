@@ -11,7 +11,7 @@ function BottomNav() {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed border-t border-border bg-secondary w-full bottom-0 h-[80px] z-20">
+    <nav className="fixed border-t border-border bg-secondary w-full bottom-0 h-[80px]">
       <div className="flex justify-around">
         {tabs.map((tab) => {
           const isActive = location.pathname === tab.path;

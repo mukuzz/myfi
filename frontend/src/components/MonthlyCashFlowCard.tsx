@@ -29,7 +29,7 @@ const MonthlyCashFlowCard: React.FC = () => {
     }, [status, dispatch]);
 
     const { incoming, outgoing, invested } = useMemo(() => {
-        if (status !== 'succeeded') {
+        if (status === 'loading') {
             return { incoming: 0, outgoing: 0, invested: 0 };
         }
 
@@ -75,7 +75,7 @@ const MonthlyCashFlowCard: React.FC = () => {
 
     const currentDate = new Date();
     // Keep only month name, year will be shown on the details screen or implicitly known
-    const monthName = currentDate.toLocaleString('default', { month: 'long' }).toUpperCase();
+    const monthYear = `${currentDate.toLocaleString('default', { month: 'long' }).toUpperCase()} ${currentDate.getFullYear()}`;
 
     return (
         // Make the Card itself clickable
@@ -100,7 +100,7 @@ const MonthlyCashFlowCard: React.FC = () => {
             {/* Content Area */}
             <div className="p-4 space-y-4 flex-grow overflow-y-auto bg-secondary">
                 <div className="text-xs font-semibold text-muted-foreground">
-                    {monthName}
+                    {monthYear}
                 </div>
 
                 {isLoading && <p className="text-muted-foreground text-center">Loading...</p>}
@@ -108,15 +108,15 @@ const MonthlyCashFlowCard: React.FC = () => {
                     <div className="space-y-2 font-medium">
                         <div className="flex justify-between">
                             <span>Incoming</span>
-                            <CurrencyDisplay amount={incoming} className="font-medium" type="CREDIT" showFraction={false} />
+                            <CurrencyDisplay amount={incoming} type="CREDIT" showFraction={false} />
                         </div>
                         <div className="flex justify-between">
                             <span>Outgoing</span>
-                            <CurrencyDisplay amount={outgoing} className="font-medium" type="DEBIT" showFraction={false} />
+                            <CurrencyDisplay amount={outgoing} type="DEBIT" showFraction={false} />
                         </div>
                         <div className="flex justify-between">
                             <span>Invested</span>
-                            <CurrencyDisplay amount={invested} className="font-medium" showType={false} showFraction={false} />
+                            <CurrencyDisplay amount={invested} showType={false} showFraction={false} />
                         </div>
                     </div>
                 )}

@@ -44,7 +44,7 @@ const SpendingSummary: React.FC = () => {
     }, [dispatch, transactionsStatus, tagsStatus]);
 
     const spendingByTag = useMemo((): TagSpending[] => {
-        if (transactionsStatus !== 'succeeded' || tagsStatus !== 'succeeded') {
+        if (transactionsStatus === 'loading' || tagsStatus === 'loading') {
             return [];
         }
         
@@ -150,23 +150,21 @@ const SpendingSummary: React.FC = () => {
 
                 <div className="space-y-3">
                     {isLoading && <p className="text-muted-foreground text-center">Loading...</p>}
-                    {error && <p className="text-destructive text-center">Error: {error}</p>}
-                    {!isLoading && !error && spendingByTag.length === 0 && (
+                    {!isLoading && spendingByTag.length === 0 && (
                         <p className="text-muted-foreground text-center">No spending data for this period.</p>
                     )}
-                    {!isLoading && !error && spendingByTag.slice(0, 5).map((item, index) => {
+                    {!isLoading && spendingByTag.slice(0, 5).map((item, index) => {
                         const barWidthPercentage = totalSpending > 0 ? (item.amount / totalSpending) * 100 : 0;
                         return (
                             <div key={index} className="flex justify-between items-center space-x-2">
                                 <div className="relative flex-1 min-w-0">
                                     <div
                                         className="absolute inset-y-0 left-0 bg-muted rounded-lg"
-                                        style={{ width: `${barWidthPercentage}%`, zIndex: 1 }}
+                                        style={{ width: `${barWidthPercentage}%` }}
                                         aria-hidden="true"
                                     ></div>
                                     <span
                                         className="relative font-medium text-card-foreground block truncate px-2 py-1"
-                                        style={{ zIndex: 2 }}
                                     >
                                         {item.name}
                                     </span>

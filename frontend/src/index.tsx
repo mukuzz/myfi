@@ -22,13 +22,13 @@ import SpendingSummaryScreen from './screens/SpendingSummaryScreen';
 function DesktopAppHome() {
   return (
     // Main container allows normal page scrolling
-    <main className="flex flex-row">
+    <main className="flex flex-row w-full">
       {/* First child is sticky to the top, occupies screen height, and allows internal scroll */}
-      <div className="flex-1 h-screen sticky top-0 overflow-y-auto">
+      <div className="flex-grow h-screen sticky top-0 w-[calc(100%-400px)]">
         <HomeScreen />
       </div>
       {/* Second child takes remaining space and scrolls with the page */}
-      <div className="flex-1 max-w-[400px] border-l border-border">
+      <div className="w-[400px] border-l border-border">
         <TransactionsScreen />
       </div>
     </main>
