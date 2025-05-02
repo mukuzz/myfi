@@ -24,6 +24,7 @@ function DraggableBottomSheet({
   const dragStartY = useRef(0);
   const modalRef = useRef<HTMLDivElement>(null);
   const modalBackgroundRef = useRef<HTMLDivElement>(null);
+  const visibilityTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref to store the visibility timeout ID
 
   const animationDuration = 300;
 
@@ -83,18 +84,37 @@ function DraggableBottomSheet({
   }, [isOpen]);
 
 
+  // Effect to manage background visibility with timeout handling
   useEffect(() => {
     const backgroundElement = modalBackgroundRef.current;
-    if (backgroundElement) {
-      if (isOpen) {
-        backgroundElement.style.visibility = 'visible';
-      } else {
-        setTimeout(() => {
-          backgroundElement.style.visibility = 'hidden';
-        }, animationDuration);
-      }
+    if (!backgroundElement) return;
+
+    // Clear any existing timeout when isOpen changes or component unmounts
+    if (visibilityTimeoutRef.current) {
+      clearTimeout(visibilityTimeoutRef.current);
+      visibilityTimeoutRef.current = null;
     }
-  }, [isOpen]);
+
+    if (isOpen) {
+      // Make visible immediately when opening
+      backgroundElement.style.visibility = 'visible';
+    } else {
+      // Set a timeout to hide the background after the animation duration
+      visibilityTimeoutRef.current = setTimeout(() => {
+        backgroundElement.style.visibility = 'hidden';
+        visibilityTimeoutRef.current = null; // Clear the ref after timeout executes
+      }, animationDuration);
+    }
+
+    // Cleanup function to clear timeout on unmount or if isOpen changes again
+    return () => {
+      if (visibilityTimeoutRef.current) {
+        clearTimeout(visibilityTimeoutRef.current);
+        visibilityTimeoutRef.current = null;
+      }
+    };
+  }, [isOpen, animationDuration]); // Rerun effect if isOpen or animationDuration changes
+
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     // Only allow dragging if the event target is the drag handle itself or within it
@@ -134,10 +154,10 @@ function DraggableBottomSheet({
     // Decide whether to close or snap back based on drag distance
     if (currentTranslateY > DRAG_THRESHOLD) {
       // Animate smoothly down using inline styles
-      modalElement.style.transition = 'transform 0.3s ease-in-out';
+      modalElement.style.transition = `transform ${animationDuration}ms ease-in-out`;
       modalElement.style.transform = 'translateY(100%)';
       // Ensure background also animates out
-      backgroundElement.style.transition = 'background-color 0.2s ease-in-out';
+      backgroundElement.style.transition = `background-color ${animationDuration}ms ease-in-out`;
       backgroundElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)';
 
       // Call onClose after the animation finishes
@@ -149,7 +169,7 @@ function DraggableBottomSheet({
 
     } else {
       // Snap back to the open position (top)
-      modalElement.style.transition = 'transform 0.3s ease-in-out';
+      modalElement.style.transition = `transform ${animationDuration}ms ease-in-out`;
       modalElement.style.transform = 'translateY(0px)';
       setCurrentTranslateY(0); // Reset drag state immediately
 
@@ -164,13 +184,13 @@ function DraggableBottomSheet({
       }, animationDuration); // Match snap-back animation duration
     }
     // No need to reset touchAction here, handled by style attribute binding
-  }, [currentTranslateY, onClose, isOpen]); // Added isOpen dependency
+  }, [currentTranslateY, onClose, isOpen, animationDuration]); // Added isOpen and animationDuration dependency
 
   return (
     <div
-      className={`fixed inset-0 bg-black invisible 
-        ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
-      style={{ zIndex: zIndex }} // Apply z-index to background
+      className={`fixed inset-0 bg-black transition-opacity duration-${animationDuration} ease-in-out
+        ${isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-1'}`}
+      style={{ zIndex: zIndex, visibility: 'hidden' }} // Apply z-index to background, visibility handled by effect
       // Close on overlay click (optional, could be a prop)
       onClick={onClose}
       ref={modalBackgroundRef}
@@ -190,7 +210,7 @@ function DraggableBottomSheet({
         }}
         className={`fixed bottom-0 left-0 right-0 bg-background w-full max-w-lg mx-auto shadow-xl h-[95vh] flex flex-col rounded-t-xl
                    transition-transform duration-${animationDuration} ease-in-out
-                   ${isOpen ? 'translate-y-0' : '-translate-y-[-150%]'}`}
+                   ${isOpen ? 'translate-y-0' : 'translate-y-[100%]'}`}
         // Inline transform applied during drag
       >
         {/* Drag Handle Area - Now includes title */}

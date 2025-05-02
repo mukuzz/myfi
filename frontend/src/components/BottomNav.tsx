@@ -16,10 +16,16 @@ function BottomNav() {
         {tabs.map((tab) => {
           const isActive = location.pathname === tab.path;
           return (
-            <button
+            <div
               key={tab.name}
-              onClick={() => {
-                navigate(tab.path, { replace: true });
+              onClick={(e) => {
+                e.preventDefault();
+                if (!isActive) {
+                  navigate(tab.path, { replace: true });
+                } else {
+                  // scoll to top
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
               }}
               className={`flex-1 py-3 flex flex-col items-center justify-center focus:outline-none ${
                 isActive ? 'accent-secondary-foreground' : 'text-muted-foreground'
@@ -27,7 +33,7 @@ function BottomNav() {
               aria-label={tab.name}
             >
               {tab.icon}
-            </button>
+            </div>
           );
         })}
       </div>

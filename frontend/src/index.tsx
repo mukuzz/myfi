@@ -21,9 +21,16 @@ import SpendingSummaryScreen from './screens/SpendingSummaryScreen';
 // Keep DesktopAppHome as it's used in conditional rendering below
 function DesktopAppHome() {
   return (
-    <main className="overflow-y-auto flex flex-row h-full">
-      <div className="flex-1 overflow-y-auto"><HomeScreen /></div>
-      <div className="flex-1 overflow-y-auto max-w-[400px] border-l border-border"><TransactionsScreen /></div>
+    // Main container allows normal page scrolling
+    <main className="flex flex-row">
+      {/* First child is sticky to the top, occupies screen height, and allows internal scroll */}
+      <div className="flex-1 h-screen sticky top-0 overflow-y-auto">
+        <HomeScreen />
+      </div>
+      {/* Second child takes remaining space and scrolls with the page */}
+      <div className="flex-1 max-w-[400px] border-l border-border">
+        <TransactionsScreen />
+      </div>
     </main>
   );
 }

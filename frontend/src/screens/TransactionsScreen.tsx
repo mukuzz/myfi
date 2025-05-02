@@ -27,7 +27,7 @@ function TransactionsScreen() {
 
   const headerRef = useRef<HTMLDivElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef(false);
+  const observerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (tagsStatus === 'idle') {
@@ -42,37 +42,30 @@ function TransactionsScreen() {
     }
   }, [dispatch, tagsStatus, accountsStatus, transactionStatus, transactions.length]);
 
-
-  const handleScroll = useCallback(() => {
-    if (!hasMore || loadingRef.current) return;
-
-    const { scrollHeight, scrollTop } = document.documentElement;
-    const clientHeight = window.innerHeight;
-    const threshold = 250;
-
-    if (scrollTop + clientHeight >= scrollHeight - threshold) {
-      loadingRef.current = true;
-      const nextPage = currentPage + 1;
-      dispatch(fetchTransactions({ page: nextPage })).finally(() => {
-        loadingRef.current = false;
-      });
-      setCurrentPage(nextPage);
-    }
-  }, [dispatch, hasMore, currentPage]);
-
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry.isIntersecting && hasMore && transactionStatus !== 'loadingMore') {
+          const nextPage = currentPage + 1;
+          dispatch(fetchTransactions({ page: nextPage }));
+          setCurrentPage(nextPage);
+        }
+      },
+      { threshold: 1.0, rootMargin: '0px 0px 600px 0px' } // Trigger when the element is fully visible
+    );
+
+    const currentObserverRef = observerRef.current;
+    if (currentObserverRef) {
+      observer.observe(currentObserverRef);
+    }
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      if (currentObserverRef) {
+        observer.unobserve(currentObserverRef);
+      }
     };
-  }, [handleScroll]);
-
-  useEffect(() => {
-    if (transactionStatus !== 'loadingMore') {
-      loadingRef.current = false;
-    }
-  }, [transactionStatus]);
+  }, [dispatch, hasMore, currentPage, transactionStatus]);
 
   return (
     <div ref={parentRef} className="text-foreground flex flex-col h-full bg-background relative">
@@ -115,9 +108,16 @@ function TransactionsScreen() {
         transactions={transactions}
       />
 
-      {isLoadingMore && (
-        <p className="text-center p-4 text-muted-foreground">Loading more transactions...</p>
-      )}
+      <div ref={observerRef} className="flex justify-center items-center h-12">
+        {isLoadingMore && (
+          <p className="text-center text-muted-foreground">Loading more transactions...</p>
+        )}
+        {!hasMore && !isLoadingMore && (
+          <p className="text-center text-muted-foreground">No more transactions.</p>
+        )}
+      </div>
+
+      
     </div>
   );
 }
