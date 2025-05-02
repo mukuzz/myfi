@@ -5,6 +5,7 @@ import Card from './Card';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAccounts as fetchAccountsRedux } from '../store/slices/accountsSlice';
 import CurrencyDisplay from './AmountDisplay';
+import TotalBalanceCardSkeleton from './skeletons/TotalBalanceCardSkeleton'; // Updated import path
 
 // Mock data for sparkline - replace with actual data fetching/generation
 const sparklineData = [5, 10, 5, 20, 8, 15]; 
@@ -108,7 +109,7 @@ function TotalBalanceCard() {
   }
 
   if (status === 'loading' || status === 'idle') {
-    return <div className="p-4 text-center text-muted-foreground">Loading Total Balance...</div>;
+    return <TotalBalanceCardSkeleton />; // Use the skeleton component
   }
 
   if (status === 'failed') {

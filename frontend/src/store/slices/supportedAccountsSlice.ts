@@ -40,8 +40,8 @@ export const fetchSupportedAccounts = createAsyncThunk<
         condition: (_, { getState }) => {
           const state = getState() as RootState;
           const { status } = state.supportedAccounts;
-          // Prevent fetch if already loading or succeeded
-          if (status === 'loading' || status === 'succeeded') {
+          // Prevent fetch if already loading, succeeded, or failed
+          if (status === 'loading' || status === 'succeeded' || status === 'failed') {
             return false;
           }
           return true;

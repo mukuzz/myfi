@@ -6,6 +6,7 @@ import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
 import { Transaction } from '../types'; // Import Transaction type
 import { FiMoreHorizontal } from 'react-icons/fi'; // Import icon
 import CurrencyDisplay from './AmountDisplay';
+import MonthlyCashFlowSkeleton from './skeletons/MonthlyCashFlowSkeleton'; // Import the skeleton
 
 
 const MonthlyCashFlowCard: React.FC = () => {
@@ -103,7 +104,7 @@ const MonthlyCashFlowCard: React.FC = () => {
                     {monthYear}
                 </div>
 
-                {isLoading && <p className="text-muted-foreground text-center">Loading...</p>}
+                {isLoading && <MonthlyCashFlowSkeleton />}
                 {!isLoading && (
                     <div className="space-y-2 font-medium">
                         <div className="flex justify-between">

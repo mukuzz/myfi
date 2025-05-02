@@ -12,6 +12,7 @@ import {
 import Card from './Card';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAccounts as fetchAccountsRedux } from '../store/slices/accountsSlice';
+import AccountCardSkeleton from './skeletons/AccountCardSkeleton';
 
 // Define props for the component
 interface AccountsDisplayCardProps {
@@ -111,21 +112,6 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
     }));
   };
 
-  if (status === 'failed') {
-    return (
-      <div className="flex flex-col items-center justify-center bg-background text-foreground">
-        <FiAlertTriangle className="h-8 w-8 mt-2 mb-4 text-error" />
-        <p className="text-error font-medium">{error || 'Failed to load accounts.'}</p>
-        <button
-          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
-          onClick={() => dispatch(fetchAccountsRedux())}
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
   return (
     <Card>
       <header className="top-0 z-10 bg-background pl-4 border-b border-border flex items-center justify-between">
@@ -136,10 +122,11 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
       </header>
 
       <div className="flex-grow overflow-x-auto p-3 flex whitespace-nowrap" style={{ scrollbarWidth: 'none' }}>
-        {status === 'loading' && (
-          <div className="flex justify-center items-center py-2 flex-shrink-0" style={{ width: '100%' }}>
-            <p className="text-muted-foreground">Loading accounts...</p>
-          </div>
+        {(status === 'loading' || status === 'idle') && (
+          <>
+            <AccountCardSkeleton />
+            <AccountCardSkeleton />
+          </>
         )}
 
         {status === 'succeeded' && !error && groupedAccounts.map(parentAccount => {

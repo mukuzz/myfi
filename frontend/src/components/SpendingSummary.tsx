@@ -7,6 +7,7 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
 import CurrencyDisplay from './AmountDisplay';
+import SpendingSummarySkeleton from './skeletons/SpendingSummarySkeleton';
 
 interface TagSpending {
     name: string;
@@ -149,8 +150,8 @@ const SpendingSummary: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                    {isLoading && <p className="text-muted-foreground text-center">Loading...</p>}
-                    {!isLoading && spendingByTag.length === 0 && (
+                    {isLoading && <SpendingSummarySkeleton />}
+                    {transactionsStatus === 'succeeded' && spendingByTag.length === 0 && (
                         <p className="text-muted-foreground text-center">No spending data for this period.</p>
                     )}
                     {!isLoading && spendingByTag.slice(0, 5).map((item, index) => {

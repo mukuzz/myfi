@@ -5,6 +5,7 @@ import { fetchAccounts } from '../store/slices/accountsSlice';
 import { fetchTransactions } from '../store/slices/transactionsSlice';
 import AddTransactionFlow from '../components/AddTransactionFlow';
 import TransactionList from '../components/TransactionList';
+import TransactionRowSkeleton from '../components/skeletons/TransactionRowSkeleton';
 
 function TransactionsScreen() {
   const dispatch = useAppDispatch();
@@ -86,8 +87,14 @@ function TransactionsScreen() {
       </div>
 
       {isLoadingInitial && (
-        <div className="p-8 text-center text-muted-foreground">
-          Loading transactions...
+        <div className="flex-grow overflow-y-auto p-4 space-y-2">
+          <TransactionRowSkeleton />
+          <TransactionRowSkeleton />
+          <TransactionRowSkeleton />
+          <TransactionRowSkeleton />
+          <TransactionRowSkeleton />
+          <TransactionRowSkeleton />
+          <TransactionRowSkeleton />
         </div>
       )}
 

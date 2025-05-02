@@ -159,6 +159,12 @@ export const fetchTransactions = createAsyncThunk<
             const requestedPage = args?.page ?? 0;
             const isInitialPaginatedFetch = requestedPage === 0 && currentPage === -1;
 
+            // Prevent fetching if status is 'failed'
+            if (status === 'failed') {
+                console.log(`[fetchTransactions condition] Blocked: Status is 'failed'`);
+                return false;
+            }
+
             // Prevent fetching if no more pages exist AND we are requesting beyond the current page
             if (!hasMore && requestedPage > currentPage) {
                 console.log(`[fetchTransactions condition] Blocked: No more pages (requested: ${requestedPage}, current: ${currentPage}, hasMore: ${hasMore})`);
@@ -209,6 +215,12 @@ export const fetchTransactionsForMonth = createAsyncThunk<
           // Use the main status field and availableMonths
           const { status, availableMonths } = state.transactions;
           
+          // Prevent fetch if status is 'failed'
+          if (status === 'failed') {
+            console.log(`[fetchMonth condition] Blocked: Status is 'failed'`);
+            return false;
+          }
+          
           // Prevent fetch if already loading
           if (status === 'loading' || status === 'loadingMore') {
             console.log(`[fetchMonth condition] Blocked: Status is '${status}'`);
@@ -249,6 +261,12 @@ export const fetchTransactionRange = createAsyncThunk<
             const state = getState() as RootState;
             const { status, availableMonths } = state.transactions;
             const { startYear, startMonth, endYear, endMonth } = args;
+            
+            // Prevent fetch if status is 'failed'
+            if (status === 'failed') {
+                console.log(`[fetchRange condition] Blocked: Status is 'failed'`);
+                return false;
+            }
             
             // Prevent fetch if already loading
             if (status === 'loading' || status === 'loadingMore') {
