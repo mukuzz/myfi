@@ -26,7 +26,6 @@ class SplitRequest {
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/transactions")
-@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST,  RequestMethod.PUT, RequestMethod.DELETE})
 @RequiredArgsConstructor
 public class TransactionController {
 

@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/status")
-@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET})
 @RequiredArgsConstructor
 public class SystemStatusController {
 
