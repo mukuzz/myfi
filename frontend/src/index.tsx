@@ -2,13 +2,14 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import { Provider } from 'react-redux';
 import { store } from './store/store';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 import {
   RouterProvider,
   useLocation,
   Outlet,
   ScrollRestoration,
-  createBrowserRouter,
+  createMemoryRouter,
 } from 'react-router-dom';
 import BottomNav from './components/BottomNav';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -72,7 +73,7 @@ function RootLayout() {
 
 // --- Data Router Configuration ---
 
-const router = createBrowserRouter([
+const router = createMemoryRouter([
   {
     path: "/",
     element: <RootLayout />, // Use RootLayout for all routes
@@ -104,3 +105,8 @@ ReactDOM.createRoot(
 ).render(
   <RouterProvider router={router} />
 );
+
+// If you want your app to work offline and load faster, you can change
+// unregister() to register() below. Note this comes with some pitfalls.
+// Learn more about service workers: https://cra.link/PWA
+serviceWorkerRegistration.register();
