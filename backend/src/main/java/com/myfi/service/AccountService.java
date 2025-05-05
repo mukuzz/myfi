@@ -1,9 +1,9 @@
 package com.myfi.service;
 
+import com.myfi.bankscraping.service.BankScrapper;
 import com.myfi.model.Account;
 import com.myfi.model.Account.AccountType;
 import com.myfi.repository.AccountRepository;
-import com.myfi.scraping.service.BankScrapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -131,5 +131,12 @@ public class AccountService {
         BigDecimal latestBalance = accountHistoryService.getLatestBalanceForAccount(account.getId())
                                         .orElse(BigDecimal.ZERO);
         account.setBalance(latestBalance);
+    }
+
+    public Account getAccountByCardLast4DigitsNumber(String cardNumber) {
+        return accountRepository.findAll().stream()
+            .filter(account -> account.getAccountNumber().endsWith(cardNumber))
+            .findFirst()
+            .orElse(null);
     }
 } 
