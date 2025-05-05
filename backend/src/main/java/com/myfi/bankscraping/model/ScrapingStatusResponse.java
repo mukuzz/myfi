@@ -1,4 +1,4 @@
-package com.myfi.scraping.model;
+package com.myfi.bankscraping.model;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

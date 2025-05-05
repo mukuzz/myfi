@@ -1,14 +1,14 @@
-package com.myfi.scraping.service;
-
-import com.myfi.scraping.model.AccountCredentials;
-import com.myfi.scraping.model.ScrapingStatusResponse;
+package com.myfi.bankscraping.service;
 
 import java.util.List;
+
+import com.myfi.bankscraping.model.AccountCredentials;
+import com.myfi.bankscraping.model.ScrapingStatusResponse;
 
 /**
  * Service interface for handling account scraping operations.
  */
-public interface ScrapingService {
+public interface BankScrapingService {
 
     /**
      * Submits a list of account credentials for scraping.

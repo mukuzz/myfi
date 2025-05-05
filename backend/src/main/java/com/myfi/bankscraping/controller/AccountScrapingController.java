@@ -1,9 +1,4 @@
-package com.myfi.scraping.controller;
-
-import com.myfi.scraping.model.AccountCredentials;
-import com.myfi.scraping.model.ScrapingStatusResponse;
-
-import com.myfi.scraping.service.ScrapingService;
+package com.myfi.bankscraping.controller;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,6 +9,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import com.myfi.bankscraping.model.AccountCredentials;
+import com.myfi.bankscraping.model.ScrapingStatusResponse;
+import com.myfi.bankscraping.service.BankScrapingService;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 
@@ -25,7 +25,7 @@ import jakarta.validation.constraints.NotEmpty;
 public class AccountScrapingController {
 
     @Autowired
-    private ScrapingService scrapingService;
+    private BankScrapingService scrapingService;
 
     @PostMapping(value = "/scrape", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> scrapeAccounts(

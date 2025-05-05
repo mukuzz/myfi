@@ -1,4 +1,4 @@
-package com.myfi.scraping.service;
+package com.myfi.bankscraping.service;
 
 import java.util.Set;
 
@@ -10,8 +10,8 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.myfi.bankscraping.model.AccountCredentials;
 import com.myfi.model.Account;
-import com.myfi.scraping.model.AccountCredentials;
 import com.myfi.model.Account.AccountType;
 
 @Service

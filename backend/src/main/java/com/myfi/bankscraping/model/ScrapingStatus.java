@@ -1,4 +1,4 @@
-package com.myfi.scraping.model;
+package com.myfi.bankscraping.model;
 
 /**
  * Represents the possible states of a scraping task for a single account.

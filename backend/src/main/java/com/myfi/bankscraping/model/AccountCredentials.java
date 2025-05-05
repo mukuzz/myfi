@@ -1,4 +1,4 @@
-package com.myfi.scraping.model;
+package com.myfi.bankscraping.model;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;

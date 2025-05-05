@@ -1,9 +1,10 @@
 package com.myfi.service;
 
+import com.myfi.bankscraping.service.BankScrapper;
 import com.myfi.model.Account;
 import com.myfi.model.Account.AccountType;
 import com.myfi.repository.AccountRepository;
-import com.myfi.scraping.service.BankScrapper;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

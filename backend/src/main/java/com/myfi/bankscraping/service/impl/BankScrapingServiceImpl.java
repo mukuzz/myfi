@@ -1,12 +1,12 @@
-package com.myfi.scraping.service.impl;
+package com.myfi.bankscraping.service.impl;
 
+import com.myfi.bankscraping.model.AccountCredentials;
+import com.myfi.bankscraping.model.ScrapingProgress;
+import com.myfi.bankscraping.model.ScrapingStatus;
+import com.myfi.bankscraping.model.ScrapingStatusResponse;
+import com.myfi.bankscraping.service.BankScrapper;
+import com.myfi.bankscraping.service.BankScrapingService;
 import com.myfi.model.Account;
-import com.myfi.scraping.model.AccountCredentials;
-import com.myfi.scraping.model.ScrapingProgress;
-import com.myfi.scraping.model.ScrapingStatus;
-import com.myfi.scraping.model.ScrapingStatusResponse;
-import com.myfi.scraping.service.BankScrapper;
-import com.myfi.scraping.service.ScrapingService;
 import com.myfi.service.AccountService;
 import com.myfi.service.SystemStatusService;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ import java.util.concurrent.Semaphore;
 
 @Slf4j
 @Service
-public class ScrapingServiceImpl implements ScrapingService {
+public class BankScrapingServiceImpl implements BankScrapingService {
 
     @Autowired
     private AccountService accountService;

@@ -1,4 +1,4 @@
-package com.myfi.scraping.model;
+package com.myfi.bankscraping.model;
 
 import com.myfi.model.Transaction;
 import lombok.Builder;

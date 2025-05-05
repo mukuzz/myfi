@@ -1,11 +1,11 @@
-package com.myfi.scraping.service.impl;
+package com.myfi.bankscraping.service.impl;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
+import com.myfi.bankscraping.model.AccountCredentials;
+import com.myfi.bankscraping.service.BankScrapper;
 import com.myfi.model.Account;
 import com.myfi.model.Transaction;
-import com.myfi.scraping.model.AccountCredentials;
-import com.myfi.scraping.service.BankScrapper;
 import com.myfi.service.AccountHistoryService;
 import com.myfi.service.TransactionService;
 import com.myfi.model.Account.AccountType;

@@ -15,7 +15,8 @@
             "name": "MyFiApplication",
             "request": "launch",
             "mainClass": "com.myfi.MyFiApplication",
-            "projectName": "myfi-backend"
+            "projectName": "myfi-backend",
+            "cwd": "${workspaceFolder}/backend"
         }
     ]
 }
