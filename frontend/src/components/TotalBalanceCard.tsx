@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { FiMoreHorizontal, FiBriefcase } from 'react-icons/fi'; // Using generic icons
+import { FiMoreHorizontal, FiDollarSign, FiCreditCard } from 'react-icons/fi'; // Using generic icons
 import { IconType } from 'react-icons';
 import Card from './Card';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -9,19 +9,6 @@ import TotalBalanceCardSkeleton from './skeletons/TotalBalanceCardSkeleton'; // 
 
 // Mock data for sparkline - replace with actual data fetching/generation
 const sparklineData = [5, 10, 5, 20, 8, 15]; 
-
-// Mock bank logos/icons - replace with actual icons or logic
-interface BankInfo {
-  icon: IconType | string; // Allow string for initial letter fallback
-  color: string;
-}
-
-const bankLogos: Record<string, BankInfo> = {
-  'ICICI': { icon: 'I', color: 'bg-orange-500' }, // Placeholder
-  'HDFC': { icon: 'H', color: 'bg-blue-800' }, // Placeholder
-  'OTHERS': { icon: FiBriefcase, color: 'bg-blue-500' }, // Example for others
-  'STAR': { icon: '⭐', color: 'bg-yellow-500' }, // Example for the star icon
-};
 
 function TotalBalanceCard() {
   const dispatch = useAppDispatch();
@@ -33,28 +20,27 @@ function TotalBalanceCard() {
     }
   }, [status, dispatch]);
 
-  const { totalBalance, aggregatedBalances } = useMemo(() => {
+  const { totalBalance, savingsBalance, creditCardBalance } = useMemo(() => {
     const parentAccounts = accounts.filter(acc => acc.parentAccountId === null || acc.parentAccountId === undefined);
     const total = parentAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
-    
-    const aggregated = parentAccounts.reduce((acc, current) => {
-      const key = current.name + "|" + current.type + "|" + current.accountNumber;
 
-      if (!acc[key]) {
-        acc[key] = { balance: 0, count: 0, name: key, logoKey: current.name }; // Add logoKey here
-      }
-      acc[key].balance += current.balance || 0;
-      acc[key].count += 1;
-      return acc;
-    }, {} as Record<string, { balance: number; count: number; name: string; logoKey: string }>); // Added logoKey type
+    // Calculate total for SAVINGS accounts
+    const savingsTotal = parentAccounts
+      .filter(acc => acc.type === 'SAVINGS')
+      .reduce((sum, acc) => sum + (acc.balance || 0), 0);
 
-    // Create the array from the aggregated object
-    const finalAggregatedBalances = Object.values(aggregated);
+    // Calculate total for CREDIT_CARD accounts
+    const creditCardTotal = parentAccounts
+      .filter(acc => acc.type === 'CREDIT_CARD')
+      .reduce((sum, acc) => sum + (acc.balance || 0), 0);
 
-    return { totalBalance: total, aggregatedBalances: finalAggregatedBalances };
+    return { totalBalance: total, savingsBalance: savingsTotal, creditCardBalance: creditCardTotal };
   }, [accounts]);
 
-  const formatCurrency = (amount: number, currency: string = 'INR', compact: boolean = false) => {
+  const formatCurrency = (amount: number, currency: string = 'INR', compact: boolean = false, showNegative: boolean = false) => {
+    if (!showNegative) {
+        amount = Math.abs(amount);
+    }
      if (compact && Math.abs(amount) >= 1000) {
        return new Intl.NumberFormat('en-IN', {
          notation: "compact",
@@ -89,25 +75,6 @@ function TotalBalanceCard() {
     </svg>
   );
 
-  const renderBankItem = (item: { name: string; balance: number; logoKey: string }) => {
-    const logoInfo = bankLogos[item.logoKey] || bankLogos['OTHERS'];
-    // Always format as currency, use compact format
-    const displayValue = formatCurrency(item.balance, 'INR', true);
-
-    return (
-        <div key={item.name} className="flex items-center bg-muted/80 rounded-full text-sm p-1 pr-3"> {/* Added padding */}
-           {typeof logoInfo.icon === 'string' ? (
-               <span className={`w-5 h-5 rounded-full ${logoInfo.color} text-white flex items-center justify-center text-xs font-bold mr-2`}>
-                   {logoInfo.icon}
-               </span>
-           ) : (
-               <logoInfo.icon className={`w-5 h-5 ${logoInfo.color ? logoInfo.color.replace('bg-', 'text-') : 'text-primary'} mr-2`} />
-           )}
-           <span className="font-medium text-foreground">{displayValue}</span>
-        </div>
-    );
-  }
-
   if (status === 'loading' || status === 'idle') {
     return <TotalBalanceCardSkeleton />; // Use the skeleton component
   }
@@ -131,7 +98,7 @@ function TotalBalanceCard() {
         </div>
 
         {/* Balance and Sparkline */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-4">
           {/* Use CurrencyDisplay for total balance */}
           <CurrencyDisplay 
             amount={totalBalance}
@@ -143,8 +110,22 @@ function TotalBalanceCard() {
         </div>
 
         {/* Aggregated Balances */}
-        <div className="flex flex-wrap flex-row gap-4">
-           {aggregatedBalances.map(renderBankItem)}
+        <div className="flex flex-wrap flex-row gap-2"> {/* Adjusted gap */}
+           {/* Savings Aggregate */}
+           {savingsBalance !== 0 && ( // Show if non-zero
+             <div className="flex items-center bg-muted/80 rounded-full text-xs p-1 px-3 space-x-1">
+               <span className="text-primary text-xs">BALANCE</span>
+               {/* Optional label: <span className="font-medium text-foreground mr-1">Savings:</span> */}
+               <span className="font-medium text-foreground">{formatCurrency(savingsBalance, 'INR', true)}</span>
+             </div>
+           )}
+           {/* Credit Card Aggregate */}
+           {creditCardBalance < 0 && ( // Show if negative
+            <div className="flex items-center bg-muted/80 rounded-full text-xs p-1 px-3 space-x-1">
+              <span className="text-primary text-xs">DEBT</span>
+              <span className={`font-medium`}>{formatCurrency(creditCardBalance, 'INR', true, false)}</span>
+             </div>
+           )}
         </div>
       </div>
        {/* Bottom corner button placeholder */}

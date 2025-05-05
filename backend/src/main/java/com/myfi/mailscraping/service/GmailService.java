@@ -95,20 +95,23 @@ public class GmailService {
             queryBuilder.append("}"); // Close the curly brace for 'from'
 
             // Find the latest processed message date
-            Optional<LocalDateTime> latestDateTimeOpt = processedGmailMessagesTrackerService.findLatestMessageDateTime();
+            Optional<LocalDateTime> latestDateTimeOpt = processedGmailMessagesTrackerService
+                    .findLatestMessageDateTime();
 
             if (latestDateTimeOpt.isPresent()) {
                 LocalDateTime latestDateTime = latestDateTimeOpt.get();
                 long secondsSinceEpoch = latestDateTime.toEpochSecond(ZoneOffset.UTC);
                 secondsSinceEpoch = secondsSinceEpoch - 1;
                 queryBuilder.append(" after:").append(secondsSinceEpoch);
-                logger.info("Found last processed message date: {}. Querying for messages after this time.", latestDateTime);
+                logger.info("Found last processed message date: {}. Querying for messages after this time.",
+                        latestDateTime);
             } else {
                 // Calculate the date 3 months ago
                 LocalDateTime threeMonthsAgo = LocalDateTime.now(ZoneOffset.UTC).minusMonths(3);
                 long secondsSinceEpoch3MonthsAgo = threeMonthsAgo.toEpochSecond(ZoneOffset.UTC);
                 queryBuilder.append(" after:").append(secondsSinceEpoch3MonthsAgo);
-                logger.info("No processed messages found in DB. Querying for messages in the last 3 months (after {}).", threeMonthsAgo);
+                logger.info("No processed messages found in DB. Querying for messages in the last 3 months (after {}).",
+                        threeMonthsAgo);
             }
 
             String finalQuery = queryBuilder.toString();
@@ -144,7 +147,8 @@ public class GmailService {
 
                         // Extract message date *before* potential processing errors
                         if (fullMessage.getInternalDate() != null) {
-                            messageDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(fullMessage.getInternalDate()), ZoneOffset.UTC);
+                            messageDateTime = LocalDateTime
+                                    .ofInstant(Instant.ofEpochMilli(fullMessage.getInternalDate()), ZoneOffset.UTC);
                         }
 
                         String cleanTextBody = emailParser.extractTextFromMessage(fullMessage);
@@ -212,15 +216,46 @@ public class GmailService {
     }
 
     private Transaction mapExtractedTransactionDetailsToTransaction(ExtractedTransactionDetails details) {
-        if (StringUtils.isBlank(details.getCardNumber()) || details.getCardNumber().length() < 4) {
+        // save transaction only if it's a successful transaction
+        if (!details.isTransactionSuccessful()) {
+            logger.info("Skipping transaction as it's not a successful transaction: {}", details);
+            return null;
+        }
+
+        if (!details.isPixelCardTransaction()
+                && (StringUtils.isBlank(details.getCardNumber()) || details.getCardNumber().length() < 4)) {
             logger.warn("Card number is blank or too short for transaction: {}", details);
             return null;
         }
-        Account account = accountService.getAccountByCardLast4DigitsNumber(
-                details.getCardNumber().substring(details.getCardNumber().length() - 4));
-        if (account == null) {
-            logger.warn("Could not find account for card number: {}, for transaction: {}", details.getCardNumber(),
-                    details);
+
+        // save transaction only if it's not a credit card statement and is a credit
+        // card transaction:
+        if (details.isCreditCardStatement() || !details.isCreditCardTransaction()) {
+            logger.info("Skipping transaction as not a credit card transaction: {}", details);
+            return null;
+        }
+
+        Account account = null;
+        // if it's a pixel card transaction, fetch the account by account name
+        if (details.isPixelCardTransaction()) {
+            account = accountService.getAccountByTypeAndName(Account.AccountType.CREDIT_CARD, Constants.HDFC_PIXEL);
+            if (account == null) {
+                logger.warn("Could not find account for pixel card transaction: {}", details);
+                return null;
+            }
+        } else {
+            account = accountService.getAccountByCardLast4DigitsNumber(
+                    details.getCardNumber().substring(details.getCardNumber().length() - 4));
+            if (account == null) {
+                logger.warn("Could not find account for card number: {}, for transaction: {}", details.getCardNumber(),
+                        details);
+                return null;
+            }
+        }
+
+        // save transaction only if account is supported by email scraper
+        if (!Constants.SUPPORTED_BANK_EMAILS.keySet().contains(account.getName())) {
+            logger.info("Skipping transaction as account is not supported by email scraper: {}", details);
             return null;
         }
 

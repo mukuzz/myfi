@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.info.Info;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import io.github.cdimascio.dotenv.Dotenv;
 
@@ -22,6 +23,7 @@ public class MyFiApplication {
     }
 
     @Bean
+    @Profile("dev")
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()

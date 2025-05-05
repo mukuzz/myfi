@@ -17,6 +17,7 @@ import CashFlowDetailsScreen from './screens/CashFlowDetailsScreen';
 import TransactionsScreen from './screens/TransactionsScreen';
 import HomeScreen from './screens/HomeScreen';
 import SpendingSummaryScreen from './screens/SpendingSummaryScreen';
+import RefreshBar from './components/RefreshBar';
 
 
 // Keep DesktopAppHome as it's used in conditional rendering below
@@ -58,6 +59,7 @@ function RootLayout() {
   // Check if the current route needs the bottom nav visible
   // Note: With nested routes, pathname might include parent paths. Adjust if needed.
   const isBottomNavNeeded = isMobile && (location.pathname === '/transactions' || location.pathname === '/');
+  const isRefreshBarNeeded = location.pathname === '/transactions' || location.pathname === '/';
 
   return (
     <Provider store={store}>
@@ -66,6 +68,9 @@ function RootLayout() {
         {/* Child routes will render here, wrapped for animation */}
         <Outlet />
         {isBottomNavNeeded && <BottomNav />}
+        {isRefreshBarNeeded && <RefreshBar 
+          className={`fixed left-0 right-0 ${isBottomNavNeeded ? 'bottom-[80px]' : 'bottom-0'} max-h-[40px] h-full z-10 w-full`}
+        />}
       </div>
     </Provider>
   );

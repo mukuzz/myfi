@@ -144,4 +144,11 @@ public class AccountService {
             .findFirst()
             .orElse(null);
     }
+
+    public Account getAccountByTypeAndName(AccountType type, String name) {
+        return accountRepository.findAll().stream()
+            .filter(account -> account.getType() == type && account.getName().equals(name))
+            .findFirst()
+            .orElse(null);
+    }
 } 

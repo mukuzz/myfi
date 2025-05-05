@@ -525,4 +525,45 @@ export const getScrapingStatus = async (): Promise<ScrapingStatusResponse> => {
   return handleResponse(response);
 };
 
+// --- Gmail Sync --- 
+
+export async function triggerGmailSync(): Promise<{ success: boolean; message: string; foundMessagesCount?: number }> {
+  console.log('Calling POST /api/v1/gmail/sync');
+  const response = await fetch(`${API_BASE_URL}/gmail/sync`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+         // Add authentication headers if required by your backend
+    },
+    // No body needed for this specific request
+  });
+
+  const responseBody = await response.json();
+
+  if (!response.ok) {
+      console.error('Gmail sync API call failed:', response.status, responseBody);
+      // Use the message from the backend response if available
+      const errorMessage = responseBody?.message || `HTTP error ${response.status}`;
+      throw new Error(errorMessage);
+  }
+
+  console.log('Gmail sync triggered successfully:', responseBody);
+  return responseBody; // Should match { success: boolean; message: string; foundMessagesCount?: number }
+}
+
+/**
+ * Fetches the Google Authentication URL from the backend.
+ * @returns A promise that resolves with the URL string.
+ * @throws Error if the fetch fails or the URL is not received.
+ */
+export const fetchGoogleAuthUrl = async (): Promise<string> => {
+  const response = await fetch(`${API_BASE_URL}/auth/google/url`);
+  const data = await handleResponse(response); // Use existing handler
+  if (data && data.url) {
+    return data.url;
+  } else {
+    throw new Error('Authorization URL not received from backend.');
+  }
+};
+
 // Add other API functions here as needed (e.g., fetchTransactions, createTransaction, deleteTransaction) 

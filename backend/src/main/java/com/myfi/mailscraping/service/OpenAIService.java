@@ -40,7 +40,7 @@ public class OpenAIService {
                 },
                 "transaction_date": {
                   "type": "string",
-                  "description": "Date of the transaction in YYYY-MM-DD format."
+                  "description": "Date of the transaction in YYYY-MM-DD format. In the mail the dates would generally in in the format DD-MM-YYYY."
                 },
                 "type": {
                   "type": "string",
@@ -66,9 +66,13 @@ public class OpenAIService {
                 "is_credit_card_statement": {
                   "type": "boolean",
                   "description": "true if the email is a credit card statement, false if it's just a transaction notification or something else."
+                },
+                "is_transaction_successful": {
+                  "type": "boolean",
+                  "description": "true if the transaction is successful, false if it's a failed transaction."
                 }
               },
-              "required": ["amount", "transaction_date", "type", "description", "card_number", "is_credit_card_transaction", "is_pixel_card_transaction", "is_credit_card_statement"],
+              "required": ["amount", "transaction_date", "type", "description", "card_number", "is_credit_card_transaction", "is_pixel_card_transaction", "is_credit_card_statement", "is_transaction_successful"],
               "additionalProperties": false
             }
             """;
@@ -151,6 +155,8 @@ public class OpenAIService {
         private boolean isPixelCardTransaction;
         @JsonProperty("is_credit_card_statement")
         private boolean isCreditCardStatement;
+        @JsonProperty("is_transaction_successful")
+        private boolean isTransactionSuccessful;
     }
 
 }

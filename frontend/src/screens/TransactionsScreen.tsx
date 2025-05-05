@@ -68,7 +68,7 @@ function TransactionsScreen() {
   }, [dispatch, hasMore, currentPage, transactionStatus]);
 
   return (
-    <div ref={parentRef} className="text-foreground flex flex-col h-full bg-background relative">
+    <div ref={parentRef} className="text-foreground flex flex-col h-full bg-background relative pb-[50px]">
       <div
         ref={headerRef}
         className={`bg-background pt-4 z-10`}
