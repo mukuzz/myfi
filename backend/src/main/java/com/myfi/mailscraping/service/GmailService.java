@@ -7,6 +7,8 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.ListMessagesResponse;
 import com.google.api.services.gmail.model.Message;
 
+import com.myfi.mailscraping.constants.Constants;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,18 +79,30 @@ public class GmailService {
                     .build();
 
             // Base query
-            String baseQuery = "from:no-reply@getonecard.app";
-            StringBuilder queryBuilder = new StringBuilder(baseQuery);
+            StringBuilder queryBuilder = new StringBuilder("from:{");
+            boolean firstEmail = true;
+            // Iterate through all supported email lists
+            for (List<String> emailList : Constants.SUPPORTED_BANK_EMAILS.values()) {
+                // Iterate through emails in the current list
+                for (String email : emailList) {
+                    if (!firstEmail) {
+                        queryBuilder.append(" "); // Add space separator before the next email
+                    }
+                    queryBuilder.append(email);
+                    firstEmail = false; // Mark that we've added at least one email
+                }
+            }
+            queryBuilder.append("}"); // Close the curly brace for 'from'
 
             // Find the latest processed message date
-            Optional<LocalDateTime> latestDateOpt = processedGmailMessagesTrackerService.findLatestMessageDate();
+            Optional<LocalDateTime> latestDateTimeOpt = processedGmailMessagesTrackerService.findLatestMessageDateTime();
 
-            if (latestDateOpt.isPresent()) {
-                LocalDateTime latestDate = latestDateOpt.get();
-                long secondsSinceEpoch = latestDate.toEpochSecond(ZoneOffset.UTC);
+            if (latestDateTimeOpt.isPresent()) {
+                LocalDateTime latestDateTime = latestDateTimeOpt.get();
+                long secondsSinceEpoch = latestDateTime.toEpochSecond(ZoneOffset.UTC);
                 secondsSinceEpoch = secondsSinceEpoch - 1;
                 queryBuilder.append(" after:").append(secondsSinceEpoch);
-                logger.info("Found last processed message date: {}. Querying for messages after this time.", latestDate);
+                logger.info("Found last processed message date: {}. Querying for messages after this time.", latestDateTime);
             } else {
                 // Calculate the date 3 months ago
                 LocalDateTime threeMonthsAgo = LocalDateTime.now(ZoneOffset.UTC).minusMonths(3);
@@ -114,7 +128,7 @@ public class GmailService {
                 String messageId = message.getId();
                 boolean needsProcessing = true;
                 boolean savedSuccessfully = false;
-                LocalDateTime messageDate = null;
+                LocalDateTime messageDateTime = null;
 
                 if (processedGmailMessagesTrackerService.isMessageProcessed(messageId)) {
                     logger.info("Skipping already processed message ID: {}", messageId);
@@ -130,7 +144,7 @@ public class GmailService {
 
                         // Extract message date *before* potential processing errors
                         if (fullMessage.getInternalDate() != null) {
-                            messageDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(fullMessage.getInternalDate()), ZoneOffset.UTC);
+                            messageDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(fullMessage.getInternalDate()), ZoneOffset.UTC);
                         }
 
                         String cleanTextBody = emailParser.extractTextFromMessage(fullMessage);
@@ -178,7 +192,7 @@ public class GmailService {
                         logger.error("Unexpected error processing message ID {}: {}", messageId, e.getMessage(), e);
                     } finally {
                         // Save with the extracted or fallback message date
-                        processedGmailMessagesTrackerService.saveProcessedMessage(messageId, messageDate);
+                        processedGmailMessagesTrackerService.saveProcessedMessage(messageId, messageDateTime);
                         if (savedSuccessfully) {
                             successfullyProcessedMessageIds.add(messageId);
                         }

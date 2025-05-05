@@ -28,7 +28,7 @@ public class ProcessedGmailMessage {
     private LocalDateTime processedAt;
 
     @Column(nullable = false)
-    private LocalDateTime messageDate;
+    private LocalDateTime messageDateTime;
 
     @PrePersist
     protected void onCreate() {

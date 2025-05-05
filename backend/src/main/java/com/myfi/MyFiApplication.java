@@ -13,7 +13,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 public class MyFiApplication {
     public static void main(String[] args) {
         Dotenv dotenv = Dotenv.configure()
-                .directory("./")
+                .directory("./data/")
                 .ignoreIfMissing()
                 .load();
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));

@@ -12,5 +12,5 @@ public interface ProcessedGmailMessageRepository extends JpaRepository<Processed
     boolean existsByMessageId(String messageId);
 
     // Find the entry with the maximum messageDate
-    Optional<ProcessedGmailMessage> findTopByOrderByMessageDateDesc();
+    Optional<ProcessedGmailMessage> findTopByOrderByMessageDateTimeDesc();
 } 

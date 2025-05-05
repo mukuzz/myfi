@@ -27,18 +27,18 @@ public class ProcessedGmailMessagesTrackerService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<LocalDateTime> findLatestMessageDate() {
-        return repository.findTopByOrderByMessageDateDesc()
-                         .map(ProcessedGmailMessage::getMessageDate);
+    public Optional<LocalDateTime> findLatestMessageDateTime() {
+        return repository.findTopByOrderByMessageDateTimeDesc()
+                         .map(ProcessedGmailMessage::getMessageDateTime);
     }
 
     @Transactional
-    public void saveProcessedMessage(String messageId, LocalDateTime messageDate) {
+    public void saveProcessedMessage(String messageId, LocalDateTime messageDateTime) {
         if (messageId == null || messageId.isBlank()) {
             logger.warn("Attempted to save a null or blank message ID. Skipping.");
             return;
         }
-        if (messageDate == null) {
+        if (messageDateTime == null) {
             logger.warn("Attempted to save message ID {} with a null message date. Skipping.", messageId);
             return;
         }
@@ -51,12 +51,12 @@ public class ProcessedGmailMessagesTrackerService {
 
         ProcessedGmailMessage processedMessage = ProcessedGmailMessage.builder()
                 .messageId(messageId)
-                .messageDate(messageDate)
+                .messageDateTime(messageDateTime)
                 .processedAt(LocalDateTime.now()) // Set here, @PrePersist will overwrite if needed
                 .build();
         try {
             repository.save(processedMessage);
-            logger.info("Saved processed message ID: {} with message date: {}", messageId, messageDate);
+            logger.info("Saved processed message ID: {} with message date: {}", messageId, messageDateTime);
         } catch (DataIntegrityViolationException e) {
             // This might happen in a race condition if another thread/instance saved it between the check and save
             logger.warn("Data integrity violation for message ID {}, likely already saved by another process.", messageId);

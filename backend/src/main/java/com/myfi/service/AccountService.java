@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.myfi.mailscraping.constants.Constants;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -122,6 +123,10 @@ public class AccountService {
                     supportedAccountsMap.get(type.name()).add(bankName);
                 }
             }
+        }
+
+        for (String bankName : Constants.SUPPORTED_BANK_EMAILS.keySet()) {
+            supportedAccountsMap.get(AccountType.CREDIT_CARD.name()).add(bankName);
         }
 
         return supportedAccountsMap;
