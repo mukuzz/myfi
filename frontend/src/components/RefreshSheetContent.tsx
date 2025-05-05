@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { triggerScraping, getScrapingStatus } from '../services/apiService';
+import { triggerScraping, getScrapingStatus, triggerGmailSync } from '../services/apiService';
 import { Account, ScrapeRequest, ScrapingProgress, ScrapingStatus } from '../types';
-import { FiRefreshCw, FiLoader, FiXCircle, FiCheckCircle, FiInfo } from 'react-icons/fi';
+import { FiRefreshCw, FiLoader, FiInfo, FiMail, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { formatDistanceToNow } from '../utils/datetimeUtils';
 import { decryptCredentials, EncryptedCredentialData } from '../utils/cryptoUtils';
 import PassphraseModal from './PassphraseModal';
@@ -22,6 +22,9 @@ interface RefreshSheetContentProps {
 // Simplified status, mainly controlling the *current* refresh section
 type ComponentStatus = 'idle' | 'loading' | 'success' | 'error';
 
+// Add new Gmail sync status type
+type GmailSyncStatus = 'idle' | 'loading' | 'success' | 'error';
+
 function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: RefreshSheetContentProps) {
   console.log('RefreshSheetContent rendering/mounting...');
 
@@ -32,6 +35,8 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
   const [accountsToRefresh, setAccountsToRefresh] = useState<Account[]>([]);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const statusResetTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for the status reset timeout
+  const [gmailSyncStatus, setGmailSyncStatus] = useState<GmailSyncStatus>('idle');
+  const [gmailSyncMessage, setGmailSyncMessage] = useState<string | null>(null);
 
   // Redux state and dispatch
   const dispatch = useDispatch();
@@ -307,6 +312,33 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
     setAccountsToRefresh([]); // Clear the accounts list state
   }, []);
 
+  // --- Handle Gmail Sync Trigger ---
+  const handleGmailSync = useCallback(async () => {
+    console.log("Triggering Gmail sync...");
+    setGmailSyncStatus('loading');
+    setGmailSyncMessage(null);
+
+    try {
+      const result = await triggerGmailSync();
+      console.log("Gmail sync API response:", result);
+      setGmailSyncStatus('success');
+      setGmailSyncMessage(result.message || 'Gmail sync completed successfully.');
+      // Maybe trigger a transaction refetch here as well if needed?
+      // dispatch(fetchTransactions() as any);
+    } catch (error: any) {
+      console.error("Error triggering Gmail sync:", error);
+      setGmailSyncStatus('error');
+      // Attempt to get message from error object, default otherwise
+      let errMsg = "An unknown error occurred during Gmail sync.";
+      if (error && typeof error === 'object' && error.message) {
+          errMsg = error.message; // Use the message from the error thrown by apiService
+      } else if (typeof error === 'string') {
+          errMsg = error;
+      }
+      setGmailSyncMessage(errMsg);
+    }
+  }, []); // No dependencies needed for now
+
 
  // Derive progress list for rendering the unified section
  const displayProgressList: ScrapingProgress[] = Object.values(displayProgress);
@@ -335,17 +367,43 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
 
         <div className="w-full flex flex-col justify-start items-center px-4 pb-6 space-y-6">
 
-            {/* Show Refresh button when idle or on error */}
-            {(componentStatus === 'idle' || componentStatus === 'error') && (
-                 <button
-                    onClick={checkForRefreshableAccounts}
-                    // Disable when accounts are loading
-                    disabled={accountsStatus === 'loading'}
-                    className={`py-3 px-6 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed`}
+            {/* Group Buttons Together */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full max-w-md">
+                {/* Account Refresh Button */}
+                {(componentStatus === 'idle' || componentStatus === 'error') && (
+                    <button
+                        onClick={checkForRefreshableAccounts}
+                        // Only disable if accounts are still loading from Redux
+                        disabled={accountsStatus === 'loading'} 
+                        className={`py-3 px-6 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto`}
+                    >
+                        <FiRefreshCw className="h-5 w-5 mr-2" />Refresh
+                    </button>
+                )}
+                {/* Disable Account Refresh Button while loading */}
+                {componentStatus === 'loading' && (
+                     <button
+                        disabled
+                        className={`py-3 px-6 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto`}
+                    >
+                        <FiLoader className="animate-spin h-5 w-5 mr-2" />Refreshing...
+                    </button>
+                )}
+
+                {/* Gmail Sync Button */}
+                <button
+                    onClick={handleGmailSync}
+                    disabled={gmailSyncStatus === 'loading' || componentStatus === 'loading'} // Disable if account scraping or gmail sync is loading
+                    className={`py-3 px-6 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/90 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto`}
                 >
-                    <FiRefreshCw className="h-5 w-5 mr-2" />Refresh
+                    {gmailSyncStatus === 'loading' ? (
+                        <FiLoader className="animate-spin h-5 w-5 mr-2" />
+                    ) : (
+                        <FiMail className="h-5 w-5 mr-2" />
+                    )}
+                    Sync Gmail
                 </button>
-            )}
+            </div>
 
              {/* 2. General Error Display Area (outside main progress flow) */}
              {/* Show general errors mainly when idle, or specific API/decryption errors when error */}
@@ -355,6 +413,14 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
                  </div>
              )}
 
+            {/* Gmail Sync Status Display Area */}
+            {gmailSyncMessage && (
+                <div className={`rounded-md p-3 text-sm w-full max-w-md text-center flex items-center justify-center gap-2 ${ gmailSyncStatus === 'success' ? 'bg-success/10 text-success border border-success/30' : 'bg-error/10 text-error border border-error/30' }
+                `}>
+                    {gmailSyncStatus === 'success' ? <FiCheckCircle className="h-4 w-4"/> : <FiAlertCircle className="h-4 w-4"/>}
+                    <span>{gmailSyncMessage}</span>
+                </div>
+             )}
 
             {/* 3. Unified Progress/Status Area */}
             <div className="flex flex-col w-full max-w-md space-y-4 py-4">
