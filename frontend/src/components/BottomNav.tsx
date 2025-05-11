@@ -16,7 +16,7 @@ function BottomNav() {
         {tabs.map((tab) => {
           const isActive = location.pathname === tab.path;
           return (
-            <div
+            <button
               key={tab.name}
               onClick={(e) => {
                 e.preventDefault();
@@ -33,7 +33,7 @@ function BottomNav() {
               aria-label={tab.name}
             >
               {tab.icon}
-            </div>
+            </button>
           );
         })}
       </div>
