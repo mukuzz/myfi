@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchTransactionRange } from '../store/slices/transactionsSlice';
 
-import { selectTagMap } from '../store/slices/tagsSlice';
 import { Transaction } from '../types';
 import CurrencyDisplay from '../components/AmountDisplay';
 import { FiChevronRight } from 'react-icons/fi'; // Back and Fullscreen icons
@@ -72,6 +71,7 @@ const CashFlowDetailsScreen: React.FC = () => {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const { transactions, status, availableMonths } = useAppSelector((state) => state.transactions);
+    const [showInitialSkeleton, setShowInitialSkeleton] = useState(true);
 
     // Get initial year/month from location state, fallback to current month/year
     const initialState = location.state as { year: number; month: number } | undefined;
@@ -115,10 +115,6 @@ const CashFlowDetailsScreen: React.FC = () => {
     // Effect to fetch data for the required range and previous month
     useEffect(() => {
         const { startYear, startMonth, endYear, endMonth } = dataFetchDateRange;
-        // const rangeKey = `${startYear}-${startMonth}-${endYear}-${endMonth}`; // No longer needed
-        // const prevKey = `${prevYear}-${prevMonth}`; // No longer needed
-
-        // Removed key tracking logic
 
         // Read current status directly here
         const currentStatus = status; // Get status from closure
@@ -131,6 +127,10 @@ const CashFlowDetailsScreen: React.FC = () => {
             console.log(`EFFECT: Dispatching fetchTransactionRange for range: ${startYear}-${startMonth} to ${endYear}-${endMonth}`);
             dispatch(fetchTransactionRange({ startYear, startMonth, endYear, endMonth }));
             fetchInitiatedRef.current.range = true; // Mark as initiated for this range key
+        }
+
+        if (fetchInitiatedRef.current.range && status === 'succeeded') {
+            setShowInitialSkeleton(false);
         }
 
         // Removed redundant previous month check
@@ -169,6 +169,7 @@ const CashFlowDetailsScreen: React.FC = () => {
         const firstMonthWithActivityIndex = data.findIndex(d =>
             d.incoming > 0 || d.outgoing > 0 || d.invested > 0
         );
+        
 
         // 3. If a month with activity is found, slice the array from that index onwards
         if (firstMonthWithActivityIndex !== -1) {
@@ -177,6 +178,7 @@ const CashFlowDetailsScreen: React.FC = () => {
             // 4. Otherwise, return an empty array (or potentially the last month if needed? For now, empty)
             return [];
         }
+
 
     }, [transactions, dataFetchDateRange, availableMonths]); // Depend on transactions for totals, and availableMonths/dataFetchDateRange for filtering
 
@@ -241,10 +243,8 @@ const CashFlowDetailsScreen: React.FC = () => {
         console.log(`Opening sheet for ${type} with ${filtered.length} transactions`);
     }, [filterTransactionsForSheet]); // Dependency
 
-    const tagMap = useAppSelector(selectTagMap);
-
     // *** ADDED: Top-level loading check ***
-    if (isLoading) {
+    if (showInitialSkeleton || isLoading) {
         return (
             <ScreenContainer title="Cash Flow">
                 <CashFlowDetailsSkeleton />
