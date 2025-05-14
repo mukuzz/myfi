@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.myfi.mailscraping.service.GmailService;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -28,32 +27,31 @@ public class GmailController {
     public ResponseEntity<Map<String, Object>> triggerEmailSync() {
         logger.info("Received request to trigger Gmail sync.");
         try {
-            List<String> processedIds = gmailService.syncAndProcessEmails();
-            logger.info("Gmail sync process completed. Found {} messages.", processedIds.size());
+            gmailService.syncAndProcessEmails();
+            logger.info("Gmail sync process initiated successfully.");
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "message", "Gmail sync triggered successfully.",
-                    "foundMessagesCount", processedIds.size()
+                    "message", "Gmail sync process completed successfully."
             ));
         } catch (IllegalStateException e) {
-            logger.error("Gmail sync failed: Authentication required.", e);
+            logger.error("Gmail sync initiation failed: Authentication required.", e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
                     "success", false,
                     "message", "Authentication required. Please connect Gmail first.",
                     "error", e.getMessage()
             ));
         } catch (IOException e) {
-            logger.error("Gmail sync failed due to API error.", e);
+            logger.error("Gmail sync initiation failed due to API error.", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "success", false,
-                    "message", "Failed to sync emails due to an API error.",
+                    "message", "Failed to initiate Gmail sync due to an API error.",
                     "error", e.getMessage()
             ));
         } catch (Exception e) {
-            logger.error("An unexpected error occurred during Gmail sync.", e);
+            logger.error("An unexpected error occurred during Gmail sync initiation.", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "success", false,
-                    "message", "An unexpected error occurred during sync.",
+                    "message", "An unexpected error occurred during sync initiation.",
                     "error", e.getMessage()
             ));
         }

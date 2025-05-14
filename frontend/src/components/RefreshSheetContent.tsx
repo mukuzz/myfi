@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { triggerScraping, getScrapingStatus, triggerGmailSync } from '../services/apiService';
-import { Account, ScrapeRequest, ScrapingProgress, ScrapingStatus } from '../types';
+import { triggerScraping, getOverallRefreshStatus, triggerGmailSync } from '../services/apiService';
+import { Account, ScrapeRequest, OperationStatusDetailType, RefreshJobStatus, AggregatedRefreshStatusResponseType } from '../types';
 import { FiRefreshCw, FiLoader, FiInfo, FiMail, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { formatDistanceToNow } from '../utils/datetimeUtils';
 import { decryptCredentials, EncryptedCredentialData } from '../utils/cryptoUtils';
@@ -30,7 +30,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
 
   const [componentStatus, setComponentStatus] = useState<ComponentStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // For general/decryption errors or API fetch errors
-  const [displayProgress, setDisplayProgress] = useState<{ [accountNumber: string]: ScrapingProgress }>({}); // Unified progress display
+  const [displayProgress, setDisplayProgress] = useState<{ [accountNumber: string]: OperationStatusDetailType }>({}); // Unified progress display
   const [isPassphraseModalOpen, setIsPassphraseModalOpen] = useState<boolean>(false);
   const [accountsToRefresh, setAccountsToRefresh] = useState<Account[]>([]);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -43,6 +43,32 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
   const allAccounts = useSelector((state: RootState) => state.accounts.accounts);
   const accountsStatus = useSelector((state: RootState) => state.accounts.status);
   const accountsError = useSelector((state: RootState) => state.accounts.error);
+
+  // --- Handle Gmail Sync Trigger ---
+  const handleGmailSync = useCallback(async () => {
+    console.log("Triggering Gmail sync...");
+    setGmailSyncStatus('loading');
+    setGmailSyncMessage(null);
+
+    try {
+      const result = await triggerGmailSync();
+      console.log("Gmail sync API response:", result);
+      setGmailSyncStatus('success');
+      // Maybe trigger a transaction refetch here as well if needed?
+      // dispatch(fetchTransactions() as any);
+    } catch (error: any) {
+      console.error("Error triggering Gmail sync:", error);
+      setGmailSyncStatus('error');
+      // Attempt to get message from error object, default otherwise
+      let errMsg = "An unknown error occurred during Gmail sync.";
+      if (error && typeof error === 'object' && error.message) {
+          errMsg = error.message; // Use the message from the error thrown by apiService
+      } else if (typeof error === 'string') {
+          errMsg = error;
+      }
+      setGmailSyncMessage(errMsg);
+    }
+  }, []); // No dependencies needed for now
 
   // --- Polling Logic ---
   const stopPolling = useCallback(() => {
@@ -67,7 +93,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
     const pollFn = async () => {
       try {
         // console.log("Polling for scraping status...");
-        const statusResponse = await getScrapingStatus();
+        const statusResponse = await getOverallRefreshStatus();
         // console.log("Received status response:", JSON.stringify(statusResponse, null, 2));
 
         // Update the *unified* progress state
@@ -79,11 +105,11 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
 
           const finalProgressMap = statusResponse.progressMap;
           const progressValues = Object.values(finalProgressMap);
-          const isAnyError = progressValues.some(p =>
-            p.status === ScrapingStatus.ERROR ||
-            p.status === ScrapingStatus.LOGIN_FAILED ||
-            p.status === ScrapingStatus.SCRAPING_FAILED ||
-            p.status === ScrapingStatus.LOGOUT_FAILED
+          const isAnyError = progressValues.some((p: OperationStatusDetailType) =>
+            p.status === RefreshJobStatus.ERROR ||
+            p.status === RefreshJobStatus.LOGIN_FAILED ||
+            p.status === RefreshJobStatus.PROCESSING_FAILED ||
+            p.status === RefreshJobStatus.LOGOUT_FAILED
           );
 
           // Set final component status (success/error)
@@ -133,7 +159,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
         console.log("Fetching initial scraping status on component mount...");
 
         try {
-            const initialStatusResponse = await getScrapingStatus();
+            const initialStatusResponse = await getOverallRefreshStatus();
             if (!isMounted) return;
 
             // Always update displayProgress with the fetched map
@@ -223,16 +249,16 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
     let decryptionErrorAccountName = '';
 
     // Initialize *display* progress map for expected accounts
-    const initialProgress: { [accountNumber: string]: ScrapingProgress } = {};
+    const initialProgress: { [accountNumber: string]: OperationStatusDetailType } = {};
     accountsToRefresh.forEach(acc => {
         initialProgress[acc.accountNumber] = {
             accountNumber: acc.accountNumber,
             accountName: acc.name,
-            status: ScrapingStatus.PENDING,
+            status: RefreshJobStatus.PENDING,
             startTime: new Date().toISOString(),
             lastUpdateTime: new Date().toISOString(),
             errorMessage: null,
-            history: [{ status: ScrapingStatus.PENDING, timestamp: new Date().toISOString(), message: 'Refresh initiated' }]
+            history: [{ status: RefreshJobStatus.PENDING, timestamp: new Date().toISOString(), message: 'Refresh initiated' }]
         };
     });
     setDisplayProgress(initialProgress); // Show pending state immediately in the unified display
@@ -288,7 +314,9 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
     try {
       console.log('Triggering scraping for:', scrapeRequests.map(r => ({ ...r, password: '***' })));
       await triggerScraping(scrapeRequests);
-      // Successfully triggered, start polling. Polling function will handle status updates.
+      // Successfully triggered scraping, now trigger Gmail sync
+      handleGmailSync();
+      // Start polling for scraping status. Polling function will handle status updates.
       startPolling();
     } catch (err: any) {
       console.error('Failed to trigger scraping:', err);
@@ -302,7 +330,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
       setDisplayProgress({}); // Clear pending progress on trigger failure
       // Don't need to stop polling as it wasn't started on trigger failure
     }
-  }, [startPolling, accountsToRefresh]); // Removed stopPolling, dispatch, updateLastAttemptState from deps
+  }, [startPolling, accountsToRefresh, handleGmailSync]); // Removed stopPolling, dispatch, updateLastAttemptState from deps
 
 
   const handleClosePassphraseModal = useCallback(() => {
@@ -312,39 +340,10 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
     setAccountsToRefresh([]); // Clear the accounts list state
   }, []);
 
-  // --- Handle Gmail Sync Trigger ---
-  const handleGmailSync = useCallback(async () => {
-    console.log("Triggering Gmail sync...");
-    setGmailSyncStatus('loading');
-    setGmailSyncMessage(null);
+  // Derive progress list for rendering the unified section
+  const displayProgressList: OperationStatusDetailType[] = Object.values(displayProgress);
 
-    try {
-      const result = await triggerGmailSync();
-      console.log("Gmail sync API response:", result);
-      setGmailSyncStatus('success');
-      setGmailSyncMessage(result.message || 'Gmail sync completed successfully.');
-      // Maybe trigger a transaction refetch here as well if needed?
-      // dispatch(fetchTransactions() as any);
-    } catch (error: any) {
-      console.error("Error triggering Gmail sync:", error);
-      setGmailSyncStatus('error');
-      // Attempt to get message from error object, default otherwise
-      let errMsg = "An unknown error occurred during Gmail sync.";
-      if (error && typeof error === 'object' && error.message) {
-          errMsg = error.message; // Use the message from the error thrown by apiService
-      } else if (typeof error === 'string') {
-          errMsg = error;
-      }
-      setGmailSyncMessage(errMsg);
-    }
-  }, []); // No dependencies needed for now
-
-
- // Derive progress list for rendering the unified section
- const displayProgressList: ScrapingProgress[] = Object.values(displayProgress);
-
-
- return (
+  return (
     <div className="p-2 pt-8 flex flex-col overflow-y-auto">
 
         {/* 1. Header Section (Last Refresh Time) */}
@@ -369,40 +368,17 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
 
             {/* Group Buttons Together */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full max-w-md">
-                {/* Account Refresh Button */}
-                {(componentStatus === 'idle' || componentStatus === 'error') && (
+                {/* Unified Refresh Button */}
+                {componentStatus !== 'loading' && (
                     <button
                         onClick={checkForRefreshableAccounts}
                         // Only disable if accounts are still loading from Redux
-                        disabled={accountsStatus === 'loading'} 
+                        disabled={accountsStatus === 'loading'}
                         className={`py-3 px-6 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto`}
                     >
                         <FiRefreshCw className="h-5 w-5 mr-2" />Refresh
                     </button>
                 )}
-                {/* Disable Account Refresh Button while loading */}
-                {componentStatus === 'loading' && (
-                     <button
-                        disabled
-                        className={`py-3 px-6 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto`}
-                    >
-                        <FiLoader className="animate-spin h-5 w-5 mr-2" />Refreshing...
-                    </button>
-                )}
-
-                {/* Gmail Sync Button */}
-                <button
-                    onClick={handleGmailSync}
-                    disabled={gmailSyncStatus === 'loading' || componentStatus === 'loading'} // Disable if account scraping or gmail sync is loading
-                    className={`py-3 px-6 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/90 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto`}
-                >
-                    {gmailSyncStatus === 'loading' ? (
-                        <FiLoader className="animate-spin h-5 w-5 mr-2" />
-                    ) : (
-                        <FiMail className="h-5 w-5 mr-2" />
-                    )}
-                    Sync Gmail
-                </button>
             </div>
 
              {/* 2. General Error Display Area (outside main progress flow) */}
@@ -417,7 +393,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
             {gmailSyncMessage && (
                 <div className={`rounded-md p-3 text-sm w-full max-w-md text-center flex items-center justify-center gap-2 ${ gmailSyncStatus === 'success' ? 'bg-success/10 text-success border border-success/30' : 'bg-error/10 text-error border border-error/30' }
                 `}>
-                    {gmailSyncStatus === 'success' ? <FiCheckCircle className="h-4 w-4"/> : <FiAlertCircle className="h-4 w-4"/>}
+                    {gmailSyncStatus === 'error' ? <FiAlertCircle className="h-4 w-4"/> : <FiCheckCircle className="h-4 w-4"/>}
                     <span>{gmailSyncMessage}</span>
                 </div>
              )}
@@ -441,7 +417,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
                 {/* Progress Details List (Rendered based on componentStatus and if data exists) */}
                 {displayProgressList.length > 0 && (
                         <ul className="w-full bg-card border border-border rounded-2xl divide-y divide-border">
-                            {displayProgressList.map(p => <AccountProgressItem key={`${p.accountNumber}-display`} progress={p} />)}
+                            {displayProgressList.map((p: OperationStatusDetailType) => <AccountProgressItem key={`${p.accountNumber}-display`} progress={p} />)}
                         </ul>
                 )}
 

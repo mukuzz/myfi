@@ -56,54 +56,60 @@ export interface ScrapeRequest {
   accountNumber: string;
 }
 
-// Define scraping status enum based on backend
-export enum ScrapingStatus {
-    PENDING = 'PENDING',
-    ACQUIRING_PERMIT = 'ACQUIRING_PERMIT',
-    LOGIN_STARTED = 'LOGIN_STARTED',
-    LOGIN_SUCCESS = 'LOGIN_SUCCESS',
-    LOGIN_FAILED = 'LOGIN_FAILED',
-    SCRAPING_STARTED = 'SCRAPING_STARTED',
-    SCRAPING_BANK_STARTED = 'SCRAPING_BANK_STARTED',
-    SCRAPING_CC_STARTED = 'SCRAPING_CC_STARTED',
-    SCRAPING_SUCCESS = 'SCRAPING_SUCCESS',
-    SCRAPING_FAILED = 'SCRAPING_FAILED',
-    LOGOUT_STARTED = 'LOGOUT_STARTED',
-    LOGOUT_SUCCESS = 'LOGOUT_SUCCESS',
-    LOGOUT_FAILED = 'LOGOUT_FAILED',
-    COMPLETED = 'COMPLETED',
-    ERROR = 'ERROR'
+// Represents com.myfi.refreshTracker.enums.RefreshJobStatus
+export enum RefreshJobStatus {
+    PENDING = "PENDING",
+    INITIALIZING = "INITIALIZING",
+    ACQUIRING_PERMIT = "ACQUIRING_PERMIT",
+    LOGIN_STARTED = "LOGIN_STARTED",
+    LOGIN_SUCCESS = "LOGIN_SUCCESS",
+    LOGIN_FAILED = "LOGIN_FAILED",
+    PROCESSING_STARTED = "PROCESSING_STARTED",
+    BANK_PROCESSING_STARTED = "BANK_PROCESSING_STARTED",
+    CC_PROCESSING_STARTED = "CC_PROCESSING_STARTED",
+    PROCESSING_IN_PROGRESS = "PROCESSING_IN_PROGRESS",
+    PROCESSING_SUCCESS = "PROCESSING_SUCCESS",
+    PROCESSING_FAILED = "PROCESSING_FAILED",
+    LOGOUT_STARTED = "LOGOUT_STARTED",
+    LOGOUT_SUCCESS = "LOGOUT_SUCCESS",
+    LOGOUT_FAILED = "LOGOUT_FAILED",
+    COMPLETED = "COMPLETED",
+    ERROR = "ERROR",
 }
 
-// Interface for a single event in the scraping history
-// Matches backend ScrapingEvent
-export interface ScrapingEvent {
-    status: ScrapingStatus;
-    timestamp: string; // ISO 8601 date string
-    message?: string;
+// Represents com.myfi.refreshTracker.dto.ProgressHistoryEntry
+export interface ProgressHistoryEntryType {
+    status: RefreshJobStatus;
+    timestamp: string; // ISO DateTime string
+    message: string | null;
 }
 
-// Interface for individual account scraping progress
-// Matches backend ScrapingProgress
-export interface ScrapingProgress {
+// Represents com.myfi.refreshTracker.dto.OperationStatusDetail
+export interface OperationStatusDetailType {
     accountNumber: string;
     accountName: string;
-    status: ScrapingStatus;
-    startTime: string; // ISO 8601 date string for start
-    lastUpdateTime: string; // ISO 8601 date string for last update
-    errorMessage?: string | null; // Optional error message
-    history: ScrapingEvent[]; // History of events
+    status: RefreshJobStatus;
+    startTime: string; // ISO DateTime string
+    lastUpdateTime: string; // ISO DateTime string
+    errorMessage: string | null;
+    history: ProgressHistoryEntryType[];
+    itemsProcessed?: number;
+    itemsTotal?: number;
 }
 
-// Interface for the overall status response
-// Matches backend ScrapingStatusResponse
-export interface ScrapingStatusResponse {
-    progressMap: { [accountNumber: string]: ScrapingProgress };
+// Represents com.myfi.refreshTracker.dto.AggregatedRefreshStatusResponse
+export interface AggregatedRefreshStatusResponseType {
+    progressMap: { [key: string]: OperationStatusDetailType };
     refreshInProgress: boolean;
 }
 
+// --- Old types removed ---
+
 export interface SystemStatus {
 // ... existing SystemStatus interface ...
+// Ensure this interface is still needed and correctly defined.
+// If it was part of the old status system and not used elsewhere, it might also be removable.
+// For now, I'll assume it's unrelated or you will manage it.
 }
 
 // Generic Page type for paginated API responses

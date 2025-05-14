@@ -6,7 +6,6 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.ListMessagesResponse;
 import com.google.api.services.gmail.model.Message;
-
 import com.myfi.mailscraping.constants.Constants;
 
 import org.apache.commons.lang3.StringUtils;
@@ -17,6 +16,9 @@ import org.springframework.stereotype.Service;
 
 import com.myfi.model.Account;
 import com.myfi.model.Transaction;
+import com.myfi.refreshTracker.enums.RefreshJobStatus;
+import com.myfi.refreshTracker.enums.RefreshType;
+import com.myfi.refreshTracker.service.RefreshTrackingService;
 import com.myfi.service.AccountService;
 import com.myfi.service.TransactionService;
 import com.myfi.mailscraping.service.OpenAIService.ExtractedTransactionDetails;
@@ -29,13 +31,15 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class GmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(GmailService.class);
     private static final String APPLICATION_NAME = "MyFi";
-    private static final String USER_ID = "me"; // Represents the authenticated user
+    private static final String USER_ID = "me";
+    private static final String GMAIL_SYNC_OPERATION_ID_PREFIX = "GMAIL_SYNC_OP_";
 
     @Autowired
     private GoogleAuthService googleAuthService;
@@ -61,59 +65,46 @@ public class GmailService {
     @Autowired
     private ProcessedGmailMessagesTrackerService processedGmailMessagesTrackerService;
 
-    /**
-     * Fetches emails based on a query and processes them (currently logs info).
-     *
-     * @return A list of message IDs that were found (can be expanded later).
-     * @throws IOException           If there is an issue communicating with the
-     *                               Gmail API or authentication fails.
-     * @throws IllegalStateException If authentication credentials are not
-     *                               available.
-     */
+    @Autowired
+    private RefreshTrackingService refreshTrackingService;
+
     public List<String> syncAndProcessEmails() throws IOException {
+        // Generate a unique ID for this specific sync operation instance
+        String operationId = GMAIL_SYNC_OPERATION_ID_PREFIX + UUID.randomUUID().toString();
+        refreshTrackingService.clearProgressForType(RefreshType.GMAIL_SYNC);
+        refreshTrackingService.initializeOperation(RefreshType.GMAIL_SYNC, operationId, "Gmail Sync", Optional.empty());
+
         List<String> successfullyProcessedMessageIds = new ArrayList<>();
+        int processedInThisRun = 0;
+
         try {
-            Credential credential = googleAuthService.getCredentials();
+            refreshTrackingService.updateOperationState(RefreshType.GMAIL_SYNC, operationId, RefreshJobStatus.LOGIN_STARTED, "Authenticating with Google.");
+            Credential credential = googleAuthService.getCredentials(); // Throws IllegalStateException if auth fails
             Gmail service = new Gmail.Builder(httpTransport, jsonFactory, credential)
                     .setApplicationName(APPLICATION_NAME)
                     .build();
+            refreshTrackingService.updateOperationState(RefreshType.GMAIL_SYNC, operationId, RefreshJobStatus.LOGIN_SUCCESS, "Google authentication successful.");
 
-            // Base query
+            refreshTrackingService.updateOperationState(RefreshType.GMAIL_SYNC, operationId, RefreshJobStatus.PROCESSING_STARTED, "Fetching emails from Gmail.");
+
             StringBuilder queryBuilder = new StringBuilder("from:{");
             boolean firstEmail = true;
-            // Iterate through all supported email lists
             for (List<String> emailList : Constants.CC_SUPPORTED_BANK_EMAILS.values()) {
-                // Iterate through emails in the current list
                 for (String email : emailList) {
-                    if (!firstEmail) {
-                        queryBuilder.append(" "); // Add space separator before the next email
-                    }
+                    if (!firstEmail) queryBuilder.append(" ");
                     queryBuilder.append(email);
-                    firstEmail = false; // Mark that we've added at least one email
+                    firstEmail = false;
                 }
             }
-            queryBuilder.append("}"); // Close the curly brace for 'from'
+            queryBuilder.append("}");
 
-            // Find the latest processed message date
-            Optional<LocalDateTime> latestDateTimeOpt = processedGmailMessagesTrackerService
-                    .findLatestMessageDateTime();
-
+            Optional<LocalDateTime> latestDateTimeOpt = processedGmailMessagesTrackerService.findLatestMessageDateTime();
             if (latestDateTimeOpt.isPresent()) {
-                LocalDateTime latestDateTime = latestDateTimeOpt.get();
-                long secondsSinceEpoch = latestDateTime.toEpochSecond(ZoneOffset.UTC);
-                secondsSinceEpoch = secondsSinceEpoch - 1;
+                long secondsSinceEpoch = latestDateTimeOpt.get().toEpochSecond(ZoneOffset.UTC) - 1;
                 queryBuilder.append(" after:").append(secondsSinceEpoch);
-                logger.info("Found last processed message date: {}. Querying for messages after this time.",
-                        latestDateTime);
             } else {
-                // Calculate the date 3 months ago
-                LocalDateTime threeMonthsAgo = LocalDateTime.now(ZoneOffset.UTC).minusMonths(3);
-                long secondsSinceEpoch3MonthsAgo = threeMonthsAgo.toEpochSecond(ZoneOffset.UTC);
-                queryBuilder.append(" after:").append(secondsSinceEpoch3MonthsAgo);
-                logger.info("No processed messages found in DB. Querying for messages in the last 3 months (after {}).",
-                        threeMonthsAgo);
+                queryBuilder.append(" after:").append(LocalDateTime.now(ZoneOffset.UTC).minusMonths(3).toEpochSecond(ZoneOffset.UTC));
             }
-
             String finalQuery = queryBuilder.toString();
             logger.info("Executing Gmail search query: [{}]", finalQuery);
 
@@ -121,145 +112,126 @@ public class GmailService {
             List<Message> messages = response.getMessages();
 
             if (messages == null || messages.isEmpty()) {
-                logger.info("No emails found matching the query.");
+                logger.info("No new emails found matching the query.");
+                refreshTrackingService.completeOperationSuccessfully(RefreshType.GMAIL_SYNC, operationId, "No new emails found.");
                 return successfullyProcessedMessageIds;
             }
 
             logger.info("Found {} emails matching the query.", messages.size());
+            refreshTrackingService.updateOperationProgress(RefreshType.GMAIL_SYNC, operationId, 
+                RefreshJobStatus.PROCESSING_IN_PROGRESS, "Processing found emails.", 0, Optional.of(messages.size()));
+            
+            int totalMessagesToProcess = messages.size();
 
-            for (Message message : messages) {
-                String messageId = message.getId();
-                boolean needsProcessing = true;
-                boolean savedSuccessfully = false;
+            for (Message messageSummary : messages) {
+                String messageId = messageSummary.getId();
+                boolean savedSuccessfullyCurrentMessage = false;
                 LocalDateTime messageDateTime = null;
 
                 if (processedGmailMessagesTrackerService.isMessageProcessed(messageId)) {
                     logger.info("Skipping already processed message ID: {}", messageId);
-                    needsProcessing = false;
+                    // Potentially decrement totalMessagesToProcess if we consider these as "not to be processed in this run"
+                    // For now, itemsTotal remains fixed from initial fetch, itemsProcessed counts actual attempts.
                 } else {
                     logger.info("Processing message ID: {}", messageId);
-                }
-
-                if (needsProcessing) {
                     try {
-                        Message fullMessage = service.users().messages().get(USER_ID, messageId).setFormat("full")
-                                .execute(); // Use "full" format
-
-                        // Extract message date *before* potential processing errors
+                        Message fullMessage = service.users().messages().get(USER_ID, messageId).setFormat("full").execute();
                         if (fullMessage.getInternalDate() != null) {
-                            messageDateTime = LocalDateTime
-                                    .ofInstant(Instant.ofEpochMilli(fullMessage.getInternalDate()), ZoneOffset.UTC);
+                            messageDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(fullMessage.getInternalDate()), ZoneOffset.UTC);
                         }
 
                         String cleanTextBody = emailParser.extractTextFromMessage(fullMessage);
-
-                        if (cleanTextBody != null && !cleanTextBody.isBlank()) {
-                            Optional<ExtractedTransactionDetails> extractedTransactionDetails = openAIService
-                                    .extractTransactionDetailsFromEmail(cleanTextBody);
-
-                            if (extractedTransactionDetails.isPresent()) {
-                                ExtractedTransactionDetails details = extractedTransactionDetails.get();
-                                Transaction transaction = mapExtractedTransactionDetailsToTransaction(details);
-                                try {
-                                    if (transaction != null) {
-                                        Transaction savedTransaction = transactionService
-                                                .createTransaction(transaction);
-                                        logger.info("Saved transaction with ID: {} for message ID: {}",
-                                                savedTransaction.getId(), messageId);
-                                        savedSuccessfully = true;
-                                    } else {
-                                        logger.warn("Mapped transaction was null for message ID: {}, skipping save.",
-                                                messageId);
+                        if (StringUtils.isNotBlank(cleanTextBody)) {
+                            Optional<ExtractedTransactionDetails> extractedDetails = openAIService.extractTransactionDetailsFromEmail(cleanTextBody);
+                            if (extractedDetails.isPresent()) {
+                                Transaction transaction = mapExtractedTransactionDetailsToTransaction(extractedDetails.get());
+                                if (transaction != null) {
+                                    try {
+                                        Transaction savedTransaction = transactionService.createTransaction(transaction);
+                                        logger.info("Saved transaction with ID: {} for message ID: {}", savedTransaction.getId(), messageId);
+                                        savedSuccessfullyCurrentMessage = true;
+                                    } catch (IllegalArgumentException e) {
+                                        logger.warn("Failed to save transaction (duplicate/validation) for message ID {}: {}", messageId, e.getMessage());
+                                    } catch (Exception e) {
+                                        logger.error("Error saving transaction for message ID {}: {}", messageId, e.getMessage(), e);
                                     }
-                                } catch (IllegalArgumentException e) {
-                                    logger.warn(
-                                            "Failed to save transaction (likely duplicate or validation error) for message ID {}: {}",
-                                            messageId, e.getMessage());
-                                } catch (Exception e) {
-                                    logger.error("Error saving transaction for message ID {}: {}", messageId,
-                                            e.getMessage(), e);
                                 }
                             } else {
                                 logger.warn("Could not extract transaction details from message ID: {}", messageId);
                             }
-
                         } else {
-                            logger.warn("Could not extract clean text body using EmailParser for message ID: {}",
-                                    messageId);
+                            logger.warn("Could not extract clean text body for message ID: {}", messageId);
                         }
-
                     } catch (IOException e) {
-                        logger.error("IOException fetching/processing full message ID {}: {}", messageId,
-                                e.getMessage(),
-                                e);
+                        logger.error("IOException fetching/processing full message ID {}: {}", messageId, e.getMessage(), e);
+                        // Do not fail the entire batch for one message, but log it.
                     } catch (Exception e) {
                         logger.error("Unexpected error processing message ID {}: {}", messageId, e.getMessage(), e);
                     } finally {
-                        // Save with the extracted or fallback message date
                         processedGmailMessagesTrackerService.saveProcessedMessage(messageId, messageDateTime);
-                        if (savedSuccessfully) {
+                        if (savedSuccessfullyCurrentMessage) {
                             successfullyProcessedMessageIds.add(messageId);
                         }
                     }
                 }
+                processedInThisRun++;
+                refreshTrackingService.updateOperationProgress(RefreshType.GMAIL_SYNC, operationId, 
+                    RefreshJobStatus.PROCESSING_IN_PROGRESS, "Processed email " + processedInThisRun + "/" + totalMessagesToProcess, 
+                    processedInThisRun, Optional.of(totalMessagesToProcess));
             }
 
+            String completionMessage = String.format("Gmail sync completed. Processed %d messages, successfully saved transactions for %d emails.", totalMessagesToProcess, successfullyProcessedMessageIds.size());
+            logger.info(completionMessage);
+            refreshTrackingService.completeOperationSuccessfully(RefreshType.GMAIL_SYNC, operationId, completionMessage);
             return successfullyProcessedMessageIds;
 
-        } catch (IllegalStateException e) {
-            logger.error("Cannot sync emails: {}", e.getMessage());
-            throw e;
-        } catch (IOException e) {
-            logger.error("IOException during Gmail sync: {}", e.getMessage(), e);
-            throw e;
+        } catch (IllegalStateException e) { // Auth error from getCredentials()
+            logger.error("Gmail sync failed: Authentication required.", e);
+            refreshTrackingService.failOperation(RefreshType.GMAIL_SYNC, operationId, "Authentication required: " + e.getMessage());
+            throw e; // Re-throw for controller to handle HTTP status
+        } catch (IOException e) { // API error from Gmail communication
+            logger.error("Gmail sync failed due to API error.", e);
+            refreshTrackingService.failOperation(RefreshType.GMAIL_SYNC, operationId, "Gmail API communication error: " + e.getMessage());
+            throw e; // Re-throw
+        } catch (Exception e) { // Other unexpected errors
+            logger.error("An unexpected error occurred during Gmail sync.", e);
+            refreshTrackingService.failOperation(RefreshType.GMAIL_SYNC, operationId, "Unexpected error during sync: " + e.getMessage());
+            throw e; // Re-throw
         }
     }
 
     private Transaction mapExtractedTransactionDetailsToTransaction(ExtractedTransactionDetails details) {
-        // save transaction only if it's a successful transaction
         if (!details.isTransactionSuccessful()) {
-            logger.info("Skipping transaction as it's not a successful transaction: {}", details);
+            logger.info("Skipping transaction as it's not successful: {}", details);
             return null;
         }
-
-        if (!details.isPixelCardTransaction()
-                && (StringUtils.isBlank(details.getCardNumber()) || details.getCardNumber().length() < 4)) {
-            logger.warn("Card number is blank or too short for transaction: {}", details);
+        if (!details.isPixelCardTransaction() && (StringUtils.isBlank(details.getCardNumber()) || details.getCardNumber().length() < 4)) {
+            logger.warn("Card number blank or too short: {}", details);
             return null;
         }
-
-        // save transaction only if it's not a credit card statement and is a credit
-        // card transaction:
         if (details.isCreditCardStatement() || !details.isCreditCardTransaction()) {
-            logger.info("Skipping transaction as not a credit card transaction: {}", details);
+            logger.info("Skipping as not a credit card transaction: {}", details);
             return null;
         }
-
-        Account account = null;
-        // if it's a pixel card transaction, fetch the account by account name
+        Account account;
         if (details.isPixelCardTransaction()) {
             account = accountService.getAccountByTypeAndName(Account.AccountType.CREDIT_CARD, Constants.HDFC_PIXEL);
             if (account == null) {
-                logger.warn("Could not find account for pixel card transaction: {}", details);
+                logger.warn("Pixel card account not found for transaction: {}", details);
                 return null;
             }
         } else {
-            account = accountService.getAccountByCardLast4DigitsNumber(
-                    details.getCardNumber().substring(details.getCardNumber().length() - 4));
+            account = accountService.getAccountByCardLast4DigitsNumber(details.getCardNumber().substring(details.getCardNumber().length() - 4));
             if (account == null) {
-                logger.warn("Could not find account for card number: {}, for transaction: {}", details.getCardNumber(),
-                        details);
+                logger.warn("Account for card number not found: {}, transaction: {}", details.getCardNumber(), details);
                 return null;
             }
         }
-
-        // save transaction only if account is supported by email scraper
         if (!Constants.CC_SUPPORTED_BANK_EMAILS.keySet().contains(account.getName())) {
-            logger.info("Skipping transaction as account is not supported by email scraper: {}", details);
+            logger.info("Account not supported by email scraper: {}", details);
             return null;
         }
-
-        Transaction transaction = Transaction.builder()
+        return Transaction.builder()
                 .amount(BigDecimal.valueOf(details.getAmount()))
                 .description(details.getDescription())
                 .type(Transaction.TransactionType.valueOf(details.getType()))
@@ -267,7 +239,5 @@ public class GmailService {
                 .createdAt(LocalDateTime.now())
                 .account(account)
                 .build();
-
-        return transaction;
     }
 }

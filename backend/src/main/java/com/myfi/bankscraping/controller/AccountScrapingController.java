@@ -11,7 +11,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.myfi.bankscraping.model.AccountCredentials;
-import com.myfi.bankscraping.model.ScrapingStatusResponse;
 import com.myfi.bankscraping.service.BankScrapingService;
 
 import jakarta.validation.Valid;
@@ -34,12 +33,5 @@ public class AccountScrapingController {
         log.info("Received scrape request for {} accounts. Forwarding to ScrapingService.", credentialsList.size());
         scrapingService.submitScrapingTasks(credentialsList);
         return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/status")
-    public ResponseEntity<ScrapingStatusResponse> getScrapingStatus() {
-        log.debug("Received status request. Forwarding to ScrapingService.");
-        ScrapingStatusResponse response = scrapingService.getScrapingStatus();
-        return ResponseEntity.ok(response);
     }
 }

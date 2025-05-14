@@ -1,4 +1,4 @@
-import { Transaction, Account, ScrapeRequest, Tag, Page, ScrapingStatusResponse } from '../types';
+import { Transaction, Account, ScrapeRequest, Tag, Page, AggregatedRefreshStatusResponseType } from '../types';
 
 // Use environment variable or default.
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/api/v1';
@@ -511,18 +511,16 @@ export const mergeTransactionApi = async (
 };
 
 /**
- * Fetches the current status of the scraping process.
- * @returns A promise that resolves with the ScrapingStatusResponse.
- * @throws Error if the fetch fails.
+ * Fetches the overall refresh status from the backend.
  */
-export const getScrapingStatus = async (): Promise<ScrapingStatusResponse> => {
-  const response = await fetch(`${API_BASE_URL}/scraping/status`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-  return handleResponse(response);
+export const getOverallRefreshStatus = async (): Promise<AggregatedRefreshStatusResponseType> => {
+    const response = await fetch(`${API_BASE_URL}/status/overall`);
+    if (!response.ok) {
+        // You might want to parse the error response body if the API provides one
+        const errorData = await response.json().catch(() => ({ message: "Failed to fetch refresh status" }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
 };
 
 // --- Gmail Sync --- 
