@@ -144,7 +144,7 @@ public class GmailService {
                         if (StringUtils.isNotBlank(cleanTextBody)) {
                             Optional<ExtractedTransactionDetails> extractedDetails = openAIService.extractTransactionDetailsFromEmail(cleanTextBody);
                             if (extractedDetails.isPresent()) {
-                                Transaction transaction = mapExtractedTransactionDetailsToTransaction(extractedDetails.get());
+                                Transaction transaction = mapExtractedTransactionDetailsToTransaction(messageId, extractedDetails.get());
                                 if (transaction != null) {
                                     try {
                                         Transaction savedTransaction = transactionService.createTransaction(transaction);
@@ -180,7 +180,7 @@ public class GmailService {
                     processedInThisRun, Optional.of(totalMessagesToProcess));
             }
 
-            String completionMessage = String.format("Gmail sync completed. Processed %d messages, successfully saved transactions for %d emails.", totalMessagesToProcess, successfullyProcessedMessageIds.size());
+            String completionMessage = String.format("Gmail sync completed. Processed %d messages, found %d transactions.", totalMessagesToProcess, successfullyProcessedMessageIds.size());
             logger.info(completionMessage);
             refreshTrackingService.completeOperationSuccessfully(RefreshType.GMAIL_SYNC, operationId, completionMessage);
             return successfullyProcessedMessageIds;
@@ -200,7 +200,7 @@ public class GmailService {
         }
     }
 
-    private Transaction mapExtractedTransactionDetailsToTransaction(ExtractedTransactionDetails details) {
+    private Transaction mapExtractedTransactionDetailsToTransaction(String messageId, ExtractedTransactionDetails details) {
         if (!details.isTransactionSuccessful()) {
             logger.info("Skipping transaction as it's not successful: {}", details);
             return null;
@@ -233,7 +233,8 @@ public class GmailService {
         }
         return Transaction.builder()
                 .amount(BigDecimal.valueOf(details.getAmount()))
-                .description(details.getDescription())
+                .description("Email Message ID: " + messageId)
+                .counterParty(details.getDescription())
                 .type(Transaction.TransactionType.valueOf(details.getType()))
                 .transactionDate(details.getTransactionDate().atStartOfDay())
                 .createdAt(LocalDateTime.now())

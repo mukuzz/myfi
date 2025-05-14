@@ -6,9 +6,9 @@ const ShimmerBar = ({ className }: { className?: string }) => (
 const SpendingRowSkeleton = () => (
   <div className="flex justify-between items-center space-x-2 h-[36px]"> {/* Match height */} 
     <div className="relative flex-1 min-w-0">
-      <ShimmerBar className="relative w-2/3 h-8" />
+      <ShimmerBar className="relative w-2/3 h-6" />
     </div>
-    <ShimmerBar className="w-12 h-8" /> 
+    <ShimmerBar className="w-12 h-6" /> 
   </div>
 );
 

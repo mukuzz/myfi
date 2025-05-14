@@ -25,7 +25,7 @@ function TotalBalanceCardSkeleton() {
         </div>
 
         <div className="flex justify-between items-center mb-4">
-          <ShimmerBar className="w-1/2 h-10" />
+          <ShimmerBar className="w-1/2 h-9" />
           <ShimmerBar className="w-16 h-6" />
         </div>
 

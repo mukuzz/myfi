@@ -164,7 +164,7 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
     <div className="p-6 h-full flex flex-col overflow-y-auto">
       
       {/* Account Information */}
-      <div className="pb-4 mb-4 border-b">
+      <div className="pb-4 mb-6 border-b">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">Account Name</p>
@@ -189,10 +189,11 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
       </div>
       
       {/* Credentials Form */}
-      <div className="flex-1">
-        <h3 className="text-lg font-medium mb-4">
-          {hasStoredCredentials ? 'Update Credentials' : 'Add Credentials'}
-        </h3>
+      {account.type === "SAVINGS" && (
+        <div className="flex-1">
+          <h3 className="text-lg font-medium mb-4">
+            {hasStoredCredentials ? 'Update Credentials' : 'Add Credentials'}
+          </h3>
         
         {hasStoredCredentials && (
           <div className="mb-4 p-3 bg-info/10 border border-info/30 rounded-md">
@@ -287,7 +288,12 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
             </button>
           </div>
         </form>
-      </div>
+        </div>
+      )}
+
+      {account.type === "CREDIT_CARD" && (
+        <p className="text-sm text-muted-foreground">Credit Card Updated through Gmail</p>
+      )}
       
       {/* Delete Account Section */}
       <div className="mt-6 pt-4 border-t">

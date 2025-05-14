@@ -111,10 +111,12 @@ const MonthlyCashFlowCard: React.FC = () => {
                             <span>Incoming</span>
                             <CurrencyDisplay amount={incoming} type="CREDIT" showFraction={false} />
                         </div>
+                        <hr />
                         <div className="flex justify-between">
                             <span>Outgoing</span>
                             <CurrencyDisplay amount={outgoing} type="DEBIT" showFraction={false} />
                         </div>
+                        <hr />
                         <div className="flex justify-between">
                             <span>Invested</span>
                             <CurrencyDisplay amount={invested} showType={false} showFraction={false} />

@@ -36,7 +36,6 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const statusResetTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for the status reset timeout
   const [gmailSyncStatus, setGmailSyncStatus] = useState<GmailSyncStatus>('idle');
-  const [gmailSyncMessage, setGmailSyncMessage] = useState<string | null>(null);
 
   // Redux state and dispatch
   const dispatch = useDispatch();
@@ -45,17 +44,15 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
   const accountsError = useSelector((state: RootState) => state.accounts.error);
 
   // --- Handle Gmail Sync Trigger ---
-  const handleGmailSync = useCallback(async () => {
+  const handleGmailSync = useCallback(async (): Promise<boolean> => {
     console.log("Triggering Gmail sync...");
     setGmailSyncStatus('loading');
-    setGmailSyncMessage(null);
 
     try {
-      const result = await triggerGmailSync();
-      console.log("Gmail sync API response:", result);
+      const result = await triggerGmailSync(); // Assume this is the actual API call
+      console.log("Gmail sync API response:", result); // For debugging
       setGmailSyncStatus('success');
-      // Maybe trigger a transaction refetch here as well if needed?
-      // dispatch(fetchTransactions() as any);
+      return true;
     } catch (error: any) {
       console.error("Error triggering Gmail sync:", error);
       setGmailSyncStatus('error');
@@ -66,9 +63,9 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
       } else if (typeof error === 'string') {
           errMsg = error;
       }
-      setGmailSyncMessage(errMsg);
+      return false;
     }
-  }, []); // No dependencies needed for now
+  }, [dispatch]); // Added dispatch as a common dependency, though not directly used in this version yet
 
   // --- Polling Logic ---
   const stopPolling = useCallback(() => {
@@ -152,6 +149,26 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
 
   }, [stopPolling, dispatch, onRefreshSuccess, componentStatus]);
 
+  // UPDATED: Function to trigger scraping and start polling (used by passphrase path)
+  const triggerScrapingAndPoll = useCallback(async (scrapeRequests: ScrapeRequest[]) => {
+    try {
+      await triggerScraping(scrapeRequests);
+      // Successfully triggered scraping, now trigger Gmail sync (if applicable)
+      handleGmailSync();
+      // Start polling for scraping status. Polling function will handle status updates.
+      startPolling();
+    } catch (err: any) {
+      console.error('Failed to trigger scraping:', err);
+      let apiErrorMessage = 'Scraping request failed. Check backend logs or connection.';
+      if (err instanceof Error && err.message) {
+          apiErrorMessage = err.message;
+      }
+      setErrorMessage(apiErrorMessage);
+      setComponentStatus('error');
+      setDisplayProgress({}); // Clear pending progress on trigger failure
+    }
+  }, [startPolling, handleGmailSync]);
+
   // --- Initial Status Fetch ---
   useEffect(() => {
     let isMounted = true;
@@ -198,13 +215,9 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
 
   // --- Credential Check & Passphrase ---
   const checkForRefreshableAccounts = useCallback(() => {
-    // Reset only general error message, keep last attempt visible
     setErrorMessage(null);
-    // Reset component status to idle in case it was error/success previously
-    // Keep displayProgress showing the last result
-    setComponentStatus('idle');
+    // componentStatus will be set to 'loading' by operations starting from here, or remains 'idle' if nothing to do.
 
-    // Handle Redux account loading states
     if (accountsStatus === 'loading') {
         setErrorMessage('Accounts are still loading, please wait...');
         return;
@@ -219,36 +232,67 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
     }
 
     try {
-        const refreshableAccounts = allAccounts.filter((account: Account) => {
+        const savingsAccounts = allAccounts.filter((account: Account) => {
             const storageKey = `${NETBANKING_STORAGE_PREFIX}${account.id}`;
             return localStorage.getItem(storageKey) !== null;
         });
 
-        if (refreshableAccounts.length === 0) {
-            setErrorMessage('No accounts found with saved credentials to refresh.');
+        const creditCardAccounts = allAccounts.filter((account: Account) => account.type === "CREDIT_CARD");
+
+        if (savingsAccounts.length > 0) {
+            // Savings accounts exist, passphrase needed. Combine with credit cards.
+            const uniqueCreditCardAccounts = creditCardAccounts.filter(
+                cc => !savingsAccounts.some(sa => sa.id === cc.id)
+            );
+            const refreshableAccounts = [...savingsAccounts, ...uniqueCreditCardAccounts];
+
+            if (refreshableAccounts.length === 0) { 
+                setErrorMessage('No accounts found with saved credentials to refresh.');
+            } else {
+                setAccountsToRefresh(refreshableAccounts);
+                setIsPassphraseModalOpen(true); // This will lead to handlePassphraseSubmit which sets loading status
+            }
+        } else if (creditCardAccounts.length > 0) {
+            // No savings accounts, but credit card accounts exist. Start Gmail sync only and show status.
+            console.log("No savings accounts, but CCs. Initiating Gmail sync and updating component status.");
+            setComponentStatus('loading'); // Set main component to loading
+            setErrorMessage(null);         // Clear previous general errors
+            setDisplayProgress({});       // Clear any account-specific progress display
+            setAccountsToRefresh([]);     // No accounts are being actively scraped via this path
+            
+            handleGmailSync().then((gmailWasSuccessful) => {
+                if (gmailWasSuccessful) {
+                    // Perform actions similar to onRefreshSuccess
+                    dispatch(fetchTransactions() as any);
+                    const now = new Date();
+                    const currentYear = now.getFullYear();
+                    const currentMonth = now.getMonth() + 1; // 1-indexed month
+                    dispatch(fetchTransactionsForMonth({ year: currentYear, month: currentMonth }) as any);
+                    onRefreshSuccess(); // Notify parent of success (e.g., update last refresh time)
+                }
+            });
         } else {
-            setAccountsToRefresh(refreshableAccounts);
-            setIsPassphraseModalOpen(true);
+            // No savings accounts and no credit card accounts.
+            setErrorMessage('No accounts available for refresh (neither with saved credentials nor credit cards).');
         }
     } catch (err: any) {
         console.error('Error during credential check:', err);
         setErrorMessage('An unexpected error occurred while checking credentials.');
-        setComponentStatus('error'); // Indicate an error in the process itself
-        setDisplayProgress({}); // Clear progress on credential check error
+        setComponentStatus('error');
+        setDisplayProgress({});
     }
-  }, [allAccounts, accountsStatus, accountsError]); // Depend on Redux state
+  }, [allAccounts, accountsStatus, accountsError, handleGmailSync, dispatch, onRefreshSuccess]);
 
   // --- Handle Passphrase Submit ---
   const handlePassphraseSubmit = useCallback(async (passphrase: string) => {
     setIsPassphraseModalOpen(false);
-    setComponentStatus('loading'); // Set component status to loading for the *new* refresh
-    setErrorMessage(null); // Clear previous errors
+    setComponentStatus('loading');
+    setErrorMessage(null);
 
     const scrapeRequests: ScrapeRequest[] = [];
     let decryptionFailed = false;
     let decryptionErrorAccountName = '';
 
-    // Initialize *display* progress map for expected accounts
     const initialProgress: { [accountNumber: string]: OperationStatusDetailType } = {};
     accountsToRefresh.forEach(acc => {
         initialProgress[acc.accountNumber] = {
@@ -261,9 +305,16 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
             history: [{ status: RefreshJobStatus.PENDING, timestamp: new Date().toISOString(), message: 'Refresh initiated' }]
         };
     });
-    setDisplayProgress(initialProgress); // Show pending state immediately in the unified display
+    setDisplayProgress(initialProgress);
 
     for (const account of accountsToRefresh) {
+      // Only attempt decryption for accounts that are expected to have stored credentials (e.g., savings)
+      // Credit card accounts included in accountsToRefresh here might not have stored creds,
+      // but the triggerScraping API should handle them based on type.
+      if (account.type === "CREDIT_CARD") {
+        continue;
+      }
+
       const storageKey = `${NETBANKING_STORAGE_PREFIX}${account.id}`;
       const storedDataString = localStorage.getItem(storageKey);
 
@@ -285,57 +336,33 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
           }
           decryptionErrorAccountName = account.name;
           setErrorMessage(`Account ${decryptionErrorAccountName}: ${decrError}`);
-          setComponentStatus('error'); // Show error in the 'current refresh' section
+          setComponentStatus('error');
           decryptionFailed = true;
-          setDisplayProgress({}); // Clear the pending progress display on decryption failure
+          setDisplayProgress({});
           break;
         }
       }
     }
 
-    // If decryption failed, stop here, show error message, keep componentStatus as 'error'
     if (decryptionFailed) {
         setAccountsToRefresh([]);
-        setDisplayProgress({}); // Clear the pending progress display
-        // Don't stop polling, as it wasn't started
+        setDisplayProgress({});
         return;
     }
 
-    // If no requests could be prepared (e.g., data missing after filtering)
-    if (scrapeRequests.length === 0 && !decryptionFailed) {
-      setComponentStatus('idle'); // Go back to idle
-      setErrorMessage('No credentials could be decrypted or prepared for refresh.');
+    if (scrapeRequests.length === 0) {
+      setErrorMessage('No credentials could be decrypted or no accounts prepared for refresh.');
       setAccountsToRefresh([]);
-      setDisplayProgress({}); // Clear progress if no requests were made
+      setDisplayProgress({});
       return;
     }
 
-    // If requests are ready, trigger the scrape
-    try {
-      console.log('Triggering scraping for:', scrapeRequests.map(r => ({ ...r, password: '***' })));
-      await triggerScraping(scrapeRequests);
-      // Successfully triggered scraping, now trigger Gmail sync
-      handleGmailSync();
-      // Start polling for scraping status. Polling function will handle status updates.
-      startPolling();
-    } catch (err: any) {
-      console.error('Failed to trigger scraping:', err);
-      let apiErrorMessage = 'Scraping request failed. Check backend logs or connection.';
-      if (err.message) {
-          apiErrorMessage = err.message;
-      }
-      setErrorMessage(apiErrorMessage);
-      setComponentStatus('error'); // Show error in the 'current refresh' section
-      setAccountsToRefresh([]);
-      setDisplayProgress({}); // Clear pending progress on trigger failure
-      // Don't need to stop polling as it wasn't started on trigger failure
-    }
-  }, [startPolling, accountsToRefresh, handleGmailSync]); // Removed stopPolling, dispatch, updateLastAttemptState from deps
+    await triggerScrapingAndPoll(scrapeRequests);
+  }, [accountsToRefresh, triggerScrapingAndPoll]);
 
 
   const handleClosePassphraseModal = useCallback(() => {
     setIsPassphraseModalOpen(false);
-    // setComponentStatus('idle'); // No, keep the status (likely idle or showing last result)
     // stopPolling(); // No need to stop polling if it wasn't started
     setAccountsToRefresh([]); // Clear the accounts list state
   }, []);
@@ -368,17 +395,24 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
 
             {/* Group Buttons Together */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full max-w-md">
-                {/* Unified Refresh Button */}
-                {componentStatus !== 'loading' && (
-                    <button
-                        onClick={checkForRefreshableAccounts}
-                        // Only disable if accounts are still loading from Redux
-                        disabled={accountsStatus === 'loading'}
-                        className={`py-3 px-6 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto`}
-                    >
-                        <FiRefreshCw className="h-5 w-5 mr-2" />Refresh
-                    </button>
-                )}
+                {/* Unified Refresh Button - Modified to always show and change text/icon/disabled state */}
+                <button
+                    onClick={checkForRefreshableAccounts}
+                    disabled={accountsStatus === 'loading' || componentStatus === 'loading'}
+                    className={`py-3 px-6 rounded-lg font-semibold flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed w-48`}
+                >
+                    {componentStatus === 'loading' ? (
+                        <>
+                            <FiLoader className="animate-spin h-5 w-5 mr-2" />
+                            Refreshing...
+                        </>
+                    ) : (
+                        <>
+                            <FiRefreshCw className="h-5 w-5 mr-2" />
+                            Refresh
+                        </>
+                    )}
+                </button>
             </div>
 
              {/* 2. General Error Display Area (outside main progress flow) */}
@@ -389,41 +423,16 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
                  </div>
              )}
 
-            {/* Gmail Sync Status Display Area */}
-            {gmailSyncMessage && (
-                <div className={`rounded-md p-3 text-sm w-full max-w-md text-center flex items-center justify-center gap-2 ${ gmailSyncStatus === 'success' ? 'bg-success/10 text-success border border-success/30' : 'bg-error/10 text-error border border-error/30' }
-                `}>
-                    {gmailSyncStatus === 'error' ? <FiAlertCircle className="h-4 w-4"/> : <FiCheckCircle className="h-4 w-4"/>}
-                    <span>{gmailSyncMessage}</span>
-                </div>
-             )}
-
             {/* 3. Unified Progress/Status Area */}
             <div className="flex flex-col w-full max-w-md space-y-4 py-4">
-                {/* Conditional Title/Status Message */}
-                {componentStatus === 'loading' && (
-                    <div className="flex items-center justify-center">
-                        <FiLoader className="animate-spin h-5 w-5 text-primary mr-3" />
-                        <p className="text-lg font-semibold text-foreground">Refreshing Accounts...</p>
-                    </div>
-                )}
-                 {componentStatus === 'idle' && displayProgressList.length > 0 && (
-                     <div className="text-center">
-                         <p className="font-medium text-muted-foreground">Last Refresh Status</p>
-                     </div>
-                 )}
-
 
                 {/* Progress Details List (Rendered based on componentStatus and if data exists) */}
                 {displayProgressList.length > 0 && (
+                  <>
                         <ul className="w-full bg-card border border-border rounded-2xl divide-y divide-border">
                             {displayProgressList.map((p: OperationStatusDetailType) => <AccountProgressItem key={`${p.accountNumber}-display`} progress={p} />)}
                         </ul>
-                )}
-
-                {/* Loading state placeholder if no progress yet */}
-                {componentStatus === 'loading' && displayProgressList.length === 0 && (
-                    <p className="text-muted-foreground text-sm text-center">Waiting for progress updates...</p>
+                  </>
                 )}
 
                  {/* Removed dedicated Try Again button */}
