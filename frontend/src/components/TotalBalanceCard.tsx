@@ -103,8 +103,8 @@ function TotalBalanceCard() {
           <CurrencyDisplay
             amount={totalBalance}
             className="text-3xl font-bold text-foreground"
-            showType={false}
             showFraction={false}
+            showOnlyNegative={true}
           />
           {renderSparkline()}
         </div>
