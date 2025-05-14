@@ -70,12 +70,22 @@ public class Account {
     }
 
     public enum AccountType {
-        SAVINGS,
-        CREDIT_CARD,
-        LOAN,
-        STOCKS,
-        FIXED_DEPOSIT,
-        MUTUAL_FUND,
-        CRYPTO
+        SAVINGS("Savings"),
+        CREDIT_CARD("Credit Card"),
+        LOAN("Loan"),
+        STOCKS("Stocks"),
+        FIXED_DEPOSIT("Fixed Deposit"),
+        MUTUAL_FUND("Mutual Fund"),
+        CRYPTO("Crypto");
+
+        private final String displayName;
+
+        AccountType(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
     }
 } 

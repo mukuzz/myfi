@@ -193,9 +193,9 @@ class AccountControllerTest {
 
      @Test
     void getSupportedAccounts_shouldReturnMap() throws Exception {
-        Map<String, List<String>> supportedMap = new HashMap<>();
-        supportedMap.put(AccountType.SAVINGS.name(), Arrays.asList("BankA", "BankB"));
-        supportedMap.put(AccountType.CREDIT_CARD.name(), Collections.singletonList("BankA"));
+        Map<AccountType, List<String>> supportedMap = new HashMap<>();
+        supportedMap.put(AccountType.SAVINGS, Arrays.asList("BankA", "BankB"));
+        supportedMap.put(AccountType.CREDIT_CARD, Collections.singletonList("BankA"));
 
         given(accountService.getSupportedAccounts()).willReturn(supportedMap);
 

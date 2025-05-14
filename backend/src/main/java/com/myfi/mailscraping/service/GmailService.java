@@ -82,7 +82,7 @@ public class GmailService {
             StringBuilder queryBuilder = new StringBuilder("from:{");
             boolean firstEmail = true;
             // Iterate through all supported email lists
-            for (List<String> emailList : Constants.SUPPORTED_BANK_EMAILS.values()) {
+            for (List<String> emailList : Constants.CC_SUPPORTED_BANK_EMAILS.values()) {
                 // Iterate through emails in the current list
                 for (String email : emailList) {
                     if (!firstEmail) {
@@ -254,7 +254,7 @@ public class GmailService {
         }
 
         // save transaction only if account is supported by email scraper
-        if (!Constants.SUPPORTED_BANK_EMAILS.keySet().contains(account.getName())) {
+        if (!Constants.CC_SUPPORTED_BANK_EMAILS.keySet().contains(account.getName())) {
             logger.info("Skipping transaction as account is not supported by email scraper: {}", details);
             return null;
         }

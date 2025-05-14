@@ -1,13 +1,15 @@
 package com.myfi.service;
 
-import com.myfi.bankscraping.service.BankScrapper;
 import com.myfi.model.Account;
 import com.myfi.model.Account.AccountType;
+import com.myfi.model.Transaction;
+import com.myfi.model.Transaction.TransactionType;
 import com.myfi.repository.AccountRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import com.myfi.mailscraping.constants.Constants;
 import java.math.BigDecimal;
@@ -15,10 +17,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.ArrayList;
 
 @Service
 public class AccountService {
@@ -29,13 +27,10 @@ public class AccountService {
     @Autowired
     private AccountHistoryService accountHistoryService;
 
-    private final List<BankScrapper> bankScrapers;
-
     @Autowired
-    public AccountService(AccountRepository accountRepository, AccountHistoryService accountHistoryService, List<BankScrapper> bankScrapers) {
+    public AccountService(AccountRepository accountRepository, AccountHistoryService accountHistoryService) {
         this.accountRepository = accountRepository;
         this.accountHistoryService = accountHistoryService;
-        this.bankScrapers = bankScrapers;
     }
 
     @Transactional(readOnly = true)
@@ -108,28 +103,8 @@ public class AccountService {
                 }).orElse(false);
     }
 
-    public Map<String, List<String>> getSupportedAccounts() {
-        Map<String, List<String>> supportedAccountsMap = EnumSet.allOf(AccountType.class).stream()
-                .collect(Collectors.toMap(
-                        AccountType::name,
-                        type -> new ArrayList<>()
-                ));
-
-        if (bankScrapers != null) {
-            for (BankScrapper scraper : bankScrapers) {
-                String bankName = scraper.getBankName();
-                Set<AccountType> supportedTypes = scraper.getSupportedAccountTypes();
-                for (AccountType type : supportedTypes) {
-                    supportedAccountsMap.get(type.name()).add(bankName);
-                }
-            }
-        }
-
-        for (String bankName : Constants.SUPPORTED_BANK_EMAILS.keySet()) {
-            supportedAccountsMap.get(AccountType.CREDIT_CARD.name()).add(bankName);
-        }
-
-        return supportedAccountsMap;
+    public Map<AccountType, List<String>> getSupportedAccounts() {
+        return Constants.SUPPORTED_ACCOUNTS;
     }
 
     private void populateLatestBalance(Account account) {
@@ -151,4 +126,44 @@ public class AccountService {
             .findFirst()
             .orElse(null);
     }
-} 
+
+    public void addToBalance(Account account, Transaction transaction) {
+        Assert.notNull(account, "Account must not be null");
+        Assert.notNull(transaction, "Transaction must not be null");
+        BigDecimal amount = transaction.getAmount();
+        BigDecimal balanceChange = amount.abs();
+        if (transaction.getType() == TransactionType.DEBIT) {
+            balanceChange = amount.negate();
+        }
+        updateBalance(account, balanceChange);
+    }
+
+    public void subtractFromBalance(Account account, Transaction transaction) {
+        Assert.notNull(account, "Account must not be null");
+        Assert.notNull(transaction, "Transaction must not be null");
+        BigDecimal amount = transaction.getAmount();
+        BigDecimal balanceChange = amount.abs();
+        if (transaction.getType() == TransactionType.CREDIT) {
+            balanceChange = amount.negate();
+        }
+        updateBalance(account, balanceChange);
+    }
+
+    public void updateBalance(Account account, BigDecimal balanceChange) {
+        Assert.notNull(account, "Account must not be null");
+        Assert.notNull(balanceChange, "Balance change must not be null");
+        populateLatestBalance(account);
+        BigDecimal newBalance = account.getBalance().add(balanceChange);
+        accountHistoryService.createAccountHistoryRecord(account.getId(), newBalance);
+        account.setBalance(newBalance);
+
+        if (account.getParentAccountId() != null) {
+            accountRepository.findById(account.getParentAccountId()).ifPresent(parentAccount -> {
+                // Ensure we don't get into an infinite loop if an account is its own parent
+                if (!parentAccount.getId().equals(account.getId())) {
+                    updateBalance(parentAccount, balanceChange);
+                }
+            });
+        }
+    }
+}

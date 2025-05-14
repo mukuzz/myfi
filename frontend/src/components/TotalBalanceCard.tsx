@@ -8,7 +8,7 @@ import CurrencyDisplay from './AmountDisplay';
 import TotalBalanceCardSkeleton from './skeletons/TotalBalanceCardSkeleton'; // Updated import path
 
 // Mock data for sparkline - replace with actual data fetching/generation
-const sparklineData = [5, 10, 5, 20, 8, 15]; 
+const sparklineData = [5, 10, 5, 20, 8, 15];
 
 function TotalBalanceCard() {
   const dispatch = useAppDispatch();
@@ -39,22 +39,22 @@ function TotalBalanceCard() {
 
   const formatCurrency = (amount: number, currency: string = 'INR', compact: boolean = false, showNegative: boolean = false) => {
     if (!showNegative) {
-        amount = Math.abs(amount);
+      amount = Math.abs(amount);
     }
-     if (compact && Math.abs(amount) >= 1000) {
-       return new Intl.NumberFormat('en-IN', {
-         notation: "compact",
-         compactDisplay: "short",
-         maximumFractionDigits: 1,
-         minimumFractionDigits: amount % 1000 !== 0 ? 1 : 0 // Show decimal only if needed
-       }).format(amount);
-     }
-     return new Intl.NumberFormat('en-IN', {
-       style: 'currency',
-       currency: currency,
-       maximumFractionDigits: 0,
-     }).format(amount);
-   };
+    if (compact && Math.abs(amount) >= 1000) {
+      return new Intl.NumberFormat('en-IN', {
+        notation: "compact",
+        compactDisplay: "short",
+        maximumFractionDigits: 1,
+        minimumFractionDigits: amount % 1000 !== 0 ? 1 : 0 // Show decimal only if needed
+      }).format(amount);
+    }
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   const renderSparkline = () => (
     <svg width="60" height="24" viewBox="0 0 60 24" className="text-green-500">
@@ -64,10 +64,10 @@ function TotalBalanceCard() {
           <stop offset="100%" style={{ stopColor: 'currentColor', stopOpacity: 0 }} />
         </linearGradient>
       </defs>
-      <path 
-        d={`M 0 ${24 - (sparklineData[0]/20)*20} L ${sparklineData.map((d, i) => `${i * (60 / (sparklineData.length - 1))} ${24 - (d/20)*20}`).join(' L ')}`} 
-        fill="url(#sparklineGradient)" 
-        stroke="currentColor" 
+      <path
+        d={`M 0 ${24 - (sparklineData[0] / 20) * 20} L ${sparklineData.map((d, i) => `${i * (60 / (sparklineData.length - 1))} ${24 - (d / 20) * 20}`).join(' L ')}`}
+        fill="url(#sparklineGradient)"
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -89,8 +89,8 @@ function TotalBalanceCard() {
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center text-sm text-muted-foreground font-medium">
-             <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center mr-2 text-xs">₹</span>
-             Total Balance
+            <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center mr-2 text-xs">₹</span>
+            Total Balance
           </div>
           <button className="text-muted-foreground">
             <FiMoreHorizontal size={20} />
@@ -100,9 +100,9 @@ function TotalBalanceCard() {
         {/* Balance and Sparkline */}
         <div className="flex justify-between items-center mb-4">
           {/* Use CurrencyDisplay for total balance */}
-          <CurrencyDisplay 
+          <CurrencyDisplay
             amount={totalBalance}
-            className="text-3xl font-bold text-foreground" 
+            className="text-3xl font-bold text-foreground"
             showType={false}
             showFraction={false}
           />
@@ -111,25 +111,21 @@ function TotalBalanceCard() {
 
         {/* Aggregated Balances */}
         <div className="flex flex-wrap flex-row gap-2"> {/* Adjusted gap */}
-           {/* Savings Aggregate */}
-           {savingsBalance !== 0 && ( // Show if non-zero
-             <div className="flex items-center bg-muted/80 rounded-full text-xs p-1 px-3 space-x-1">
-               <span className="text-primary text-xs">BALANCE</span>
-               {/* Optional label: <span className="font-medium text-foreground mr-1">Savings:</span> */}
-               <span className="font-medium text-foreground">{formatCurrency(savingsBalance, 'INR', true)}</span>
-             </div>
-           )}
-           {/* Credit Card Aggregate */}
-           {creditCardBalance < 0 && ( // Show if negative
-            <div className="flex items-center bg-muted/80 rounded-full text-xs p-1 px-3 space-x-1">
-              <span className="text-primary text-xs">DEBT</span>
-              <span className={`font-medium`}>{formatCurrency(creditCardBalance, 'INR', true, false)}</span>
-             </div>
-           )}
+          {/* Savings Aggregate */}
+          <div className="flex items-center bg-muted/80 rounded-full text-xs p-1 px-3 space-x-1">
+            <span className="text-primary text-xs">BALANCE</span>
+            {/* Optional label: <span className="font-medium text-foreground mr-1">Savings:</span> */}
+            <span className="font-medium text-foreground">{formatCurrency(savingsBalance, 'INR', true)}</span>
+          </div>
+          {/* Credit Card Aggregate */}
+          <div className="flex items-center bg-muted/80 rounded-full text-xs p-1 px-3 space-x-1">
+            <span className="text-primary text-xs">DEBT</span>
+            <span className={`font-medium`}>{formatCurrency(creditCardBalance, 'INR', true, false)}</span>
+          </div>
         </div>
       </div>
-       {/* Bottom corner button placeholder */}
-       
+      {/* Bottom corner button placeholder */}
+
     </Card>
   );
 }

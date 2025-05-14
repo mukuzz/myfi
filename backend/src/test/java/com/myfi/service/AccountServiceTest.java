@@ -45,7 +45,7 @@ class AccountServiceTest {
     @BeforeEach
     void setUp() {
         // Re-initialize service with potentially updated mocks if constructor injection needs specific setup
-        accountService = new AccountService(accountRepository, null, bankScrapers);
+        accountService = new AccountService(accountRepository, null);
 
         account1 = new Account();
         account1.setId(1L);
@@ -266,7 +266,7 @@ class AccountServiceTest {
         // Mock the behavior of the list iterator
         when(bankScrapers.iterator()).thenReturn(Arrays.asList(mockScraper1, mockScraper2).iterator());
 
-        Map<String, List<String>> supportedAccounts = accountService.getSupportedAccounts();
+        Map<AccountType, List<String>> supportedAccounts = accountService.getSupportedAccounts();
 
         assertNotNull(supportedAccounts);
         // Check all account types are present as keys
@@ -288,9 +288,9 @@ class AccountServiceTest {
     @Test
     void getSupportedAccounts_shouldReturnEmptyListsWhenNoScrapers() {
        // Use an empty list for scrapers in this specific test setup
-       accountService = new AccountService(accountRepository, null, Collections.emptyList());
+       accountService = new AccountService(accountRepository, null);
 
-        Map<String, List<String>> supportedAccounts = accountService.getSupportedAccounts();
+        Map<AccountType, List<String>> supportedAccounts = accountService.getSupportedAccounts();
 
         assertNotNull(supportedAccounts);
         assertEquals(AccountType.values().length, supportedAccounts.size());
@@ -304,9 +304,9 @@ class AccountServiceTest {
      @Test
     void getSupportedAccounts_shouldHandleNullScrapersListGracefully() {
         // Explicitly set scrapers to null
-        accountService = new AccountService(accountRepository, null, Collections.emptyList());
+        accountService = new AccountService(accountRepository, null);
 
-        Map<String, List<String>> supportedAccounts = accountService.getSupportedAccounts();
+        Map<AccountType, List<String>> supportedAccounts = accountService.getSupportedAccounts();
 
         assertNotNull(supportedAccounts);
         assertEquals(AccountType.values().length, supportedAccounts.size());

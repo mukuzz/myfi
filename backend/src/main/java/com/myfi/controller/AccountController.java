@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.myfi.model.Account;
+import com.myfi.model.Account.AccountType;
 import com.myfi.service.AccountService;
 
 import lombok.RequiredArgsConstructor;
@@ -59,7 +60,7 @@ public class AccountController {
     }
 
     @GetMapping("/supported")
-    public Map<String, List<String>> getSupportedAccounts() {
+    public Map<AccountType, List<String>> getSupportedAccounts() {
         return accountService.getSupportedAccounts();
     }
 } 

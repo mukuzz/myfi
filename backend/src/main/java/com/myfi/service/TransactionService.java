@@ -1,5 +1,6 @@
 package com.myfi.service;
 
+import com.myfi.model.Account.AccountType;
 import com.myfi.model.Transaction;
 import com.myfi.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,9 @@ public class TransactionService {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
+    @Autowired
+    private AccountService accountService;
 
     @Transactional(readOnly = true)
     public Page<Transaction> getAllTransactions(Pageable pageable) {
@@ -69,6 +73,9 @@ public class TransactionService {
             return existingTransaction.get();
         }
 
+        if (transaction.getAccount() != null && transaction.getAccount().getType() == AccountType.CREDIT_CARD) {
+            accountService.addToBalance(transaction.getAccount(), transaction);
+        }
         // If no duplicate, save the new transaction
         return transactionRepository.save(transaction);
     }
@@ -99,9 +106,10 @@ public class TransactionService {
                             existingTransaction.setTagId(newTagId);
                         }
                     }
-                    
+
                     if (transactionDetails.getAccount() != null) {
-                        existingTransaction.setAccount(transactionDetails.getAccount()); // Consider fetching Account by ID if only ID is passed
+                        existingTransaction.setAccount(transactionDetails.getAccount()); // Consider fetching Account by
+                                                                                         // ID if only ID is passed
                     }
                     if (transactionDetails.getCounterParty() != null) {
                         existingTransaction.setCounterParty(transactionDetails.getCounterParty());
@@ -110,8 +118,9 @@ public class TransactionService {
                         existingTransaction.setNotes(transactionDetails.getNotes());
                     }
                     // Check if the Boolean value is provided and different from the existing one
-                    if (transactionDetails.getExcludeFromAccounting() != null && 
-                        !transactionDetails.getExcludeFromAccounting().equals(existingTransaction.getExcludeFromAccounting())) { 
+                    if (transactionDetails.getExcludeFromAccounting() != null &&
+                            !transactionDetails.getExcludeFromAccounting()
+                                    .equals(existingTransaction.getExcludeFromAccounting())) {
                         existingTransaction.setExcludeFromAccounting(transactionDetails.getExcludeFromAccounting());
                     }
 
@@ -121,7 +130,8 @@ public class TransactionService {
                     // IMPORTANT:
                     // Don't regenerate unique key
                     // As updating the unique key will result in duplicate transactions
-                    // As in case of split transactions, the amount chnaged and the unique key will change                    
+                    // As in case of split transactions, the amount chnaged and the unique key will
+                    // change
 
                     return transactionRepository.save(existingTransaction);
                 });
@@ -131,6 +141,10 @@ public class TransactionService {
     public boolean deleteTransaction(Long id) {
         return transactionRepository.findById(id)
                 .map(transaction -> {
+                    if (transaction.getAccount() != null
+                            && transaction.getAccount().getType() == AccountType.CREDIT_CARD) {
+                        accountService.subtractFromBalance(transaction.getAccount(), transaction);
+                    }
                     transactionRepository.delete(transaction);
                     return true;
                 }).orElse(false);
@@ -164,7 +178,7 @@ public class TransactionService {
         YearMonth yearMonth = YearMonth.of(year, month);
         LocalDateTime startOfMonth = yearMonth.atDay(1).atStartOfDay();
         LocalDateTime endOfMonth = yearMonth.atEndOfMonth().atTime(LocalTime.MAX);
-        
+
         // Assuming findByTransactionDateBetween exists in TransactionRepository
         return transactionRepository.findByTransactionDateBetween(startOfMonth, endOfMonth);
     }
@@ -172,10 +186,10 @@ public class TransactionService {
     /**
      * Retrieves transactions within a specified date range, inclusive.
      *
-     * @param startYear The starting year of the range.
+     * @param startYear  The starting year of the range.
      * @param startMonth The starting month (1-indexed) of the range.
-     * @param endYear The ending year of the range.
-     * @param endMonth The ending month (1-indexed) of the range.
+     * @param endYear    The ending year of the range.
+     * @param endMonth   The ending month (1-indexed) of the range.
      * @return A list of transactions within the specified range.
      * @throws IllegalArgumentException if the month values are invalid.
      */
@@ -243,7 +257,7 @@ public class TransactionService {
         newSubTransaction.setCounterParty(parent.getCounterParty()); // Inherit counterParty
         newSubTransaction.setNotes(parent.getNotes()); // Inherit notes
         // Use the getter for Boolean type
-        newSubTransaction.setExcludeFromAccounting(parent.getExcludeFromAccounting()); 
+        newSubTransaction.setExcludeFromAccounting(parent.getExcludeFromAccounting());
         newSubTransaction.setCreatedAt(LocalDateTime.now());
         // Generate unique key BEFORE saving
         try {
@@ -287,26 +301,29 @@ public class TransactionService {
      *
      * @param childId The ID of the child transaction to merge.
      * @return The updated parent transaction.
-     * @throws ResponseStatusException If the child or parent transaction is not found.
-     * @throws IllegalArgumentException If the transaction with childId is not a child transaction (has no parentId).
+     * @throws ResponseStatusException  If the child or parent transaction is not
+     *                                  found.
+     * @throws IllegalArgumentException If the transaction with childId is not a
+     *                                  child transaction (has no parentId).
      */
     @Transactional
     public Transaction mergeTransaction(Long childId) {
         // 1. Fetch the child transaction
         Transaction child = transactionRepository.findById(childId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Child transaction with ID " + childId + " not found."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Child transaction with ID " + childId + " not found."));
 
         // 2. Check if it's actually a child
         Long parentId = child.getParentId();
         if (parentId == null) {
-            throw new IllegalArgumentException("Transaction with ID " + childId + " is not a child transaction and cannot be merged.");
+            throw new IllegalArgumentException(
+                    "Transaction with ID " + childId + " is not a child transaction and cannot be merged.");
         }
 
         // 3. Fetch the parent transaction
         Transaction parent = transactionRepository.findById(parentId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Parent transaction with ID " + parentId + " not found for child " + childId + "."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Parent transaction with ID " + parentId + " not found for child " + childId + "."));
 
         // 4. Calculate the new parent amount
         BigDecimal newParentAmount = parent.getAmount().add(child.getAmount());
