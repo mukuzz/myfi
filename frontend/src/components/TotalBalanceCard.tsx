@@ -25,14 +25,19 @@ function TotalBalanceCard() {
     const total = parentAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
 
     // Calculate total for SAVINGS accounts
-    const savingsTotal = parentAccounts
+    let savingsTotal = parentAccounts
       .filter(acc => acc.type === 'SAVINGS')
       .reduce((sum, acc) => sum + (acc.balance || 0), 0);
 
     // Calculate total for CREDIT_CARD accounts
-    const creditCardTotal = parentAccounts
+    let creditCardTotal = parentAccounts
       .filter(acc => acc.type === 'CREDIT_CARD')
       .reduce((sum, acc) => sum + (acc.balance || 0), 0);
+
+    if (creditCardTotal > 0) {
+      savingsTotal += creditCardTotal;
+      creditCardTotal = 0;
+    }
 
     return { totalBalance: total, savingsBalance: savingsTotal, creditCardBalance: creditCardTotal };
   }, [accounts]);

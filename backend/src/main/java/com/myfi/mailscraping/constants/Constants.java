@@ -15,6 +15,8 @@ public class Constants {
         {
             put(HDFC_PIXEL, new ArrayList<>(List.of("alerts@hdfcbank.net")));
             put(ONE_CARD, new ArrayList<>(List.of("no-reply@getonecard.app", "statement@getonecard.app")));
+            put(ICICI, new ArrayList<>(List.of("credit_cards@icicibank.com")));
+            put(HDFC, new ArrayList<>(List.of("alerts@hdfcbank.net")));
         }
     };
 

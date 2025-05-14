@@ -147,6 +147,9 @@ public class GmailService {
                                 Transaction transaction = mapExtractedTransactionDetailsToTransaction(messageId, extractedDetails.get());
                                 if (transaction != null) {
                                     try {
+                                        if (transaction.getType() == Transaction.TransactionType.CREDIT) {
+                                            transaction.setExcludeFromAccounting(true);    
+                                        }
                                         Transaction savedTransaction = transactionService.createTransaction(transaction);
                                         logger.info("Saved transaction with ID: {} for message ID: {}", savedTransaction.getId(), messageId);
                                         savedSuccessfullyCurrentMessage = true;

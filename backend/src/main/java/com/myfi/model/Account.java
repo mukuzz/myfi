@@ -52,6 +52,10 @@ public class Account {
     @Column(name = "parent_account_id")
     private Long parentAccountId;
 
+    @OneToMany(mappedBy = "parentAccountId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<Account> childAccounts;
+
     // Added relationship
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore
