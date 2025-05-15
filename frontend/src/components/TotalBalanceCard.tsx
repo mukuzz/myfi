@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { FiMoreHorizontal, FiDollarSign, FiCreditCard } from 'react-icons/fi'; // Using generic icons
-import { IconType } from 'react-icons';
+import { FiMoreHorizontal } from 'react-icons/fi'; // Using generic icons
 import Card from './Card';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAccounts as fetchAccountsRedux } from '../store/slices/accountsSlice';

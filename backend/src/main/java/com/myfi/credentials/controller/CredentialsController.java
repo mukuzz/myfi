@@ -38,7 +38,7 @@ public class CredentialsController {
     ) {
         log.info("Received request to save/update credentials for account number: {} and account name: {}", request.accountNumber, request.accountName);
         try {
-            credentialsService.saveCredentials(request.accountNumber, request.accountName, request.username, request.password, masterKey);
+            credentialsService.saveAccountCredentials(request.accountNumber, request.accountName, request.username, request.password, masterKey);
             log.info("Successfully saved/updated credentials for account number: {} and account name: {}", request.accountNumber, request.accountName);
             // Return 201 CREATED if new, 200 OK if updated - for simplicity, just 200 or 201.
             // The service itself handles create/update logic. Let's assume 201 for new/updated for simplicity.

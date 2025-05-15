@@ -11,12 +11,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "credentials", uniqueConstraints = {
+@Table(name = "account_credentials", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"accountNumber"})
 })
 @Data
 @NoArgsConstructor
-public class CredentialEntity {
+public class AccountCredentialEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,7 +37,7 @@ public class CredentialEntity {
     @Column(nullable = false)
     private String salt;
 
-    public CredentialEntity(String accountNumber, String accountName, String encryptedUsername, String encryptedPassword, String salt) {
+    public AccountCredentialEntity(String accountNumber, String accountName, String encryptedUsername, String encryptedPassword, String salt) {
         this.accountNumber = accountNumber;
         this.accountName = accountName;
         this.encryptedUsername = encryptedUsername;

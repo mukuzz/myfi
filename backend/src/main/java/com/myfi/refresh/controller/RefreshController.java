@@ -46,7 +46,7 @@ public class RefreshController {
 
         // Trigger Bank Scraping Asynchronously
         try {
-            List<AccountCredentials> credentialsList = credentialsService.getAllCredentials(masterKey);
+            List<AccountCredentials> credentialsList = credentialsService.getAllAccountCredentials(masterKey);
             if (credentialsList != null && !credentialsList.isEmpty()) {
                 log.debug("Fetched account credentials.");
                 bankScrapingService.submitScrapingTasks(credentialsList); // Assumed to be already async or handles async internally

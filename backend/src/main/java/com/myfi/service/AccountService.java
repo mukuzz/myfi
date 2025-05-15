@@ -104,7 +104,7 @@ public class AccountService {
                 .map(account -> {
                     accountRepository.delete(account);
                     try {
-                        credentialsService.deleteCredentials(account.getAccountNumber());
+                        credentialsService.deleteAccountCredentials(account.getAccountNumber());
                     } catch (Exception e) {
                         throw new RuntimeException("Failed to delete credentials for account number: " + account.getAccountNumber(), e);
                     }

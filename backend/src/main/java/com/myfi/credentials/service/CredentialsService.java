@@ -5,11 +5,19 @@ import java.util.List;
 
 public interface CredentialsService {
 
-    void saveCredentials(String accountNumber, String accountName, String username, String password, String masterKey) throws Exception;
+    // Methods for Account Specific Credentials
+    void saveAccountCredentials(String accountNumber, String accountName, String username, String password, String masterKey) throws Exception;
 
-    AccountCredentials getCredentials(String accountNumber, String masterKey) throws Exception;
+    AccountCredentials getAccountCredentials(String accountNumber, String masterKey) throws Exception;
 
-    List<AccountCredentials> getAllCredentials(String masterKey) throws Exception;
+    List<AccountCredentials> getAllAccountCredentials(String masterKey) throws Exception;
 
-    void deleteCredentials(String accountNumber) throws Exception;
+    void deleteAccountCredentials(String accountNumber) throws Exception;
+
+    // Methods for Generic Key-Value Credentials
+    void saveCredential(String key, String value, String masterKey) throws Exception;
+
+    String getCredential(String key, String masterKey) throws Exception;
+
+    void deleteCredential(String key) throws Exception;
 } 
