@@ -1,12 +1,13 @@
-package com.myfi.refreshTracker.dto;
+package com.myfi.refresh.dto;
 
-import com.myfi.refreshTracker.enums.RefreshJobStatus;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.myfi.refresh.enums.RefreshJobStatus;
 
 @Getter
 public class RefreshOperationProgress {

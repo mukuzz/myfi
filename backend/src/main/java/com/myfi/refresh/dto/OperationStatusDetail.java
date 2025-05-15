@@ -1,8 +1,9 @@
-package com.myfi.refreshTracker.dto;
+package com.myfi.refresh.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.myfi.refreshTracker.enums.RefreshJobStatus;
+import com.myfi.refresh.enums.RefreshJobStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

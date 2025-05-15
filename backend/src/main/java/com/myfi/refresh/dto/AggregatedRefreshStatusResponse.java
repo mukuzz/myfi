@@ -1,4 +1,4 @@
-package com.myfi.refreshTracker.dto;
+package com.myfi.refresh.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

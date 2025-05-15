@@ -1,13 +1,14 @@
-package com.myfi.refreshTracker.service.impl;
+package com.myfi.refresh.service.impl;
 
-import com.myfi.refreshTracker.dto.AggregatedRefreshStatusResponse;
-import com.myfi.refreshTracker.dto.OperationStatusDetail;
-import com.myfi.refreshTracker.dto.RefreshOperationProgress;
-import com.myfi.refreshTracker.enums.RefreshJobStatus;
-import com.myfi.refreshTracker.enums.RefreshType;
-import com.myfi.refreshTracker.service.RefreshTrackingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import com.myfi.refresh.dto.AggregatedRefreshStatusResponse;
+import com.myfi.refresh.dto.OperationStatusDetail;
+import com.myfi.refresh.dto.RefreshOperationProgress;
+import com.myfi.refresh.enums.RefreshJobStatus;
+import com.myfi.refresh.enums.RefreshType;
+import com.myfi.refresh.service.RefreshTrackingService;
 
 import java.util.Collections;
 import java.util.Map;

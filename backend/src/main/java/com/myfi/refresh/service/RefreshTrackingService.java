@@ -1,12 +1,12 @@
-package com.myfi.refreshTracker.service;
+package com.myfi.refresh.service;
 
 import java.util.Map;
 import java.util.Optional;
 
-import com.myfi.refreshTracker.dto.AggregatedRefreshStatusResponse;
-import com.myfi.refreshTracker.dto.RefreshOperationProgress;
-import com.myfi.refreshTracker.enums.RefreshJobStatus;
-import com.myfi.refreshTracker.enums.RefreshType;
+import com.myfi.refresh.dto.AggregatedRefreshStatusResponse;
+import com.myfi.refresh.dto.RefreshOperationProgress;
+import com.myfi.refresh.enums.RefreshJobStatus;
+import com.myfi.refresh.enums.RefreshType;
 
 public interface RefreshTrackingService {
 

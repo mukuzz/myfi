@@ -1,4 +1,4 @@
-package com.myfi.refreshTracker.enums;
+package com.myfi.refresh.enums;
 
 public enum RefreshJobStatus {
     PENDING,             // Operation is queued but not yet started
