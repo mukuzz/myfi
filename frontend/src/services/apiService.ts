@@ -607,4 +607,22 @@ export const fetchGoogleAuthUrl = async (masterKey: string): Promise<string> => 
   }
 };
 
+export async function setCredentialKeyValue(key: string, value: string, masterKey: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/credentials/key-value`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Master-Key': masterKey,
+      'accept': '*/*',
+    },
+    body: JSON.stringify({ key, value }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: 'Failed to set credential with no error details from server' }));
+    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+  }
+  // No specific content expected on success for this endpoint based on the curl command
+}
+
 // Add other API functions here as needed (e.g., fetchTransactions, createTransaction, deleteTransaction) 
