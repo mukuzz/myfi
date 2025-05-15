@@ -9,5 +9,5 @@ import java.util.Optional;
 @Repository
 public interface CredentialRepository extends JpaRepository<CredentialEntity, Long> {
     Optional<CredentialEntity> findByAccountNumber(String accountNumber);
-    void deleteByAccountNumber(String accountNumber); // Optional: if direct deletion by account number is needed
+    void deleteByAccountNumber(String accountNumber);
 } 

@@ -3,11 +3,11 @@ package com.myfi.bankscraping.service.impl;
 import com.myfi.bankscraping.model.AccountCredentials;
 import com.myfi.bankscraping.service.BankScrapper;
 import com.myfi.bankscraping.service.BankScrapingService;
-import com.myfi.refreshTracker.dto.RefreshOperationProgress;
-import com.myfi.refreshTracker.enums.RefreshJobStatus;
-import com.myfi.refreshTracker.enums.RefreshType;
-import com.myfi.refreshTracker.service.RefreshTrackingService;
 import com.myfi.model.Account;
+import com.myfi.refresh.dto.RefreshOperationProgress;
+import com.myfi.refresh.enums.RefreshJobStatus;
+import com.myfi.refresh.enums.RefreshType;
+import com.myfi.refresh.service.RefreshTrackingService;
 import com.myfi.service.AccountService;
 import com.myfi.service.SystemStatusService;
 
@@ -50,7 +50,7 @@ public class BankScrapingServiceImpl implements BankScrapingService {
 
     @Override
     public void submitScrapingTasks(List<AccountCredentials> credentialsList) {
-        log.info("Received request to submit scraping tasks for {} accounts.", credentialsList.size());
+        log.debug("Received request to submit scraping tasks for {} accounts.", credentialsList.size());
         refreshTrackingService.clearProgressForType(RefreshType.BANK_SCRAPING);
         for (AccountCredentials creds : credentialsList) {
             refreshTrackingService.initializeOperation(
@@ -60,7 +60,6 @@ public class BankScrapingServiceImpl implements BankScrapingService {
                     Optional.empty()
             );
         }
-        log.info("Submitting scraping tasks for {} accounts.", credentialsList.size());
         for (AccountCredentials creds : credentialsList) {
             Callable<Void> task = () -> {
                 scrapingTask(creds);

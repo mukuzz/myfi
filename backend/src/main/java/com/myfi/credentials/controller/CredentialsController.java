@@ -23,6 +23,8 @@ public class CredentialsController {
     public static class CredentialsRequest {
         @NotBlank(message = "Account number cannot be blank")
         public String accountNumber;
+        @NotBlank(message = "Account name cannot be blank")
+        public String accountName;
         @NotBlank(message = "Username cannot be blank")
         public String username;
         @NotBlank(message = "Password cannot be blank")
@@ -34,10 +36,10 @@ public class CredentialsController {
         @RequestHeader("X-Master-Key") @NotBlank String masterKey,
         @RequestBody @Valid CredentialsRequest request
     ) {
-        log.info("Received request to save/update credentials for account number: {}", request.accountNumber);
+        log.info("Received request to save/update credentials for account number: {} and account name: {}", request.accountNumber, request.accountName);
         try {
-            credentialsService.saveCredentials(request.accountNumber, request.username, request.password, masterKey);
-            log.info("Successfully saved/updated credentials for account number: {}", request.accountNumber);
+            credentialsService.saveCredentials(request.accountNumber, request.accountName, request.username, request.password, masterKey);
+            log.info("Successfully saved/updated credentials for account number: {} and account name: {}", request.accountNumber, request.accountName);
             // Return 201 CREATED if new, 200 OK if updated - for simplicity, just 200 or 201.
             // The service itself handles create/update logic. Let's assume 201 for new/updated for simplicity.
             return ResponseEntity.status(HttpStatus.CREATED).build();

@@ -28,9 +28,10 @@ public class CredentialsServiceImpl implements CredentialsService { // Renamed c
 
     @Override
     @Transactional
-    public void saveCredentials(String accountNumber, String username, String password, String masterKey) throws Exception {
-        log.info("Attempting to save credentials for account number: {} to database", accountNumber);
+    public void saveCredentials(String accountNumber, String accountName, String username, String password, String masterKey) throws Exception {
+        log.info("Attempting to save credentials for account number: {} and account name: {} to database", accountNumber, accountName);
         String salt = EncryptionUtil.generateSalt();
+        //TODO: enctypt the account name and account number as well later
         String encryptedUsername = EncryptionUtil.encrypt(username, masterKey, salt);
         String encryptedPassword = EncryptionUtil.encrypt(password, masterKey, salt);
 
@@ -42,12 +43,13 @@ public class CredentialsServiceImpl implements CredentialsService { // Renamed c
             credentialEntity.setEncryptedUsername(encryptedUsername);
             credentialEntity.setEncryptedPassword(encryptedPassword);
             credentialEntity.setSalt(salt); // Update salt as well, as new encryption uses new salt
+            credentialEntity.setAccountName(accountName); // Update account name
         } else {
-            log.info("Saving new credentials for account number: {}", accountNumber);
-            credentialEntity = new CredentialEntity(accountNumber, encryptedUsername, encryptedPassword, salt);
+            log.info("Saving new credentials for account number: {} and account name: {}", accountNumber, accountName);
+            credentialEntity = new CredentialEntity(accountNumber, accountName, encryptedUsername, encryptedPassword, salt);
         }
         credentialRepository.save(credentialEntity);
-        log.info("Successfully saved credentials for account number: {} to database", accountNumber);
+        log.info("Successfully saved credentials for account number: {} and account name: {} to database", accountNumber, accountName);
     }
 
     @Override
@@ -67,7 +69,7 @@ public class CredentialsServiceImpl implements CredentialsService { // Renamed c
                 .username(decryptedUsername)
                 .password(decryptedPassword)
                 .accountNumber(credentialEntity.getAccountNumber())
-                .accountName(credentialEntity.getAccountNumber()) // Assuming account number can be used as account name
+                .accountName(credentialEntity.getAccountName()) // Use actual account name from entity
                 .build();
     }
 
@@ -90,7 +92,7 @@ public class CredentialsServiceImpl implements CredentialsService { // Renamed c
                                 .username(decryptedUsername)
                                 .password(decryptedPassword)
                                 .accountNumber(entity.getAccountNumber())
-                                .accountName(entity.getAccountNumber()) // Use account number as account name
+                                .accountName(entity.getAccountName()) // Use actual account name from entity
                                 .build();
                     } catch (Exception e) {
                         log.error("Failed to decrypt password for account number: {} from database. Error: {}", entity.getAccountNumber(), e.getMessage());
@@ -101,5 +103,10 @@ public class CredentialsServiceImpl implements CredentialsService { // Renamed c
                 .collect(Collectors.toList());
         log.info("Successfully retrieved and decrypted {} credential sets from database.", allDecryptedCredentials.size());
         return allDecryptedCredentials;
+    }
+
+    @Override
+    public void deleteCredentials(String accountNumber) throws Exception {
+        credentialRepository.deleteByAccountNumber(accountNumber);
     }
 } 

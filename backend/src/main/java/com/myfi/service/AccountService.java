@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import com.myfi.credentials.service.CredentialsService;
 import com.myfi.mailscraping.constants.Constants;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,6 +27,9 @@ public class AccountService {
 
     @Autowired
     private AccountHistoryService accountHistoryService;
+
+    @Autowired
+    private CredentialsService credentialsService;
 
     @Autowired
     public AccountService(AccountRepository accountRepository, AccountHistoryService accountHistoryService) {
@@ -99,6 +103,11 @@ public class AccountService {
         return accountRepository.findById(id)
                 .map(account -> {
                     accountRepository.delete(account);
+                    try {
+                        credentialsService.deleteCredentials(account.getAccountNumber());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to delete credentials for account number: " + account.getAccountNumber(), e);
+                    }
                     return true;
                 }).orElse(false);
     }

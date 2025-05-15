@@ -1,6 +1,7 @@
 package com.myfi.service;
 
 import com.myfi.model.Account.AccountType;
+import com.myfi.mailscraping.constants.Constants;
 import com.myfi.model.Transaction;
 import com.myfi.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -73,7 +74,8 @@ public class TransactionService {
             return existingTransaction.get();
         }
 
-        if (transaction.getAccount() != null && transaction.getAccount().getType() == AccountType.CREDIT_CARD) {
+        if (transaction.getAccount() != null && transaction.getAccount().getType() == AccountType.CREDIT_CARD
+                && Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(transaction.getAccount().getName())) {
             accountService.addToBalance(transaction.getAccount(), transaction);
         }
         // If no duplicate, save the new transaction
@@ -142,7 +144,9 @@ public class TransactionService {
         return transactionRepository.findById(id)
                 .map(transaction -> {
                     if (transaction.getAccount() != null
-                            && transaction.getAccount().getType() == AccountType.CREDIT_CARD) {
+                            && transaction.getAccount().getType() == AccountType.CREDIT_CARD
+                            && Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS
+                                    .containsKey(transaction.getAccount().getName())) {
                         accountService.subtractFromBalance(transaction.getAccount(), transaction);
                     }
                     transactionRepository.delete(transaction);

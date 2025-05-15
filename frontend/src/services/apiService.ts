@@ -514,7 +514,7 @@ export const mergeTransactionApi = async (
  * Fetches the overall refresh status from the backend.
  */
 export const getOverallRefreshStatus = async (): Promise<AggregatedRefreshStatusResponseType> => {
-    const response = await fetch(`${API_BASE_URL}/status/overall`);
+    const response = await fetch(`${API_BASE_URL}/refresh/status`);
     if (!response.ok) {
         // You might want to parse the error response body if the API provides one
         const errorData = await response.json().catch(() => ({ message: "Failed to fetch refresh status" }));
@@ -523,31 +523,69 @@ export const getOverallRefreshStatus = async (): Promise<AggregatedRefreshStatus
     return response.json();
 };
 
-// --- Gmail Sync --- 
 
-export async function triggerGmailSync(): Promise<{ success: boolean; message: string; foundMessagesCount?: number }> {
-  console.log('Calling POST /api/v1/gmail/sync');
-  const response = await fetch(`${API_BASE_URL}/gmail/sync`, {
+/**
+ * Triggers a full refresh of all accounts using a master key.
+ * @param masterKey The master key for authorizing the refresh.
+ * @throws Error if the API call fails.
+ */
+export const triggerFullRefresh = async (masterKey: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/refresh/trigger-full-refresh`, {
     method: 'POST',
     headers: {
-        'Content-Type': 'application/json',
-         // Add authentication headers if required by your backend
+      'Content-Type': 'application/json', // Though body is empty, Content-Type might be expected
+      'X-Master-Key': masterKey,
+      'accept': '*/*',
     },
-    // No body needed for this specific request
+    body: '', // Empty body as per curl
+  });
+  await handleResponse(response); // Use existing handler
+  // No specific return value needed on success
+};
+
+/**
+ * Saves or updates user credentials on the server.
+ * @param accountNumber The account number.
+ * @param accountName The account name.
+ * @param username The username for the account.
+ * @param password The password for the account.
+ * @param masterKey The master key for the account.
+ * @throws Error if the API call fails.
+ */
+export const saveCredentials = async (
+  accountNumber: string,
+  accountName: string,
+  username: string,
+  password: string,
+  masterKey: string
+): Promise<void> => {
+  // TODO: The X-Master-Key should ideally be stored in an environment variable and not hardcoded.
+  // const MASTER_KEY = 'notsecure'; // Removed hardcoded key
+
+  const response = await fetch(`${API_BASE_URL}/credentials`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Master-Key': masterKey, // Use passed masterKey
+      'accept': '*/*',
+    },
+    body: JSON.stringify({
+      accountNumber,
+      accountName,
+      username,
+      password,
+    }),
   });
 
-  const responseBody = await response.json();
-
-  if (!response.ok) {
-      console.error('Gmail sync API call failed:', response.status, responseBody);
-      // Use the message from the backend response if available
-      const errorMessage = responseBody?.message || `HTTP error ${response.status}`;
-      throw new Error(errorMessage);
-  }
-
-  console.log('Gmail sync triggered successfully:', responseBody);
-  return responseBody; // Should match { success: boolean; message: string; foundMessagesCount?: number }
-}
+  // Using handleResponse to centralize error handling and JSON parsing logic
+  // If the response is not ok, handleResponse will throw an error.
+  // If the response is ok but no content (e.g. 204), it will return null.
+  // If the response is ok with JSON content, it will parse and return it.
+  // For a POST that might return 200/201 with no body or just a success message,
+  // we might not need the parsed body, but handleResponse is safe.
+  await handleResponse(response); 
+  // No specific return value needed if the server returns 200/201/204 on success.
+};
 
 /**
  * Fetches the Google Authentication URL from the backend.

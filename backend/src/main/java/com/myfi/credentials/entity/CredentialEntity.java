@@ -25,6 +25,9 @@ public class CredentialEntity {
     @Column(nullable = false, unique = true)
     private String accountNumber;
 
+    @Column(nullable = false)
+    private String accountName;
+
     @Column(nullable = false, length = 1024) // Assuming username might also be long once encrypted
     private String encryptedUsername;
 
@@ -34,8 +37,9 @@ public class CredentialEntity {
     @Column(nullable = false)
     private String salt;
 
-    public CredentialEntity(String accountNumber, String encryptedUsername, String encryptedPassword, String salt) {
+    public CredentialEntity(String accountNumber, String accountName, String encryptedUsername, String encryptedPassword, String salt) {
         this.accountNumber = accountNumber;
+        this.accountName = accountName;
         this.encryptedUsername = encryptedUsername;
         this.encryptedPassword = encryptedPassword;
         this.salt = salt;

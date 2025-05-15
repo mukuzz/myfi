@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @RestController
@@ -47,10 +48,10 @@ public class RefreshController {
         try {
             List<AccountCredentials> credentialsList = credentialsService.getAllCredentials(masterKey);
             if (credentialsList != null && !credentialsList.isEmpty()) {
-                log.info("Fetched {} account(s) credentials. Submitting for bank scraping.", credentialsList.size());
+                log.debug("Fetched account credentials.");
                 bankScrapingService.submitScrapingTasks(credentialsList); // Assumed to be already async or handles async internally
             } else {
-                log.info("No bank credentials found or list is empty. Skipping bank scraping.");
+                log.debug("No bank credentials found or list is empty. Skipping bank scraping.");
             }
         } catch (Exception e) {
             log.error("Error during bank scraping initiation (master key or credential retrieval failed): {}", e.getMessage(), e);
@@ -67,7 +68,7 @@ public class RefreshController {
         // Trigger Gmail Sync Asynchronously
         try {
             log.info("Triggering Gmail sync.");
-            gmailService.triggerAsyncSyncAndProcessEmails(); // This is the new @Async method
+            CompletableFuture.runAsync(() -> gmailService.syncAndProcessEmails());
         } catch (Exception e) {
             // This catch is unlikely to be hit if triggerAsyncSyncAndProcessEmails is truly async
             // and handles its own exceptions, but as a safeguard:

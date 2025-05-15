@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Account } from '../types';
 import { 
-  FiEye, FiEyeOff, FiSave, FiTrash2, 
-  FiAlertCircle, FiCheckCircle 
+  FiEye, FiEyeOff, FiSave, FiTrash2, FiCheckCircle 
 } from 'react-icons/fi';
-import { encryptCredentials } from '../utils/cryptoUtils';
 import PassphraseModal from './PassphraseModal';
 import { useAppDispatch } from '../store/hooks';
 import { deleteAccount as deleteAccountAction } from '../store/slices/accountsSlice';
 import CurrencyDisplay from './AmountDisplay';
-
-const NETBANKING_STORAGE_PREFIX = 'myfi_credential_';
-const PASSPHRASE_SET_KEY = 'myfi_passphrase_set';
+import { saveCredentials as saveCredentialsApi } from '../services/apiService';
 
 interface AccountDetailsModalProps {
   account: Account;
@@ -31,7 +27,6 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
   // States for form fields and UI
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [hasStoredCredentials, setHasStoredCredentials] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -40,29 +35,48 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
   
   // Passphrase states
   const [isPassphraseModalOpen, setIsPassphraseModalOpen] = useState<boolean>(false);
-  const [encryptionPassphrase, setEncryptionPassphrase] = useState<string>('');
-  const [hasPassphrase, setHasPassphrase] = useState<boolean>(false);
+  const [masterKeyInput, setMasterKeyInput] = useState<string>('');
 
-  // Check if credentials exist on mount
-  useEffect(() => {
-    const storageKey = `${NETBANKING_STORAGE_PREFIX}${account.id}`;
-    const hasCredentials = localStorage.getItem(storageKey) !== null;
-    setHasStoredCredentials(hasCredentials);
-    
-    // Check if passphrase has been set before
-    const hasPassphraseSet = localStorage.getItem(PASSPHRASE_SET_KEY) === 'true';
-    setHasPassphrase(hasPassphraseSet);
-  }, [account.id]);
-
-  // Security: Clear passphrase from memory on component unmount
   useEffect(() => {
     return () => {
-      if (encryptionPassphrase) {
-        setEncryptionPassphrase('');
-        console.log('Passphrase cleared on unmount');
+      if (masterKeyInput) {
+        setMasterKeyInput('');
+        console.log('Master key input cleared on unmount');
       }
     };
-  }, [encryptionPassphrase]);
+  }, [masterKeyInput]);
+
+  const proceedWithSaveCredentials = async (currentMasterKey: string) => {
+    if (!currentMasterKey) {
+      setErrorMessage('Master key is required to save credentials.');
+      setSaveStatus('error');
+      return;
+    }
+    setSaveStatus('saving');
+    setErrorMessage(null);
+
+    try {
+      await saveCredentialsApi(account.accountNumber, account.name, username, password, currentMasterKey);
+      setSaveStatus('success');
+      setPassword('');
+      setUsername('');
+      
+      setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
+      
+      setTimeout(() => {
+        setMasterKeyInput('');
+        console.log('Master key input cleared after successful save.');
+      }, 1000); 
+
+    } catch (error: any) {
+      console.error('Failed to save credentials:', error);
+      setSaveStatus('error');
+      const message = error?.message || 'Failed to save credentials. Please try again.';
+      setErrorMessage(message);
+    }
+  };
 
   const handleSaveCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,73 +86,18 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
       return;
     }
 
-    setSaveStatus('saving');
-    setErrorMessage(null);
-
-    // If we don't have a passphrase yet or it's not in memory, request it
-    if (!encryptionPassphrase) {
+    if (!masterKeyInput) {
       setIsPassphraseModalOpen(true);
     } else {
-      // We already have the passphrase in memory, use it directly
-      proceedWithEncryption(encryptionPassphrase);
+      proceedWithSaveCredentials(masterKeyInput);
     }
   };
 
   const handlePassphraseSubmit = (passphrase: string) => {
-    setEncryptionPassphrase(passphrase);
+    setMasterKeyInput(passphrase);
     setIsPassphraseModalOpen(false);
     
-    // Mark that a passphrase has been set
-    setHasPassphrase(true);
-    localStorage.setItem(PASSPHRASE_SET_KEY, 'true');
-    
-    // Proceed with encryption using the submitted passphrase
-    proceedWithEncryption(passphrase);
-  };
-
-  const proceedWithEncryption = async (passphrase: string) => {
-    try {
-      // Encrypt the credentials with the provided passphrase
-      const encryptedData = await encryptCredentials(username, password, passphrase);
-      
-      // Store in localStorage
-      const storageKey = `${NETBANKING_STORAGE_PREFIX}${account.id}`;
-      localStorage.setItem(storageKey, JSON.stringify(encryptedData));
-      
-      // Update UI
-      setSaveStatus('success');
-      setHasStoredCredentials(true);
-      
-      // Reset sensitive fields (keep username visible for UX)
-      setPassword('');
-      
-      // Reset status after a delay
-      setTimeout(() => {
-        setSaveStatus('idle');
-      }, 2000);
-      
-      // Clear the passphrase from memory after use
-      setTimeout(() => {
-        setEncryptionPassphrase('');
-        console.log('Passphrase cleared from memory for security');
-      }, 1000); // Clear after 1 second to ensure encryption completes
-    } catch (error) {
-      console.error('Failed to encrypt credentials:', error);
-      setSaveStatus('error');
-      setErrorMessage('Failed to encrypt credentials. Please try again.');
-    }
-  };
-
-  const handleDeleteCredentials = () => {
-    if (window.confirm('Are you sure you want to delete the stored credentials for this account?')) {
-      const storageKey = `${NETBANKING_STORAGE_PREFIX}${account.id}`;
-      localStorage.removeItem(storageKey);
-      setHasStoredCredentials(false);
-      setUsername('');
-      setPassword('');
-      setSaveStatus('idle');
-      setErrorMessage(null);
-    }
+    proceedWithSaveCredentials(passphrase);
   };
 
   const handleDeleteAccount = async () => {
@@ -192,17 +151,8 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
       {!account.isEmailScrapingSupported && (
         <div className="flex-1">
           <h3 className="text-lg font-medium mb-4">
-            {hasStoredCredentials ? 'Update Credentials' : 'Add Credentials'}
+            Set Credentials
           </h3>
-        
-        {hasStoredCredentials && (
-          <div className="mb-4 p-3 bg-info/10 border border-info/30 rounded-md">
-            <p className="text-sm flex items-center">
-              <FiAlertCircle className="mr-2 h-4 w-4 text-info" />
-              This account has encrypted credentials stored on your device.
-            </p>
-          </div>
-        )}
         
         <form onSubmit={handleSaveCredentials} className="space-y-4">
           {/* Username field */}
@@ -261,17 +211,6 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
           
           {/* Action buttons */}
           <div className="flex space-x-3 pt-4 pb-6">
-            {hasStoredCredentials && (
-              <button
-                type="button"
-                onClick={handleDeleteCredentials}
-                className="flex-1 py-2 px-4 border border-error text-error rounded-md hover:bg-error/10 flex items-center justify-center"
-              >
-                <FiTrash2 className="mr-2 h-4 w-4" />
-                Delete Credentials
-              </button>
-            )}
-            
             <button
               type="submit"
               disabled={saveStatus === 'saving'}
@@ -282,7 +221,7 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
               ) : (
                 <>
                   <FiSave className="mr-2 h-4 w-4" />
-                  {hasStoredCredentials ? 'Update Credentials' : 'Save Credentials'}
+                  Save Credentials
                 </>
               )}
             </button>
@@ -326,17 +265,11 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
         isOpen={isPassphraseModalOpen}
         onClose={() => {
           setIsPassphraseModalOpen(false);
-          
-          // Also clear passphrase if modal is closed without submission
-          if (encryptionPassphrase) {
-            setEncryptionPassphrase('');
+          if (saveStatus === 'saving') {
+             setSaveStatus('idle');
           }
-          
-          // Reset save status if modal is closed
-          setSaveStatus('idle');
         }}
         onPassphraseSubmit={handlePassphraseSubmit}
-        existingPassphrase={hasPassphrase}
       />
     </div>
   );

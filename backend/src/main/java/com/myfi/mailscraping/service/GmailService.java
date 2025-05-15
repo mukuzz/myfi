@@ -16,9 +16,9 @@ import org.springframework.stereotype.Service;
 
 import com.myfi.model.Account;
 import com.myfi.model.Transaction;
-import com.myfi.refreshTracker.enums.RefreshJobStatus;
-import com.myfi.refreshTracker.enums.RefreshType;
-import com.myfi.refreshTracker.service.RefreshTrackingService;
+import com.myfi.refresh.enums.RefreshJobStatus;
+import com.myfi.refresh.enums.RefreshType;
+import com.myfi.refresh.service.RefreshTrackingService;
 import com.myfi.service.AccountService;
 import com.myfi.service.TransactionService;
 import com.myfi.mailscraping.service.OpenAIService.ExtractedTransactionDetails;
@@ -67,7 +67,7 @@ public class GmailService {
     @Autowired
     private RefreshTrackingService refreshTrackingService;
 
-    public List<String> syncAndProcessEmails() throws IOException {
+    public List<String> syncAndProcessEmails() {
         List<String> allSuccessfullyProcessedMessageIds = new ArrayList<>();
 
         logger.info("Starting Gmail sync process for all configured credit card accounts.");
@@ -91,7 +91,7 @@ public class GmailService {
             String accountNumber = account.getAccountNumber();
             String accountOperationId = String.valueOf(accountNumber);
             refreshTrackingService.initializeOperation(RefreshType.GMAIL_SYNC, accountOperationId,
-                    "Gmail Sync for " + account.getName(), Optional.empty());
+                    account.getName(), Optional.empty());
         }
 
         for (Account account : creditCardAccounts) {
