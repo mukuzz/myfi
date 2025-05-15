@@ -90,7 +90,7 @@ function TotalBalanceCard() {
 
   return (
     <Card>
-      <div className="p-4 bg-secondary">
+      <div className="p-6 bg-secondary">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center text-sm text-muted-foreground font-medium">

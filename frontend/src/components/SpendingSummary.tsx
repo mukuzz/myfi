@@ -137,14 +137,14 @@ const SpendingSummary: React.FC = () => {
 
     return (
         <Card className="flex flex-col cursor-pointer" onClick={handleCardClick}>
-            <header className="pl-4 pr-2 border-b border-border flex items-center justify-between flex-shrink-0">
+            <header className="pl-6 pr-4 border-b border-border flex items-center justify-between flex-shrink-0">
                 <h1 className="text-xs font-bold">Spending Summary</h1>
                 <button className="text-muted-foreground p-2" onClick={(e) => e.stopPropagation()}>
                     <FiMoreHorizontal size={20} />
                 </button>
             </header>
 
-            <div className="p-4 space-y-4 flex-grow overflow-y-auto bg-secondary">
+            <div className="p-6 space-y-4 flex-grow overflow-y-auto bg-secondary">
                 <div className="text-xs font-semibold text-muted-foreground">
                     {monthYear}
                 </div>

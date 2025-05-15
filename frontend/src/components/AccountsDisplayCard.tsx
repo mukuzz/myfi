@@ -114,7 +114,7 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
 
   return (
     <Card>
-      <header className="top-0 z-10 bg-background pl-4 border-b border-border flex items-center justify-between">
+      <header className="top-0 z-10 bg-background pl-6 pr-2 border-b border-border flex items-center justify-between">
         <h1 className="text-xs font-bold">{title}</h1>
         <button onClick={openSheet} className="text-primary text-lg p-2">
           <FiPlus />

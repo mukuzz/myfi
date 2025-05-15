@@ -84,7 +84,7 @@ const MonthlyCashFlowCard: React.FC = () => {
             className="flex flex-col cursor-pointer"
             onClick={handleCardClick}
         >
-            <header className="pl-4 pr-2 border-b border-border flex items-center justify-between flex-shrink-0">
+            <header className="pl-6 pr-4 border-b border-border flex items-center justify-between flex-shrink-0">
                 {/* Display only Month Name in the header */}
                 <h1 className="text-xs font-bold">Cash Flow</h1>
                 <button
@@ -99,27 +99,28 @@ const MonthlyCashFlowCard: React.FC = () => {
             </header>
 
             {/* Content Area */}
-            <div className="p-4 space-y-4 flex-grow overflow-y-auto bg-secondary">
+            <div className="p-6 space-y-4 flex-grow overflow-y-auto bg-secondary">
                 <div className="text-xs font-semibold text-muted-foreground">
                     {monthYear}
                 </div>
 
                 {isLoading && <MonthlyCashFlowSkeleton />}
                 {!isLoading && (
-                    <div className="space-y-2 font-medium">
-                        <div className="flex justify-between">
-                            <span>Incoming</span>
-                            <CurrencyDisplay amount={incoming} type="CREDIT" showFraction={false} />
+                    <div className="flex flex-row justify-between align-top font-medium flex-wrap gap-4">
+                        <div className="flex flex-col justify-between">
+                            <span className="mb-1">Incoming</span>
+                            <hr />
+                            <CurrencyDisplay className="text-xl mt-2 font-semibold" amount={incoming} type="CREDIT" showFraction={false} smallRupeeSymbol={true} />
                         </div>
-                        <hr />
-                        <div className="flex justify-between">
-                            <span>Outgoing</span>
-                            <CurrencyDisplay amount={outgoing} type="DEBIT" showFraction={false} />
+                        <div className="flex flex-col justify-between">
+                            <span className="mb-1">Outgoing</span>
+                            <hr />
+                            <CurrencyDisplay className="text-xl mt-2 font-semibold" amount={outgoing} type="DEBIT" showFraction={false} smallRupeeSymbol={true} />
                         </div>
-                        <hr />
-                        <div className="flex justify-between">
-                            <span>Invested</span>
-                            <CurrencyDisplay amount={invested} showType={false} showFraction={false} />
+                        <div className="flex flex-col justify-between">
+                            <span className="mb-1">Invested</span>
+                            <hr />
+                            <CurrencyDisplay className="text-xl mt-2 font-semibold" amount={invested} showType={false} showFraction={false} smallRupeeSymbol={true} />
                         </div>
                     </div>
                 )}
