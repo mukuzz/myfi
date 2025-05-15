@@ -18,6 +18,7 @@ import TransactionsScreen from './screens/TransactionsScreen';
 import HomeScreen from './screens/HomeScreen';
 import SpendingSummaryScreen from './screens/SpendingSummaryScreen';
 import RefreshBar from './components/RefreshBar';
+import SettingsScreen from './screens/SettingsScreen';
 
 
 // Keep DesktopAppHome as it's used in conditional rendering below
@@ -49,6 +50,11 @@ const HomeRouteElement = () => {
 const TransactionsRouteElement = () => {
   const isMobile = useIsMobile();
   return isMobile ? <TransactionsScreen /> : <DesktopAppHome />;
+}
+
+// Component to conditionally render Settings or DesktopAppHome (or a new DesktopSettings view if needed)
+const SettingsRouteElement = () => {
+  return <SettingsScreen />;
 }
 
 // Root layout component incorporating logic from old AppContent
@@ -99,6 +105,10 @@ const router = createMemoryRouter([
       {
         path: "cash-flow",
         element: <CashFlowDetailsScreen />,
+      },
+      {
+        path: "settings",
+        element: <SettingsRouteElement />,
       },
     ],
   },

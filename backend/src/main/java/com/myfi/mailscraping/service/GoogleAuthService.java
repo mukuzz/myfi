@@ -84,7 +84,8 @@ public class GoogleAuthService {
      *
      * @return The authorization URL string.
      */
-    public String getAuthorizationUrl() {
+    public String getAuthorizationUrl(String masterKey) {
+        credentialsService.setMasterKey(masterKey);
         if (flow == null) {
             try {
                 initGoogleAuthorizationCodeFlow(httpTransport);

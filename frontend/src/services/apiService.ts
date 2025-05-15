@@ -589,11 +589,16 @@ export const saveCredentials = async (
 
 /**
  * Fetches the Google Authentication URL from the backend.
+ * @param masterKey The master key to be sent in the header.
  * @returns A promise that resolves with the URL string.
  * @throws Error if the fetch fails or the URL is not received.
  */
-export const fetchGoogleAuthUrl = async (): Promise<string> => {
-  const response = await fetch(`${API_BASE_URL}/auth/google/url`);
+export const fetchGoogleAuthUrl = async (masterKey: string): Promise<string> => {
+  const response = await fetch(`${API_BASE_URL}/auth/google/url`, {
+    headers: {
+      'X-Master-Key': masterKey,
+    },
+  });
   const data = await handleResponse(response); // Use existing handler
   if (data && data.url) {
     return data.url;
