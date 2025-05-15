@@ -8,7 +8,6 @@ import com.myfi.credentials.repository.GenericCredentialRepository;
 import com.myfi.utils.EncryptionUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.context.annotation.Primary; // No longer needed
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,11 +17,16 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-// @Primary // No longer needed as it's the only implementation
 public class CredentialsServiceImpl implements CredentialsService { // Renamed class
 
     private final CredentialRepository credentialRepository;
     private final GenericCredentialRepository genericCredentialRepository;
+
+    private String masterKey;
+
+    public void setMasterKey(String masterKey) {
+        this.masterKey = masterKey;
+    }
 
     @Autowired
     public CredentialsServiceImpl(CredentialRepository credentialRepository, GenericCredentialRepository genericCredentialRepository) { // Updated constructor
@@ -143,6 +147,9 @@ public class CredentialsServiceImpl implements CredentialsService { // Renamed c
     @Override
     @Transactional(readOnly = true)
     public String getCredential(String key, String masterKey) throws Exception {
+        if (masterKey == null || masterKey.isBlank()) {
+            masterKey = this.masterKey;
+        }
         log.info("Attempting to retrieve generic credential for key: {} from database", key);
         Optional<GenericCredentialEntity> credentialEntityOpt = genericCredentialRepository.findByCredentialKey(key);
         if (credentialEntityOpt.isEmpty()) {

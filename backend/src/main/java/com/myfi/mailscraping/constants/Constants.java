@@ -24,4 +24,9 @@ public class Constants {
             put(AccountType.CREDIT_CARD, new ArrayList<>(List.of(HDFC, HDFC_PIXEL, ONE_CARD, ICICI)));
         }
     };
+
+    public static final String GOOGLE_OAUTH_CLIENT_ID_KEY = "GOOGLE_OAUTH_CLIENT_ID";
+    public static final String GOOGLE_OAUTH_CLIENT_SECRET_KEY = "GOOGLE_OAUTH_CLIENT_SECRET";
+    public static final String OPENAI_API_KEY_KEY = "OPENAI_API_KEY";
+    public static final String APP_HOST_URL_KEY = "APP_HOST_URL";
 }

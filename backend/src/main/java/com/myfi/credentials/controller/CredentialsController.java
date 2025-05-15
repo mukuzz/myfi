@@ -31,7 +31,15 @@ public class CredentialsController {
         public String password;
     }
 
-    @PostMapping
+    // DTO for saving/updating generic key-value credentials
+    public static class GenericCredentialRequest {
+        @NotBlank(message = "Key cannot be blank")
+        public String key;
+        @NotBlank(message = "Value cannot be blank")
+        public String value;
+    }
+
+    @PostMapping("/account")
     public ResponseEntity<Void> saveOrUpdateCredentials(
         @RequestHeader("X-Master-Key") @NotBlank String masterKey,
         @RequestBody @Valid CredentialsRequest request
@@ -49,4 +57,22 @@ public class CredentialsController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @PostMapping("/key-value")
+    public ResponseEntity<Void> saveOrUpdateGenericCredential(
+        @RequestHeader("X-Master-Key") @NotBlank String masterKey,
+        @RequestBody @Valid GenericCredentialRequest request
+    ) {
+        log.info("Received request to save/update generic credential for key: {}", request.key);
+        try {
+            credentialsService.saveCredential(request.key, request.value, masterKey);
+            log.info("Successfully saved/updated generic credential for key: {}", request.key);
+            return ResponseEntity.status(HttpStatus.CREATED).build(); // 201 for new/updated
+        } catch (Exception e) {
+            log.error("Error saving/updating generic credential for key {}: {}", request.key, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    
 } 

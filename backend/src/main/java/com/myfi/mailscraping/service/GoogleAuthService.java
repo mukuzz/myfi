@@ -5,20 +5,24 @@ import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.auth.oauth2.AuthorizationCodeRequestUrl;
 import com.google.api.client.auth.oauth2.TokenResponse;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
+import com.google.api.services.gmail.GmailScopes;
+import com.myfi.credentials.service.CredentialsService;
+import com.myfi.mailscraping.constants.Constants;
 import com.myfi.mailscraping.model.GoogleOAuthToken;
 import com.myfi.mailscraping.repository.GoogleOAuthTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Optional;
 
 @Service
@@ -27,7 +31,6 @@ public class GoogleAuthService {
     private static final Logger logger = LoggerFactory.getLogger(GoogleAuthService.class);
     private static final Long FIXED_CREDENTIAL_ID = 1L;
 
-    @Autowired
     private GoogleAuthorizationCodeFlow flow;
 
     @Autowired
@@ -39,17 +42,42 @@ public class GoogleAuthService {
     @Autowired
     private GoogleOAuthTokenRepository tokenRepository;
 
-    @Value("${google.oauth.client.id}")
-    private String clientId;
+    @Autowired
+    private CredentialsService credentialsService;
 
-    @Value("${google.oauth.client.secret}")
-    private String clientSecret;
-
-    @Value("${google.oauth.redirect.uri}")
     private String redirectUri;
 
     private String accessToken = null;
     private Instant accessTokenExpiry = null;
+
+    public void initGoogleAuthorizationCodeFlow(HttpTransport httpTransport) throws IOException {
+
+        String clientId, clientSecret;
+        try {
+            clientId = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_ID_KEY, null);
+            clientSecret = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_SECRET_KEY, null);
+            String appHostUrl = credentialsService.getCredential(Constants.APP_HOST_URL_KEY, null);
+            redirectUri = appHostUrl + "/api/v1/auth/google/callback";
+        } catch (Exception e) {
+            logger.error("No secret found for decrypting Google OAuth client ID and secret: {}", e.getMessage(), e);
+            throw new IOException("Failed to decrypt Google OAuth client ID and secret.", e);
+        }
+
+        GoogleClientSecrets.Details web = new GoogleClientSecrets.Details();
+        web.setClientId(clientId);
+        web.setClientSecret(clientSecret);
+        web.setRedirectUris(Collections.singletonList(redirectUri));
+        web.setAuthUri("https://accounts.google.com/o/oauth2/auth");
+        web.setTokenUri("https://oauth2.googleapis.com/token");
+
+        GoogleClientSecrets clientSecrets = new GoogleClientSecrets().setWeb(web);
+
+        this.flow = new GoogleAuthorizationCodeFlow.Builder(
+                httpTransport, jsonFactory, clientSecrets, Collections.singletonList(GmailScopes.GMAIL_READONLY))
+                .setAccessType("offline") // Necessary to get refresh token
+                .setApprovalPrompt("force") // Ensures refresh token is sent every time (useful for dev)
+                .build();
+    }
 
     /**
      * Generates the Google OAuth 2.0 authorization URL.
@@ -57,6 +85,14 @@ public class GoogleAuthService {
      * @return The authorization URL string.
      */
     public String getAuthorizationUrl() {
+        if (flow == null) {
+            try {
+                initGoogleAuthorizationCodeFlow(httpTransport);
+            } catch (IOException e) {
+                logger.error("Error initializing Google Authorization Code Flow: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to initialize Google Authorization Code Flow.", e);
+            }
+        }
         AuthorizationCodeRequestUrl authorizationUrl = flow.newAuthorizationUrl();
         authorizationUrl.setRedirectUri(redirectUri);
         // AccessType and ApprovalPrompt are set on the flow itself during configuration
@@ -68,6 +104,14 @@ public class GoogleAuthService {
 
     @Transactional
     public boolean exchangeCodeForTokensAndStore(String code) {
+        if (flow == null) {
+            try {
+                initGoogleAuthorizationCodeFlow(httpTransport);
+            } catch (IOException e) {
+                logger.error("Error initializing Google Authorization Code Flow: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to initialize Google Authorization Code Flow.", e);
+            }
+        }
         try {
             logger.info("Exchanging authorization code for tokens via GoogleAuthService.");
             TokenResponse tokenResponse = flow.newTokenRequest(code)
@@ -113,7 +157,7 @@ public class GoogleAuthService {
     public void setRefreshToken(String token) {
         GoogleOAuthToken credential = tokenRepository.findById(FIXED_CREDENTIAL_ID)
                 .orElse(new GoogleOAuthToken());
-        
+
         credential.setRefreshToken(token);
         tokenRepository.save(credential);
         logger.info("Stored/Updated Google OAuth refresh token in database.");
@@ -123,8 +167,8 @@ public class GoogleAuthService {
     public String getRefreshToken() {
         Optional<GoogleOAuthToken> credentialOpt = tokenRepository.findById(FIXED_CREDENTIAL_ID);
         if (credentialOpt.isEmpty()) {
-             logger.warn("Attempted to retrieve Google OAuth refresh token from DB, but none is stored.");
-             return null;
+            logger.warn("Attempted to retrieve Google OAuth refresh token from DB, but none is stored.");
+            return null;
         }
         return credentialOpt.get().getRefreshToken();
     }
@@ -140,13 +184,14 @@ public class GoogleAuthService {
             tokenRepository.deleteById(FIXED_CREDENTIAL_ID);
             logger.warn("Deleted Google OAuth refresh token from database.");
         } else {
-             logger.warn("Attempted to clear Google OAuth refresh token from DB, but none was found.");
+            logger.warn("Attempted to clear Google OAuth refresh token from DB, but none was found.");
         }
     }
 
     /**
      * Gets the stored access token.
      * Note: Does not check for expiry. Use getValidAccessToken() for that.
+     * 
      * @return The stored access token, or null if none is stored.
      */
     public String getAccessToken() {
@@ -154,11 +199,14 @@ public class GoogleAuthService {
     }
 
     /**
-     * Checks if the stored access token is likely still valid (based on stored expiry).
+     * Checks if the stored access token is likely still valid (based on stored
+     * expiry).
+     * 
      * @return true if an access token exists and hasn't expired, false otherwise.
      */
     public boolean isAccessTokenValid() {
-        return this.accessToken != null && this.accessTokenExpiry != null && Instant.now().isBefore(this.accessTokenExpiry);
+        return this.accessToken != null && this.accessTokenExpiry != null
+                && Instant.now().isBefore(this.accessTokenExpiry);
     }
 
     public void clearAccessToken() {
@@ -179,6 +227,15 @@ public class GoogleAuthService {
             throw new IllegalStateException("Cannot get Google credentials: No refresh token available in database.");
         }
 
+        String clientId, clientSecret;
+        try {
+            clientId = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_ID_KEY, null);
+            clientSecret = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_SECRET_KEY, null);
+        } catch (Exception e) {
+            logger.error("No secret found for decrypting Google OAuth client ID and secret: {}", e.getMessage(), e);
+            throw new IOException("Failed to decrypt Google OAuth client ID and secret.", e);
+        }
+
         Credential credential = new GoogleCredential.Builder()
                 .setClientSecrets(clientId, clientSecret)
                 .setJsonFactory(jsonFactory)
@@ -193,19 +250,20 @@ public class GoogleAuthService {
                 this.accessToken = credential.getAccessToken();
                 Long expiresIn = credential.getExpiresInSeconds();
                 this.accessTokenExpiry = (expiresIn == null) ? null : Instant.now().plusSeconds(expiresIn);
-                 logger.info("Updated stored access token info after refresh.");
+                logger.info("Updated stored access token info after refresh.");
             } else {
-                 logger.info("Google token refresh was not needed or did not happen.");
+                logger.info("Google token refresh was not needed or did not happen.");
             }
         } catch (TokenResponseException e) {
             if (e.getDetails() != null && e.getDetails().getError().equals("invalid_grant")) {
-                logger.error("Error refreshing Google token (invalid_grant - likely revoked). Clearing stored DB token.", e);
+                logger.error(
+                        "Error refreshing Google token (invalid_grant - likely revoked). Clearing stored DB token.", e);
                 clearRefreshToken();
                 clearAccessToken();
                 throw new IOException("Failed to refresh token: Invalid grant. Please re-authenticate.", e);
             } else {
-                 logger.error("Error refreshing Google token: {}", e.getMessage(), e);
-                 throw e;
+                logger.error("Error refreshing Google token: {}", e.getMessage(), e);
+                throw e;
             }
         } catch (IOException e) {
             logger.error("IOException during Google token refresh: {}", e.getMessage(), e);
@@ -215,4 +273,4 @@ public class GoogleAuthService {
         logger.info("Successfully obtained Google Credential using DB refresh token.");
         return credential;
     }
-} 
+}

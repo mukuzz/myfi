@@ -20,4 +20,6 @@ public interface CredentialsService {
     String getCredential(String key, String masterKey) throws Exception;
 
     void deleteCredential(String key) throws Exception;
+
+    void setMasterKey(String masterKey);
 } 

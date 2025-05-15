@@ -562,7 +562,7 @@ export const saveCredentials = async (
   // TODO: The X-Master-Key should ideally be stored in an environment variable and not hardcoded.
   // const MASTER_KEY = 'notsecure'; // Removed hardcoded key
 
-  const response = await fetch(`${API_BASE_URL}/credentials`, {
+  const response = await fetch(`${API_BASE_URL}/credentials/account`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
