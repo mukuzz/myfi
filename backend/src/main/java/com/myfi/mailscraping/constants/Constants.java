@@ -11,12 +11,10 @@ public class Constants {
     public static final String HDFC_PIXEL = "HDFC Pixel";
     public static final String ONE_CARD = "OneCard";
     public static final String ICICI = "ICICI";
-    public static final Map<String, List<String>> CC_SUPPORTED_BANK_EMAILS = new HashMap<String, List<String>>() {
+    public static final Map<String, List<String>> CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS = new HashMap<String, List<String>>() {
         {
             put(HDFC_PIXEL, new ArrayList<>(List.of("alerts@hdfcbank.net")));
             put(ONE_CARD, new ArrayList<>(List.of("no-reply@getonecard.app", "statement@getonecard.app")));
-            put(ICICI, new ArrayList<>(List.of("credit_cards@icicibank.com")));
-            put(HDFC, new ArrayList<>(List.of("alerts@hdfcbank.net")));
         }
     };
 

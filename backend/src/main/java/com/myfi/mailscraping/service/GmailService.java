@@ -74,7 +74,8 @@ public class GmailService {
 
         List<Account> allAccounts = accountService.getAllAccounts();
         List<Account> creditCardAccounts = allAccounts.stream()
-                .filter(acc -> acc.getType() == Account.AccountType.CREDIT_CARD)
+                .filter(acc -> acc.getType() == Account.AccountType.CREDIT_CARD
+                        && Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(acc.getName()))
                 .collect(java.util.stream.Collectors.toList());
 
         if (creditCardAccounts == null || creditCardAccounts.isEmpty()) {
@@ -92,7 +93,7 @@ public class GmailService {
             refreshTrackingService.initializeOperation(RefreshType.GMAIL_SYNC, accountOperationId,
                     "Gmail Sync for " + account.getName(), Optional.empty());
         }
-         
+
         for (Account account : creditCardAccounts) {
             accountsProcessedCount++;
             String accountName = account.getName();
@@ -100,7 +101,8 @@ public class GmailService {
             String accountNumber = account.getAccountNumber();
             String accountOperationId = String.valueOf(accountNumber);
 
-            logger.info("Preparing to sync account: {} (ID: {}, AccountNumber: {}) - {}/{} of total accounts.", accountName,
+            logger.info("Preparing to sync account: {} (ID: {}, AccountNumber: {}) - {}/{} of total accounts.",
+                    accountName,
                     accountOperationId, accountNumber, accountsProcessedCount, totalAccounts);
 
             Credential credential;
@@ -129,7 +131,7 @@ public class GmailService {
                 continue; // Move to the next account
             }
 
-            if (!Constants.CC_SUPPORTED_BANK_EMAILS.containsKey(accountName)) {
+            if (!Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(accountName)) {
                 logger.warn(
                         "Account '{}' (ID: {}) is not configured in Constants.CC_SUPPORTED_BANK_EMAILS. Skipping sync for this account.",
                         accountName, accountOperationId);
@@ -138,7 +140,7 @@ public class GmailService {
                 continue;
             }
 
-            List<String> senderEmails = Constants.CC_SUPPORTED_BANK_EMAILS.get(accountName);
+            List<String> senderEmails = Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.get(accountName);
             if (senderEmails == null || senderEmails.isEmpty()) {
                 logger.warn("No sender emails configured for account '{}' (ID: {}). Skipping sync for this account.",
                         accountName, accountOperationId);
@@ -174,21 +176,22 @@ public class GmailService {
                 } else {
                     LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHoursMinutes(5, 30));
                     LocalDateTime threeMonthsAgo = now.minusMonths(3);
-                    
+
                     // Calculate the statement generation date ~3 months ago
                     Integer statementGenerationDay = account.getCcStatementGenerationDay();
                     statementGenerationDay = statementGenerationDay == null ? 28 : statementGenerationDay;
                     LocalDateTime statementDate = threeMonthsAgo.withDayOfMonth(statementGenerationDay)
-                        .withHour(0)
-                        .withMinute(0)
-                        .withSecond(0)
-                        .withNano(0);
-                    
+                            .withHour(0)
+                            .withMinute(0)
+                            .withSecond(0)
+                            .withNano(0);
+
                     LocalDateTime oneDayAfterStatementDate = statementDate.plusDays(1);
-                    
+
                     queryBuilder.append(" after:")
-                        .append(oneDayAfterStatementDate.toEpochSecond(ZoneOffset.ofHoursMinutes(5, 30)));
-                    logger.info("3 months ago epoch: {}", oneDayAfterStatementDate.toEpochSecond(ZoneOffset.ofHoursMinutes(5, 30)));
+                            .append(oneDayAfterStatementDate.toEpochSecond(ZoneOffset.ofHoursMinutes(5, 30)));
+                    logger.info("3 months ago epoch: {}",
+                            oneDayAfterStatementDate.toEpochSecond(ZoneOffset.ofHoursMinutes(5, 30)));
                 }
                 String finalQuery = queryBuilder.toString();
                 logger.info("Executing Gmail search query for account '{}' (OpID: {}): [{}]", accountName,
@@ -200,9 +203,9 @@ public class GmailService {
 
                 do {
                     response = service.users().messages().list(USER_ID)
-                                    .setQ(finalQuery)
-                                    .setPageToken(nextPageToken)
-                                    .execute();
+                            .setQ(finalQuery)
+                            .setPageToken(nextPageToken)
+                            .execute();
                     if (response.getMessages() != null && !response.getMessages().isEmpty()) {
                         allMessages.addAll(response.getMessages());
                     }
@@ -237,10 +240,13 @@ public class GmailService {
                     LocalDateTime messageDateTime = null;
 
                     if (processedGmailMessagesTrackerService.isMessageProcessed(messageId, accountNumber)) {
-                        logger.info("Skipping already processed message ID: {} for account '{}' (OpID: {}, AccountNumber: {})", messageId,
+                        logger.info(
+                                "Skipping already processed message ID: {} for account '{}' (OpID: {}, AccountNumber: {})",
+                                messageId,
                                 accountName, accountOperationId, accountNumber);
                     } else {
-                        logger.info("Processing message ID: {} for account '{}' (OpID: {}, AccountNumber: {})", messageId, accountName,
+                        logger.info("Processing message ID: {} for account '{}' (OpID: {}, AccountNumber: {})",
+                                messageId, accountName,
                                 accountOperationId, accountNumber);
                         try {
                             Message fullMessage = service.users().messages().get(USER_ID, messageId).setFormat("full")
@@ -274,11 +280,13 @@ public class GmailService {
                                             } catch (IllegalArgumentException e) {
                                                 logger.warn(
                                                         "Failed to save transaction (duplicate/validation) for message ID {} (Account: {}, OpID: {}, AccountNumber: {}): {}",
-                                                        messageId, accountName, accountOperationId, accountNumber, e.getMessage());
+                                                        messageId, accountName, accountOperationId, accountNumber,
+                                                        e.getMessage());
                                             } catch (Exception e) {
                                                 logger.error(
                                                         "Error saving transaction for message ID {} (Account: {}, OpID: {}, AccountNumber: {}): {}",
-                                                        messageId, accountName, accountOperationId, accountNumber, e.getMessage(), e);
+                                                        messageId, accountName, accountOperationId, accountNumber,
+                                                        e.getMessage(), e);
                                             }
                                         } else {
                                             logger.warn(
@@ -306,10 +314,12 @@ public class GmailService {
                             // This error is for a single message, not the whole account operation, so we
                             // don't fail the operation here.
                         } catch (Exception e) {
-                            logger.error("Unexpected error processing message ID {} (Account: {}, OpID: {}, AccountNumber: {}): {}",
+                            logger.error(
+                                    "Unexpected error processing message ID {} (Account: {}, OpID: {}, AccountNumber: {}): {}",
                                     messageId, accountName, accountOperationId, accountNumber, e.getMessage(), e);
                         } finally {
-                            processedGmailMessagesTrackerService.saveProcessedMessage(messageId, accountNumber, messageDateTime);
+                            processedGmailMessagesTrackerService.saveProcessedMessage(messageId, accountNumber,
+                                    messageDateTime);
                             if (savedSuccessfullyCurrentMessage) {
                                 successfullyProcessedMessageIdsForAccount.add(messageId);
                             }
@@ -386,7 +396,7 @@ public class GmailService {
                 return null;
             }
         }
-        if (!Constants.CC_SUPPORTED_BANK_EMAILS.keySet().contains(account.getName())) {
+        if (!Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.keySet().contains(account.getName())) {
             logger.info("Account not supported by email scraper: {}", details);
             return null;
         }
