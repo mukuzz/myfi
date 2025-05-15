@@ -97,13 +97,6 @@
         </dependency>
         <!-- End Google API Client -->
 
-        <!-- Dotenv for loading .env files -->
-        <dependency>
-            <groupId>io.github.cdimascio</groupId>
-            <artifactId>dotenv-java</artifactId>
-            <version>3.0.0</version> <!-- Use a recent version -->
-        </dependency>
-
 
         <!-- Added for OpenAI -->
         <dependency>
