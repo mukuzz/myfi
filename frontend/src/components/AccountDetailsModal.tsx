@@ -189,7 +189,7 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
       </div>
       
       {/* Credentials Form */}
-      {account.type === "SAVINGS" && (
+      {!account.isEmailScrapingSupported && (
         <div className="flex-1">
           <h3 className="text-lg font-medium mb-4">
             {hasStoredCredentials ? 'Update Credentials' : 'Add Credentials'}
@@ -291,7 +291,7 @@ const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
         </div>
       )}
 
-      {account.type === "CREDIT_CARD" && (
+      {account.isEmailScrapingSupported && (
         <p className="text-sm text-muted-foreground">Credit Card Updated through Gmail</p>
       )}
       

@@ -9,6 +9,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.myfi.mailscraping.constants.Constants;
 
 @Entity
 @Table(name = "accounts")
@@ -32,6 +33,9 @@ public class Account {
     // Balance will be derived from the latest AccountHistory
     @Transient
     private BigDecimal balance;
+
+    @Transient
+    private boolean isEmailScrapingSupported;
 
     @Column(name = "currency", nullable = false)
     private String currency;
@@ -69,10 +73,14 @@ public class Account {
     private List<AccountHistory> accountHistories;
 
     // Method to get the latest balance (logic will be in service)
-    public BigDecimal getLatestBalance() {
+    public BigDecimal getBalance() {
         // Placeholder: Actual logic will fetch from the latest AccountHistory
         // For now, return the transient balance field if set, or zero
         return this.balance != null ? this.balance : BigDecimal.ZERO;
+    }
+
+    public Boolean getIsEmailScrapingSupported() {
+        return Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(this.name);
     }
 
     public enum AccountType {

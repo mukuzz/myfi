@@ -38,6 +38,7 @@ export interface Account {
   name: string;
   type: 'SAVINGS' | 'CREDIT_CARD' | 'LOAN' | 'STOCKS' | 'FIXED_DEPOSIT' | 'MUTUAL_FUND' | 'CRYPTO';
   balance: number;
+  isEmailScrapingSupported?: boolean;
   currency: string;
   createdAt: string;
   updatedAt?: string;
