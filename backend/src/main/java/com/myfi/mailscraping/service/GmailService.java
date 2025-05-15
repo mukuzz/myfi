@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -193,8 +194,23 @@ public class GmailService {
                 logger.info("Executing Gmail search query for account '{}' (OpID: {}): [{}]", accountName,
                         accountOperationId, finalQuery);
 
-                ListMessagesResponse response = service.users().messages().list(USER_ID).setQ(finalQuery).execute();
-                List<Message> messages = response.getMessages();
+                List<Message> allMessages = new ArrayList<>();
+                String nextPageToken = null;
+                ListMessagesResponse response;
+
+                do {
+                    response = service.users().messages().list(USER_ID)
+                                    .setQ(finalQuery)
+                                    .setPageToken(nextPageToken)
+                                    .execute();
+                    if (response.getMessages() != null && !response.getMessages().isEmpty()) {
+                        allMessages.addAll(response.getMessages());
+                    }
+                    nextPageToken = response.getNextPageToken();
+                } while (nextPageToken != null);
+
+                List<Message> messages = allMessages; // Use the aggregated list
+                Collections.reverse(messages);
 
                 if (messages == null || messages.isEmpty()) {
                     logger.info("No new emails found for account '{}' (OpID: {}) matching the query.", accountName,
