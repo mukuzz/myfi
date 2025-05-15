@@ -74,9 +74,11 @@ public class TransactionService {
             return existingTransaction.get();
         }
 
-        if (transaction.getAccount() != null && transaction.getAccount().getType() == AccountType.CREDIT_CARD
-                && Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(transaction.getAccount().getName())) {
-            accountService.addToBalance(transaction.getAccount(), transaction);
+        if (transaction.getAccount() != null && transaction.getAccount().getType() == AccountType.CREDIT_CARD) {
+            transaction.setExcludeFromAccounting(true);
+            if (Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(transaction.getAccount().getName())) {
+                accountService.addToBalance(transaction.getAccount(), transaction);
+            }
         }
         // If no duplicate, save the new transaction
         return transactionRepository.save(transaction);
