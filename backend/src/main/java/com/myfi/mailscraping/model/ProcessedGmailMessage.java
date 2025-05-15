@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "processed_gmail_messages", indexes = {
-    @Index(name = "idx_processed_gmail_message_id", columnList = "messageId", unique = true)
+    @Index(name = "idx_processed_gmail_message_id_account_number", columnList = "messageId, accountNumber", unique = true)
 })
 @Data
 @Builder
@@ -21,8 +21,11 @@ public class ProcessedGmailMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String messageId;
+
+    @Column(nullable = false)
+    private String accountNumber;
 
     @Column(nullable = false)
     private LocalDateTime processedAt;

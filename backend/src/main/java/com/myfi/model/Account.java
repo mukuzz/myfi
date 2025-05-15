@@ -48,7 +48,9 @@ public class Account {
     @Column(name = "account_number", nullable = false)
     private String accountNumber;
 
-    // Store the ID of the parent account directly
+    @Column(name = "cc_statement_generation_day")
+    private Integer ccStatementGenerationDay;
+    
     @Column(name = "parent_account_id")
     private Long parentAccountId;
 

@@ -20,6 +20,7 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
   const [currency, setCurrency] = useState('INR');
   const [accountNumber, setAccountNumber] = useState('');
   const [parentAccountId, setParentAccountId] = useState<string>('');
+  const [ccStatementGenerationDay, setCcStatementGenerationDay] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -88,6 +89,15 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
       parentAccountId: parentAccountId ? parseInt(parentAccountId, 10) : null,
     };
 
+    if (type === 'CREDIT_CARD') {
+      if (ccStatementGenerationDay === null || ccStatementGenerationDay < 1 || ccStatementGenerationDay > 28) {
+        setSubmitError('Please enter a valid statement generation day (1-28)');
+        setIsLoading(false);
+        return;
+      }
+      accountData.ccStatementGenerationDay = ccStatementGenerationDay;
+    }
+
     try {
       const resultAction = await dispatch(createAccount(accountData));
 
@@ -99,6 +109,7 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
         setCurrency('INR');
         setAccountNumber('');
         setParentAccountId('');
+        setCcStatementGenerationDay(null);
         setSubmitError(null);
 
         dispatch(fetchAccounts());
@@ -229,6 +240,34 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
                 placeholder="The complete account number"
               />
             </div>
+
+            {type === 'CREDIT_CARD' && (
+              <div>
+                <label htmlFor="ccStatementGenerationDay" className="block text-sm font-medium text-muted-foreground mb-1">
+                  Statement Generation Day (1-28)
+                </label>
+                <input
+                  type="number"
+                  id="ccStatementGenerationDay"
+                  value={ccStatementGenerationDay === null ? '' : ccStatementGenerationDay}
+                  onChange={(e) => {
+                    const day = parseInt(e.target.value, 10);
+                    if (isNaN(day)) {
+                      e.target.value = '';
+                      setCcStatementGenerationDay(null);
+                    } else if (day >= 1 && day <= 28) {
+                      setCcStatementGenerationDay(day);
+                    } else if (e.target.value === '') {
+                      setCcStatementGenerationDay(null);
+                    }
+                  }}
+                  min="1"
+                  max="31"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
+                  placeholder="e.g., 28"
+                />
+              </div>
+            )}
 
             <div>
               <label htmlFor="parentAccount" className="block text-sm font-medium text-muted-foreground mb-1">

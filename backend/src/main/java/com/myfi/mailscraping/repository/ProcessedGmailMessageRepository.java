@@ -9,8 +9,8 @@ import java.util.Optional;
 @Repository
 public interface ProcessedGmailMessageRepository extends JpaRepository<ProcessedGmailMessage, Long> {
 
-    boolean existsByMessageId(String messageId);
+    boolean existsByMessageIdAndAccountNumber(String messageId, String accountNumber);
 
-    // Find the entry with the maximum messageDate
-    Optional<ProcessedGmailMessage> findTopByOrderByMessageDateTimeDesc();
+    // Find the entry with the maximum messageDate for a given account
+    Optional<ProcessedGmailMessage> findTopByAccountNumberOrderByMessageDateTimeDesc(String accountNumber);
 } 

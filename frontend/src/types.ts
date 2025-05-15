@@ -43,6 +43,7 @@ export interface Account {
   updatedAt?: string;
   isActive: boolean;
   accountNumber: string;
+  ccStatementGenerationDay?: number | null;
   parentAccountId?: number | null; // Optional parent account ID
 }
 
