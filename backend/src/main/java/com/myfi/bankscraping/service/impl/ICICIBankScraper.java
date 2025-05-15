@@ -355,10 +355,13 @@ public class ICICIBankScraper extends BankScrapper {
             // extract the transactions
             try {
                 getPage().waitForSelector("#ListingTable3 #Redeem");
-                ElementHandle transactionTable = getPage().querySelector("#ListingTable3 #Redeem");
-                if (transactionTable != null) {
-                    List<ElementHandle> transactionRows = transactionTable.querySelectorAll("tbody tr.listgreyrow");
-                    processCreditCardTransactions(account, transactionRows);
+                List<ElementHandle> transactionTables = getPage().querySelectorAll("#ListingTable3 #Redeem");
+                
+                if (!transactionTables.isEmpty()) {
+                    for (ElementHandle transactionTable : transactionTables) {
+                        List<ElementHandle> transactionRows = transactionTable.querySelectorAll("tbody tr.listgreyrow");
+                        processCreditCardTransactions(account, transactionRows);
+                    }
                 } else {
                     log.warn("Could not find credit card transaction table for card: {}", cardNumber);
                 }
