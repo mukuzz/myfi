@@ -4,7 +4,6 @@ import Card from './Card';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
 import { Transaction } from '../types'; // Import Transaction type
-import { FiMoreHorizontal } from 'react-icons/fi'; // Import icon
 import CurrencyDisplay from './AmountDisplay';
 import MonthlyCashFlowSkeleton from './skeletons/MonthlyCashFlowSkeleton'; // Import the skeleton
 
@@ -84,43 +83,28 @@ const MonthlyCashFlowCard: React.FC = () => {
             className="flex flex-col cursor-pointer"
             onClick={handleCardClick}
         >
-            <header className="pl-6 pr-4 border-b border-border flex items-center justify-between flex-shrink-0">
-                {/* Display only Month Name in the header */}
-                <h1 className="text-xs font-bold">Cash Flow</h1>
-                <button
-                    className="text-muted-foreground p-2"
-                    onClick={(e) => {
-                        e.stopPropagation(); // Prevent card click when clicking the button
-                        console.log("More options clicked"); // Placeholder for future action
-                    }}
-                >
-                    <FiMoreHorizontal size={20} />
-                </button>
-            </header>
 
             {/* Content Area */}
-            <div className="p-6 space-y-4 flex-grow overflow-y-auto bg-secondary">
-                <div className="text-xs font-semibold text-muted-foreground">
-                    {monthYear}
+            <div className="p-4 space-y-4 flex-grow overflow-y-auto bg-secondary">
+                <div className="flex flex-row text-muted-foreground items-center justify-between">
+                    <h1 className=" font-bold">Cash Flow</h1>
+                    <div className="text-xs font-semibold text-muted-foreground">
+                        {monthYear}
+                    </div>
                 </div>
 
                 {isLoading && <MonthlyCashFlowSkeleton />}
                 {!isLoading && (
-                    <div className="flex flex-row justify-between align-top font-medium flex-wrap gap-4">
-                        <div className="flex flex-col justify-between">
-                            <span className="mb-1">Incoming</span>
-                            <hr />
-                            <CurrencyDisplay className="text-xl mt-2 font-semibold" amount={incoming} type="CREDIT" showFraction={false} smallRupeeSymbol={true} />
+                    <div className="flex flex-row justify-between align-top font-medium flex-wrap">
+                        <div className="flex flex-grow flex-col justify-between items-start">
+                            <span className="text-sm mb-2">Incoming</span>
+                            <hr className='w-full' />
+                            <CurrencyDisplay className="text-2xl mt-3 font-bold" amount={incoming} type="CREDIT" showFraction={false} smallRupeeSymbol={true} />
                         </div>
-                        <div className="flex flex-col justify-between">
-                            <span className="mb-1">Outgoing</span>
-                            <hr />
-                            <CurrencyDisplay className="text-xl mt-2 font-semibold" amount={outgoing} type="DEBIT" showFraction={false} smallRupeeSymbol={true} />
-                        </div>
-                        <div className="flex flex-col justify-between">
-                            <span className="mb-1">Invested</span>
-                            <hr />
-                            <CurrencyDisplay className="text-xl mt-2 font-semibold" amount={invested} showType={false} showFraction={false} smallRupeeSymbol={true} />
+                        <div className="flex flex-grow flex-col justify-between items-end">
+                            <span className="text-sm mb-2">Outgoing</span>
+                            <hr className='w-full' />
+                            <CurrencyDisplay className="text-2xl mt-3 font-bold" amount={outgoing} type="DEBIT" showFraction={false} smallRupeeSymbol={true} />
                         </div>
                     </div>
                 )}

@@ -3,6 +3,7 @@ package com.myfi.service;
 import com.myfi.model.Account.AccountType;
 import com.myfi.mailscraping.constants.Constants;
 import com.myfi.model.Transaction;
+import com.myfi.model.Transaction.TransactionType;
 import com.myfi.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,7 +76,9 @@ public class TransactionService {
         }
 
         if (transaction.getAccount() != null && transaction.getAccount().getType() == AccountType.CREDIT_CARD) {
-            transaction.setExcludeFromAccounting(true);
+            if (transaction.getType() == TransactionType.CREDIT) {
+                transaction.setExcludeFromAccounting(true);
+            }
             if (Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(transaction.getAccount().getName())) {
                 accountService.addToBalance(transaction.getAccount(), transaction);
             }

@@ -89,16 +89,14 @@ function TotalBalanceCard() {
 
   return (
     <Card>
-      <div className="p-6 bg-secondary">
+      <div className="p-4 bg-secondary">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center text-sm text-muted-foreground font-medium">
-            <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center mr-2 text-xs">₹</span>
+          <div className="flex items-center text-muted-foreground font-semibold">
+            <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center mr-2 pt-[2px] text-xs">₹</span>
             Total Balance
           </div>
-          <button className="text-muted-foreground">
-            <FiMoreHorizontal size={20} />
-          </button>
+          {renderSparkline()}
         </div>
 
         {/* Balance and Sparkline */}
@@ -110,7 +108,6 @@ function TotalBalanceCard() {
             showFraction={false}
             showOnlyNegative={true}
           />
-          {renderSparkline()}
         </div>
 
         {/* Aggregated Balances */}
@@ -119,12 +116,12 @@ function TotalBalanceCard() {
           <div className="flex items-center bg-muted/80 rounded-full text-xs p-1 px-3 space-x-1">
             <span className="text-primary text-xs">BALANCE</span>
             {/* Optional label: <span className="font-medium text-foreground mr-1">Savings:</span> */}
-            <span className="font-medium text-foreground">{formatCurrency(savingsBalance, 'INR', true)}</span>
+            <span className="font-bold text-foreground">{formatCurrency(savingsBalance, 'INR', true)}</span>
           </div>
           {/* Credit Card Aggregate */}
           <div className="flex items-center bg-muted/80 rounded-full text-xs p-1 px-3 space-x-1">
             <span className="text-primary text-xs">DEBT</span>
-            <span className={`font-medium`}>{formatCurrency(creditCardBalance, 'INR', true, false)}</span>
+            <span className={`font-bold`}>{formatCurrency(creditCardBalance, 'INR', true, false)}</span>
           </div>
         </div>
       </div>
