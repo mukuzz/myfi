@@ -7,12 +7,13 @@ import AccountCard from './AccountCard';
 import AccountDetailsModal from './AccountDetailsModal';
 import { copyToClipboard } from '../utils/clipboard';
 import {
-  FiCreditCard, FiAlertTriangle, FiPlus, FiChevronDown, FiChevronUp
+  FiCreditCard, FiChevronDown, FiChevronUp,
 } from 'react-icons/fi';
 import Card from './Card';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAccounts as fetchAccountsRedux } from '../store/slices/accountsSlice';
 import AccountCardSkeleton from './skeletons/AccountCardSkeleton';
+import { BsWindowPlus } from 'react-icons/bs';
 
 // Define props for the component
 interface AccountsDisplayCardProps {
@@ -114,14 +115,14 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
 
   return (
     <Card>
-      <header className="top-0 z-10 bg-background pl-6 pr-2 border-b border-border flex items-center justify-between">
-        <h1 className="text-xs font-bold">{title}</h1>
-        <button onClick={openSheet} className="text-primary text-lg p-2">
-          <FiPlus />
+      <header className="top-0 z-10 bg-background p-4 pb-3 flex items-center justify-between">
+        <h1 className="text-sm text-muted-foreground font-bold">{title}</h1>
+        <button onClick={openSheet} className="text-primary font-bold text-xl">
+          <BsWindowPlus />
         </button>
       </header>
 
-      <div className="flex-grow overflow-x-auto p-3 flex whitespace-nowrap" style={{ scrollbarWidth: 'none' }}>
+      <div className="flex-grow overflow-x-auto px-2 pb-4 pt-0 flex whitespace-nowrap" style={{ scrollbarWidth: 'none' }}>
         {(status === 'loading' || status === 'idle') && (
           <>
             <AccountCardSkeleton />
@@ -132,7 +133,7 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
         {status === 'succeeded' && !error && groupedAccounts.map(parentAccount => {
           const isExpanded = !!expandedParents[parentAccount.id];
           return (
-            <div key={parentAccount.id} className="inline-block align-top mr-4 min-w-[280px]">
+            <div key={parentAccount.id} className="inline-block align-top mr-2 min-w-[280px]">
               <div
                 className={`bg-card rounded-2xl overflow-hidden border border-border relative`} // Always rounded, remove conditional border
               >

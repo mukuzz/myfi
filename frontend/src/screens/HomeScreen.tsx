@@ -75,14 +75,14 @@ function HomeScreen() {
 
         <div className="lg:w-1/2 flex flex-col gap-4">
           <AccountsDisplayCard
-            title="Bank Accounts"
-            accountTypes={['SAVINGS']}
-            emptyStateMessage="No savings accounts found"
-          />
-          <AccountsDisplayCard
             title="Credit Cards"
             accountTypes={['CREDIT_CARD']}
             emptyStateMessage="No credit cards found"
+          />
+          <AccountsDisplayCard
+            title="Bank Accounts"
+            accountTypes={['SAVINGS']}
+            emptyStateMessage="No savings accounts found"
           />
         </div>
 
