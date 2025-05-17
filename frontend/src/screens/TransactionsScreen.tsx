@@ -82,7 +82,7 @@ function TransactionsScreen() {
         </div>
       </div>
 
-      <div className='flex-grow h-full overflow-y-auto enable-scroll'>
+      <div className='flex-grow h-full overflow-y-auto enable-scroll pb-2'>
         {isLoadingInitial && (
           <div className="overflow-y-auto p-4 space-y-2">
             <TransactionRowSkeleton />

@@ -11,6 +11,7 @@ import HomeScreen from './screens/HomeScreen';
 import SpendingSummaryScreen from './screens/SpendingSummaryScreen';
 import RefreshBar from './components/RefreshBar';
 import SettingsScreen from './screens/SettingsScreen';
+import { NavigationProvider } from './contexts/NavigationContext';
 
 
 // Keep DesktopAppHome as it's used in conditional rendering below
@@ -83,7 +84,9 @@ ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 ).render(
   <Provider store={store}>
-    <RootLayout />
+    <NavigationProvider>
+      <RootLayout />
+    </NavigationProvider>
   </Provider>
 );
 

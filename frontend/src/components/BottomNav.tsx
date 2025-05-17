@@ -1,12 +1,13 @@
-import { FiHome, FiList } from 'react-icons/fi';
 import { useState } from 'react';
 import HomeScreen from '../screens/HomeScreen';
 import TransactionsScreen from '../screens/TransactionsScreen';
 import RefreshBar from './RefreshBar';
+import { BsViewList } from 'react-icons/bs';
+import { LuHome } from 'react-icons/lu';
 
 const tabs = [
-  { name: 'Home', path: '/', icon: <FiHome size={32} />, screen: <HomeScreen /> },
-  { name: 'Transactions', path: '/transactions', icon: <FiList size={32} />, screen: <TransactionsScreen /> }
+  { name: 'Home', path: '/', icon: <LuHome size={32} />, screen: <HomeScreen /> },
+  { name: 'Transactions', path: '/transactions', icon: <BsViewList size={32} />, screen: <TransactionsScreen /> }
 ];
 
 function BottomNav() {

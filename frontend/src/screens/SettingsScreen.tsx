@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FiMail, FiSave, FiKey } from 'react-icons/fi';
 import { fetchGoogleAuthUrl, setCredentialKeyValue } from '../services/apiService';
 import PassphraseModal from '../components/PassphraseModal';
+import ScreenContainer from '../components/ScreenContainer';
 
 // Define the keys to be managed
 const CREDENTIAL_KEYS = {
@@ -17,7 +18,7 @@ type CredentialKey = typeof CREDENTIAL_KEYS[keyof typeof CREDENTIAL_KEYS];
 function SettingsScreen() {
   const [isPassphraseModalOpen, setIsPassphraseModalOpen] = useState<boolean>(false);
   const [currentKeyToSet, setCurrentKeyToSet] = useState<CredentialKey | null>(null);
-  
+
   // State for input values
   const [googleClientId, setGoogleClientId] = useState<string>('');
   const [googleClientSecret, setGoogleClientSecret] = useState<string>('');
@@ -118,50 +119,48 @@ function SettingsScreen() {
   );
 
   return (
-    <div className="bg-background text-foreground flex flex-col flex-grow space-y-6 p-4 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-      <div className="flex justify-between items-center mb-2 ml-1">
-        <h1 className="text-3xl font-bold">Settings</h1>
-      </div>
+    <ScreenContainer title="Settings">
+      <div className="bg-background text-foreground flex flex-col flex-grow space-y-6 p-4 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="p-4 border border-border rounded-md">
+          <h2 className="text-xl font-semibold mb-3">Gmail Integration</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Connect your Gmail account to automatically sync email transactions and updates.
+          </p>
+          <button
+            onClick={handleOpenPassphraseModalForGmail}
+            className="flex items-center gap-2 px-3 py-1.5 text-primary text-sm border border-border rounded-md hover:bg-muted transition-colors"
+          >
+            <FiMail size={18} />
+            Connect Gmail
+          </button>
+        </div>
 
-      <div className="p-4 border border-border rounded-md">
-        <h2 className="text-xl font-semibold mb-3">Gmail Integration</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Connect your Gmail account to automatically sync email transactions and updates.
-        </p>
-        <button
-          onClick={handleOpenPassphraseModalForGmail}
-          className="flex items-center gap-2 px-3 py-1.5 text-primary text-sm border border-border rounded-md hover:bg-muted transition-colors"
-        >
-          <FiMail size={18} />
-          Connect Gmail
-        </button>
-      </div>
-
-      <div className="p-4 border border-border rounded-md">
-        <div className="flex items-top gap-2 mb-3">
+        <div className="p-4 border border-border rounded-md">
+          <div className="flex items-top gap-2 mb-3">
             <FiKey className='mt-1' size={20} />
             <h2 className="text-xl font-semibold">API Credentials & Configuration</h2>
-        </div>
-        <p className="text-sm text-muted-foreground mb-6">
-          Set the necessary API keys and configuration values for the application. Each value requires the master key for an authorized update.
-        </p>
-        
-        {renderInputForKey(CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_ID, googleClientId, setGoogleClientId, "Enter Google OAuth Client ID")}
-        {renderInputForKey(CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_SECRET, googleClientSecret, setGoogleClientSecret, "Enter Google OAuth Client Secret")}
-        {renderInputForKey(CREDENTIAL_KEYS.OPENAI_API_KEY, openaiApiKey, setOpenaiApiKey, "Enter OpenAI API Key")}
-        {renderInputForKey(CREDENTIAL_KEYS.APP_HOST_URL, appHostUrl, setAppHostUrl, "e.g., http://localhost:8080")}
+          </div>
+          <p className="text-sm text-muted-foreground mb-6">
+            Set the necessary API keys and configuration values for the application. Each value requires the master key for an authorized update.
+          </p>
 
+          {renderInputForKey(CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_ID, googleClientId, setGoogleClientId, "Enter Google OAuth Client ID")}
+          {renderInputForKey(CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_SECRET, googleClientSecret, setGoogleClientSecret, "Enter Google OAuth Client Secret")}
+          {renderInputForKey(CREDENTIAL_KEYS.OPENAI_API_KEY, openaiApiKey, setOpenaiApiKey, "Enter OpenAI API Key")}
+          {renderInputForKey(CREDENTIAL_KEYS.APP_HOST_URL, appHostUrl, setAppHostUrl, "e.g., http://localhost:8080")}
+
+        </div>
+
+        <PassphraseModal
+          isOpen={isPassphraseModalOpen}
+          onClose={() => {
+            setIsPassphraseModalOpen(false);
+            setCurrentKeyToSet(null);
+          }}
+          onPassphraseSubmit={handlePassphraseSubmit}
+        />
       </div>
-      
-      <PassphraseModal 
-        isOpen={isPassphraseModalOpen}
-        onClose={() => {
-          setIsPassphraseModalOpen(false);
-          setCurrentKeyToSet(null);
-        }}
-        onPassphraseSubmit={handlePassphraseSubmit}
-      />
-    </div>
+    </ScreenContainer>
   );
 }
 

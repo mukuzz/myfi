@@ -5,10 +5,13 @@ import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
 import { Transaction } from '../types'; // Import Transaction type
 import CurrencyDisplay from './AmountDisplay';
 import MonthlyCashFlowSkeleton from './skeletons/MonthlyCashFlowSkeleton'; // Import the skeleton
+import { useNavigation } from '../hooks/useNavigation'; // Added import
+import CashFlowDetailsScreen from '../screens/CashFlowDetailsScreen'; // Added import
 
 
 const MonthlyCashFlowCard: React.FC = () => {
     const dispatch = useAppDispatch();
+    const { navigateTo } = useNavigation(); // Added navigation hook
     const {
         transactions, // Use main transactions list
         status,       // Use main status
@@ -65,10 +68,7 @@ const MonthlyCashFlowCard: React.FC = () => {
 
     const handleCardClick = () => {
         const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1; // Month is 1-indexed
-        // Navigate to the details screen, passing year/month in location state
-        // navigate('/cash-flow', { state: { year, month } });
+        navigateTo(<CashFlowDetailsScreen />); // Updated to use navigateTo
     };
 
     const currentDate = new Date();

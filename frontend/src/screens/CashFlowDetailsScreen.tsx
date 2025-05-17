@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchTransactionRange } from '../store/slices/transactionsSlice';
 
@@ -67,16 +66,14 @@ const doesMonthDataExistInStore = (
 };
 
 const CashFlowDetailsScreen: React.FC = () => {
-    const location = useLocation();
-    const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const { transactions, status, availableMonths } = useAppSelector((state) => state.transactions);
     const [showInitialSkeleton, setShowInitialSkeleton] = useState(true);
 
     // Get initial year/month from location state, fallback to current month/year
-    const initialState = location.state as { year: number; month: number } | undefined;
-    const initialYear = initialState?.year ?? new Date().getFullYear();
-    const initialMonth = initialState?.month ?? new Date().getMonth() + 1; // Ensure month is 1-indexed
+    // const initialState = location.state as { year: number; month: number } | undefined;
+    const initialYear = new Date().getFullYear();
+    const initialMonth = new Date().getMonth() + 1; // Ensure month is 1-indexed
 
     // Use state to manage the currently *selected* month/year (for data display)
     const [selectedYear, setSelectedYear] = useState<number>(initialYear);

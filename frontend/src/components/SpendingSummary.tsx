@@ -6,6 +6,8 @@ import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
 import CurrencyDisplay from './AmountDisplay';
 import SpendingSummarySkeleton from './skeletons/SpendingSummarySkeleton';
+import { useNavigation } from '../hooks/useNavigation';
+import SpendingSummaryScreen from '../screens/SpendingSummaryScreen';
 
 interface TagSpending {
     name: string;
@@ -128,8 +130,10 @@ const SpendingSummary: React.FC = () => {
         return spendingByTag.reduce((sum, item) => sum + item.amount, 0);
     }, [spendingByTag]);
 
+    const { navigateTo } = useNavigation(); // Added navigation hook
+
     const handleCardClick = () => {
-        // navigate('/spending-summary');
+        navigateTo(<SpendingSummaryScreen />);
     };
 
     return (

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { FiPlus } from 'react-icons/fi';
 import { useAppDispatch } from '../store/hooks';
 import { createTransaction } from '../store/slices/transactionsSlice';
 import { Transaction, Account, TagMap, Tag } from '../types';
 import AmountInputModal from './AmountInputModal';
 import AccountSelectionModal from './AccountSelectionModal';
+import { LuPlusSquare } from 'react-icons/lu';
 
 interface AddTransactionFlowProps {
     accounts: Account[];
@@ -87,10 +87,10 @@ function AddTransactionFlow({ accounts, tags, tagMap }: AddTransactionFlowProps)
     return (
         <>
             <button
-                className="text-muted-foreground hover:text-foreground p-2"
+                className="text-foreground hover:text-foreground p-2"
                 onClick={handleAddTransactionClick}
             >
-                <FiPlus size={24} />
+                <LuPlusSquare size={24} />
             </button>
 
             {accounts && (

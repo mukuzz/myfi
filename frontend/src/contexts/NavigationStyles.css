@@ -1,0 +1,53 @@
+/* frontend/src/contexts/NavigationStyles.css */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Screens should set their own background via Tailwind (e.g., bg-background or bg-card) */
+    /* Fallback background, can be removed if all screens guarantee their own */
+    background-color: white; 
+    transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+    will-change: transform;
+    overflow-y: auto; /* Allow individual screens to scroll their content */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Add a subtle shadow to screens that are coming in or active on top */
+.screen-entering,
+.screen-active {
+    box-shadow: -3px 0 15px rgba(0, 0, 0, 0.12);
+}
+
+.screen-entering {
+    transform: translateX(100%);
+    z-index: 4; /* Highest during its transition */
+}
+
+.screen-active {
+    transform: translateX(0%);
+    z-index: 3; /* Active screen on top */
+}
+
+.screen-exiting {
+    transform: translateX(100%);
+    z-index: 2; /* Above covered, below active during its exit */
+    box-shadow: none; /* Remove shadow as it slides out */
+}
+
+/* Screens that are covered (underneath the active one, or the base screen when another is active) */
+.screen-covered {
+    transform: translateX(-25%); /* Slide to the left */
+    /* filter: brightness(0.95); Optional: Slightly dim the covered screen */
+    transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), filter 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+    box-shadow: none; /* No shadow for covered screens */
+    z-index: 1; /* Below exiting and active screens */
+}
+
+/* Base screen default styling (when no specific status class is applied by logic, e.g. z-index 0) */
+/* The NavigationProvider applies specific status classes, so this might not be strictly needed if logic is robust. */
+/* However, good for clarity if base screen is directly manipulated or for initial state. */
+/* .screen:not(.screen-entering):not(.screen-active):not(.screen-exiting):not(.screen-covered) {
+    z-index: 0;
+} */ 

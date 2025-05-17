@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiSettings } from 'react-icons/fi';
 import SpendingSummary from '../components/SpendingSummary';
 import TotalBalanceCard from '../components/TotalBalanceCard';
 import AccountsDisplayCard from '../components/AccountsDisplayCard';
 import MonthlyCashFlowCard from '../components/MonthlyCashFlowCard';
 import CustomToast from '../components/CustomToast';
+import { useNavigation } from '../hooks/useNavigation';
+import SettingsScreen from './SettingsScreen';
+import { LuSettings2 } from 'react-icons/lu';
 
 function HomeScreen() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isToastVisible, setIsToastVisible] = useState<boolean>(false);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { navigateTo } = useNavigation(); // Added navigation hook
 
   useEffect(() => {
     // Clear timeout on unmount
@@ -55,10 +58,11 @@ function HomeScreen() {
       <div className="flex flex-shrink-0 justify-between items-center p-4  ml-1">
         <h1 className="text-3xl font-bold">Home</h1>
         <button 
-          className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+          className="p-2 text-foreground hover:text-foreground transition-colors"
           aria-label="Settings"
+          onClick={() => navigateTo(<SettingsScreen />)}
         >
-          <FiSettings size={24} />
+          <LuSettings2 size={24} />
         </button>
       </div>
 
