@@ -184,7 +184,7 @@ const AmountInputModal: React.FC<AmountInputModalProps> = ({
     return (
         <>
             <div
-                className={`fixed ${mode === 'split' ? 'rounded-t-xl' : ''} inset-0 flex flex-col items-center justify-end z-50 transition-opacity ${animationDuration} ease-in ${isVisible && !isAnimatingOut ? 'bg-black/50 opacity-100 backdrop-blur-sm' : 'bg-black/0 opacity-0'} px-4 pb-10`}
+                className={`fixed ${mode === 'split' ? 'rounded-t-xl' : ''} inset-0 flex flex-col items-center justify-center z-50 transition-opacity ${animationDuration} ease-in ${isVisible && !isAnimatingOut ? 'bg-black/50 opacity-100 backdrop-blur-sm' : 'bg-black/0 opacity-0'} px-4`}
                 onClick={handleClose}
             >
                 <div

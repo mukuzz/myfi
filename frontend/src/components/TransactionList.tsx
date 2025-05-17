@@ -91,12 +91,13 @@ const TransactionList: React.FC<TransactionListProps> = ({
   return (
     <div
       ref={scrollContainerRef}
-      className="flex-grow overflow-y-auto thin-scrollbar px-2"
+      className="px-2 relative"
       style={{ scrollbarWidth: 'none' }}
     >
+      <div className="sticky top-0 left-0 right-0 h-4 bg-gradient-to-b from-background to-transparent" />
 
       {transactions.length > 0 && (
-        <ul className="space-y-2 p-2">
+        <ul className="space-y-2 p-2 pt-0">
           {transactions.map((tx) => {
             if (tx.parentId) return null;
 
@@ -109,8 +110,8 @@ const TransactionList: React.FC<TransactionListProps> = ({
             return (
               <React.Fragment key={tx.id}>
                 {showMonthHeader && (
-                  <div className="flex justify-between items-center mb-2 px-1 pt-2">
-                    <h2 className="text-lg font-semibold text-foreground">{currentMonthYear}</h2>
+                  <div className="flex justify-between items-center mb-2 px-1">
+                    <h2 className="text-lg font-semibold text-muted-foreground">{currentMonthYear}</h2>
                   </div>
                 )}
                 <SplitTransactionCard

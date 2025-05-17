@@ -43,7 +43,7 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick, classNa
       <div className="flex justify-between items-center mt-1 pointer-events-none">
         <CurrencyDisplay 
           amount={transaction.amount}
-          className='text-xl font-semibold text-foreground'
+          className='text-xl font-bold text-foreground'
           smallRupeeSymbol={true}
           type={transaction.type}
         />
@@ -66,11 +66,6 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick, classNa
           {transaction.excludeFromAccounting && (
             <span className="text-muted-foreground flex items-center pointer-events-none" title="Excluded from accounting">
               <ExcludedIcon className="h-6 w-6" />
-            </span>
-          )}
-          {transaction.account && (
-            <span className="text-primary flex items-center pointer-events-none" title={`Account ID: ${transaction.account.id}`}>
-              <FiCreditCard size={24} />
             </span>
           )}
         </div>

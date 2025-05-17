@@ -170,7 +170,8 @@ function TransactionDetailView({
                     Account
                     <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-secondary-foreground">
                         <FiCreditCard className="mr-2 h-4 w-4" />
-                        {transaction.account.name}
+                        <span className='text-sm'>{transaction.account.name}</span>
+                        <span className='text- text-muted-foreground ml-2'>{transaction.account.accountNumber.slice(-4)}</span>
                     </div>
                 </div>
             )}

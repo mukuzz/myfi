@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Card from './Card';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
@@ -9,7 +8,6 @@ import MonthlyCashFlowSkeleton from './skeletons/MonthlyCashFlowSkeleton'; // Im
 
 
 const MonthlyCashFlowCard: React.FC = () => {
-    const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const {
         transactions, // Use main transactions list
@@ -70,7 +68,7 @@ const MonthlyCashFlowCard: React.FC = () => {
         const year = now.getFullYear();
         const month = now.getMonth() + 1; // Month is 1-indexed
         // Navigate to the details screen, passing year/month in location state
-        navigate('/cash-flow', { state: { year, month } });
+        // navigate('/cash-flow', { state: { year, month } });
     };
 
     const currentDate = new Date();

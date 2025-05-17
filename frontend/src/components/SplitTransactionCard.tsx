@@ -1,6 +1,7 @@
 import React from 'react';
 import { Transaction, TagMap } from '../types';
 import TransactionCard from './TransactionCard';
+import CurrencyDisplay from './AmountDisplay';
 
 interface SplitTransactionCardProps {
   transaction: Transaction;
@@ -24,20 +25,19 @@ const SplitTransactionCard: React.FC<SplitTransactionCardProps> = ({
   return (
     <div className={`flex flex-col border border-border rounded-xl overflow-hidden ${className}`}>
       {hasChildTransactions && (
-        <button className="flex justify-between items-center bg-secondary" onClick={() => openSplitView?.(tx)}>
+        <button className="flex justify-between items-center bg-muted" onClick={() => openSplitView?.(tx)}>
           <div className="flex flex-row items-center p-3 text-muted-foreground">
-            {tx.type === 'DEBIT' ? '-' : '+'}
-            <div className='flex flex-row items-start'>
-              <span className={`text-sm mx-0.5`}>₹</span>
-              <span className='text-xl font-semibold accent-foreground text-foreground'>{
-                Math.abs([tx, ...(tx.subTransactions || [])].reduce((sum, t) =>
-                  sum + (t.type === 'DEBIT' ? -t.amount : t.amount), 0
-                )).toLocaleString('en-IN')
-              }</span>
-            </div>
+            <CurrencyDisplay
+              amount={Math.abs([tx, ...(tx.subTransactions || [])].reduce((sum, t) =>
+                sum + (t.type === 'DEBIT' ? -t.amount : t.amount), 0
+              ))}
+              className='text-xl font-bold text-foreground'
+              smallRupeeSymbol={true}
+              type={tx.type}
+            />
           </div>
           <div className='flex flex-row items-center font-bold text-muted-foreground/50 px-3'>
-            <div className="bg-background text-sm font-medium text-secondary-foreground pr-2">
+            <div className="text-sm font-medium text-secondary-foreground pr-2">
               {tx.subTransactions?.length} split{tx.subTransactions?.length === 1 ? "" : "s"}
             </div>
             {" > "}

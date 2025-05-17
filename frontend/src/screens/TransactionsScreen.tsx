@@ -24,9 +24,6 @@ function TransactionsScreen() {
   const isLoadingInitial = transactionStatus === 'loading' && transactions.length === 0;
   const isLoadingMore = transactionStatus === 'loadingMore';
   const overallError = tagsError || accountsError || transactionError;
-
-  const headerRef = useRef<HTMLDivElement>(null);
-  const parentRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,10 +65,9 @@ function TransactionsScreen() {
   }, [dispatch, hasMore, currentPage, transactionStatus]);
 
   return (
-    <div ref={parentRef} className="text-foreground flex flex-col h-full bg-background relative pb-[50px]">
+    <div className="text-foreground flex flex-col justify-stretch h-full bg-background relative">
       <div
-        ref={headerRef}
-        className={`bg-background pt-4 z-10`}
+        className={`flex-shrink-0 bg-background py-4`}
       >
         <div className="flex justify-between items-start px-2">
           <h1 className="text-3xl font-bold pl-2">Transactions</h1>
@@ -86,38 +82,39 @@ function TransactionsScreen() {
         </div>
       </div>
 
-      {isLoadingInitial && (
-        <div className="flex-grow overflow-y-auto p-4 space-y-2">
-          <TransactionRowSkeleton />
-          <TransactionRowSkeleton />
-          <TransactionRowSkeleton />
-          <TransactionRowSkeleton />
-          <TransactionRowSkeleton />
-          <TransactionRowSkeleton />
-          <TransactionRowSkeleton />
-        </div>
-      )}
-
-      {!isLoadingInitial && !overallError && transactions.length === 0 && transactionStatus === 'succeeded' && (
-        <div className="p-8 text-center text-muted-foreground">
-          No transactions found.
-        </div>
-      )}
-
-      <TransactionList
-        transactions={transactions}
-      />
-
-      <div ref={observerRef} className="flex justify-center items-center h-12">
-        {isLoadingMore && (
-          <p className="text-center text-muted-foreground">Loading more transactions...</p>
+      <div className='flex-grow h-full overflow-y-auto enable-scroll'>
+        {isLoadingInitial && (
+          <div className="overflow-y-auto p-4 space-y-2">
+            <TransactionRowSkeleton />
+            <TransactionRowSkeleton />
+            <TransactionRowSkeleton />
+            <TransactionRowSkeleton />
+            <TransactionRowSkeleton />
+            <TransactionRowSkeleton />
+            <TransactionRowSkeleton />
+          </div>
         )}
-        {!hasMore && !isLoadingMore && (
-          <p className="text-center text-muted-foreground">No more transactions.</p>
-        )}
+
+        {!isLoadingInitial && !overallError && transactions.length === 0 && transactionStatus === 'succeeded' && (
+          <div className="p-8 text-center text-muted-foreground">
+            No transactions found.
+          </div>
+        )}  
+        <TransactionList
+          transactions={transactions}
+        />
+
+        <div ref={observerRef} className="flex justify-center items-center h-12">
+          {isLoadingMore && (
+            <p className="text-center text-muted-foreground">Loading more transactions...</p>
+          )}
+          {!hasMore && !isLoadingMore && (
+            <p className="text-center text-muted-foreground">No more transactions.</p>
+          )}
+        </div>
+
       </div>
 
-      
     </div>
   );
 }

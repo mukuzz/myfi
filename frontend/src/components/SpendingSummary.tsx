@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Card from './Card';
 import { Transaction, Tag } from '../types';
-import { FiMoreHorizontal } from 'react-icons/fi';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
 import { fetchTags } from '../store/slices/tagsSlice';
@@ -16,7 +14,6 @@ interface TagSpending {
 
 const SpendingSummary: React.FC = () => {
     const dispatch = useAppDispatch();
-    const navigate = useNavigate();
 
     const {
         transactions,
@@ -132,7 +129,7 @@ const SpendingSummary: React.FC = () => {
     }, [spendingByTag]);
 
     const handleCardClick = () => {
-        navigate('/spending-summary');
+        // navigate('/spending-summary');
     };
 
     return (

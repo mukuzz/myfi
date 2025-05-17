@@ -44,8 +44,8 @@ const RefreshBar: React.FC<RefreshBarProps> = ({ className, style }) => {
   return (
     <>
       {/* The clickable bar */}
-      <div 
-        className={`z-10 flex-shrink-0 px-4 py-2 bg-muted border-t border-border flex items-center justify-center cursor-pointer ${className}`}
+      <button 
+        className={`flex-shrink-0 px-4 py-2 w-full bg-muted border-t border-border flex items-center justify-center cursor-pointer ${className}`}
         onClick={openRefreshSheet}
         style={style} // Apply the style prop
       >
@@ -59,7 +59,7 @@ const RefreshBar: React.FC<RefreshBarProps> = ({ className, style }) => {
             'Refresh Accounts'
           )}
         </span>
-      </div>
+      </button>
 
       {/* Refresh Bottom Sheet - Now rendered within RefreshBar */}
       <DraggableBottomSheet isOpen={isRefreshSheetOpen} onClose={closeRefreshSheet} title="Refresh Accounts">

@@ -23,11 +23,31 @@ code {
 
 html {
   background-color: #f8fafc;
+  -webkit-overflow-scrolling: none;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-elastic-scrolling: none;
 }
 
 * {
   scrollbar-width: none;
 }
+
+.disable-scroll {
+  -webkit-overflow-scrolling: none;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-elastic-scrolling: none;
+}
+
+.enable-scroll {
+  -webkit-overflow-scrolling: auto;
+  overscroll-behavior: auto;
+  touch-action: auto;
+  -webkit-elastic-scrolling: auto;
+}
+
+
 
 html {
   font-size: 18px;

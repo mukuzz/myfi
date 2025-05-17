@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { FiSettings } from 'react-icons/fi';
 import SpendingSummary from '../components/SpendingSummary';
 import TotalBalanceCard from '../components/TotalBalanceCard';
@@ -11,7 +10,6 @@ function HomeScreen() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isToastVisible, setIsToastVisible] = useState<boolean>(false);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Clear timeout on unmount
@@ -52,12 +50,11 @@ function HomeScreen() {
     }
   }, []);
 
-  return <div className='relative h-full flex flex-col overflow-hidden pb-[40px]'>
-    <div className="bg-background text-foreground flex flex-col flex-grow space-y-4 p-4 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-      <div className="flex justify-between items-center mb-2 ml-1">
+  return <div className='relative h-full flex flex-col'>
+    <div className="bg-background text-foreground h-full flex flex-col" style={{ scrollbarWidth: 'none' }}>
+      <div className="flex flex-shrink-0 justify-between items-center p-4  ml-1">
         <h1 className="text-3xl font-bold">Home</h1>
         <button 
-          onClick={() => navigate('/settings')}
           className="p-2 text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Settings"
         >
@@ -65,30 +62,33 @@ function HomeScreen() {
         </button>
       </div>
 
-      <div className="lg:flex lg:gap-4 space-y-4 lg:space-y-0">
+      <div className='overflow-y-auto h-full p-4 pt-0 enable-scroll'>
+        <div className="z-10 sticky top-0 left-0 right-0 h-4 bg-gradient-to-b from-background to-transparent" />
+        <div className="lg:flex lg:gap-4 space-y-4 lg:space-y-0">
 
-        <div className="lg:w-1/2 flex flex-col gap-4">
-          <TotalBalanceCard />
-          <MonthlyCashFlowCard />
-          <SpendingSummary />
+          <div className="lg:w-1/2 flex flex-col gap-4">
+            <TotalBalanceCard />
+            <MonthlyCashFlowCard />
+            <SpendingSummary />
+          </div>
+
+          <div className="lg:w-1/2 flex flex-col gap-4">
+            <AccountsDisplayCard
+              title="Credit Cards"
+              accountTypes={['CREDIT_CARD']}
+              emptyStateMessage="No credit cards found"
+            />
+            <AccountsDisplayCard
+              title="Bank Accounts"
+              accountTypes={['SAVINGS']}
+              emptyStateMessage="No savings accounts found"
+            />
+          </div>
+
         </div>
-
-        <div className="lg:w-1/2 flex flex-col gap-4">
-          <AccountsDisplayCard
-            title="Credit Cards"
-            accountTypes={['CREDIT_CARD']}
-            emptyStateMessage="No credit cards found"
-          />
-          <AccountsDisplayCard
-            title="Bank Accounts"
-            accountTypes={['SAVINGS']}
-            emptyStateMessage="No savings accounts found"
-          />
-        </div>
-
       </div>
     </div>
-    
+
     <CustomToast message={toastMessage} isVisible={isToastVisible} />
   </div>
 }
