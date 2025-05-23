@@ -6,14 +6,14 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#f8fafc', // Very light bluish gray background (Slate-50)
+        background: '#f9f9f9', // Very light bluish gray background (Slate-50)
         foreground: '#1f2937', // Dark gray text
         primary: {
           DEFAULT: '#4b5563', // Gray-600
-          foreground: '#ffffff', // White text on primary
+          foreground: '#feffff', // White text on primary
         },
         secondary: {
-          DEFAULT: '#ffffff', // White
+          DEFAULT: '#feffff', // White
           foreground: '#1f2937', // Dark gray text on secondary
         },
         muted: {
@@ -22,18 +22,18 @@ module.exports = {
         },
         accent: {
           DEFAULT: '#22c55e', // Emerald-500
-          foreground: '#ffffff', // White text on accent
+          foreground: '#feffff', // White text on accent
         },
-        border: '#e5e7eb', // Gray-200
+        border: '#e5e7eb', // Gray-250
         input: '#e5e7eb', // Gray-200 (for input borders)
         ring: '#4b5563', // Gray-600 (for focus rings)
         error: {
           DEFAULT: '#ef4444', // Red-500
-          foreground: '#ffffff', // White text on error bg
+          foreground: '#feffff', // White text on error bg
         },
         success: {
            DEFAULT: '#22c55e', // Green-500
-           foreground: '#ffffff', // White text on success bg
+           foreground: '#feffff', // White text on success bg
         }
       },
     },

@@ -24,7 +24,7 @@ function DesktopAppHome() {
         <HomeScreen />
       </div>
       {/* Second child takes remaining space and scrolls with the page */}
-      <div className="border-l h-full border-border col-span-6 lg:col-span-4">
+      <div className="h-full border-dashed border-l-2 border-border col-span-6 lg:col-span-4">
         <TransactionsScreen />
       </div>
     </main>

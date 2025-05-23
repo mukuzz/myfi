@@ -12,7 +12,7 @@ const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, title }) =>
     return (
         <div className="fixed top-0 left-0 right-0 h-screen flex flex-col bg-background text-foreground">
             {/* Header Bar */}
-            <header className="flex-shrink-0 flex flex-row items-center justify-between p-4 border-b border-border bg-background ">
+            <header className="flex-shrink-0 flex flex-row items-center justify-between p-4 border-b border-border bg-secondary ">
                 <button className="p-2"
                     onClick={goBack}>
                     <FiChevronLeft size={24} />

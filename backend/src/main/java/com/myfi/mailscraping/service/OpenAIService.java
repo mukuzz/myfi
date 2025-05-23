@@ -47,7 +47,7 @@ public class OpenAIService {
           },
           "transaction_date": {
             "type": "string",
-            "description": "Date of the transaction in YYYY-MM-DD format. In the mail the dates would generally in in the format DD-MM-YYYY."
+            "description": "Date of the transaction in ISO 8601 format. In the mail the dates are in the Indian date format. The Indian date format has the following order: day, month, year."
           },
           "type": {
             "type": "string",

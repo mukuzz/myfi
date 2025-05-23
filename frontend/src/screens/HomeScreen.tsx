@@ -55,19 +55,18 @@ function HomeScreen() {
 
   return <div className='relative h-full flex flex-col'>
     <div className="bg-background text-foreground h-full flex flex-col" style={{ scrollbarWidth: 'none' }}>
-      <div className="flex flex-shrink-0 justify-between items-center p-4  ml-1">
+      <div className="flex flex-shrink-0 justify-between items-center bg-secondary py-4 px-5 border-b border-border">
         <h1 className="text-3xl font-bold">Home</h1>
         <button 
-          className="p-2 text-foreground hover:text-foreground transition-colors"
+          className=" text-foreground hover:text-foreground transition-colors"
           aria-label="Settings"
           onClick={() => navigateTo(<SettingsScreen />)}
         >
-          <LuSettings2 size={24} />
+          <LuSettings2 className='w-7 h-7' />
         </button>
       </div>
 
-      <div className='overflow-y-auto h-full p-4 pt-0 enable-scroll'>
-        <div className="z-10 sticky top-0 left-0 right-0 h-4 bg-gradient-to-b from-background to-transparent" />
+      <div className='overflow-y-auto h-full p-4 enable-scroll'>
         <div className="lg:flex lg:gap-4 space-y-4 lg:space-y-0">
 
           <div className="lg:w-1/2 flex flex-col gap-4">

@@ -87,10 +87,10 @@ function AddTransactionFlow({ accounts, tags, tagMap }: AddTransactionFlowProps)
     return (
         <>
             <button
-                className="text-foreground hover:text-foreground p-2"
+                className="text-foreground hover:text-foreground pr-2"
                 onClick={handleAddTransactionClick}
             >
-                <LuPlusSquare size={24} />
+                <LuPlusSquare className='w-7 h-7' />
             </button>
 
             {accounts && (

@@ -4,6 +4,7 @@ import { Transaction, TagMap } from '../types';
 import { formatDate } from '../utils/dateUtils';
 import { ReactComponent as ExcludedIcon } from '../assets/icons/ExcludedFromAccountingIcon.svg';
 import CurrencyDisplay from './AmountDisplay';
+import AccountIcon from './AccountIcon';
 
 interface TransactionCardProps {
   transaction: Transaction;
@@ -67,6 +68,11 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick, classNa
             <span className="text-muted-foreground flex items-center pointer-events-none" title="Excluded from accounting">
               <ExcludedIcon className="h-6 w-6" />
             </span>
+          )}
+          {transaction.account && (
+            <div className="flex items-center pointer-events-none" title={`Account ID: ${transaction.account.id}`}>
+              <AccountIcon account={transaction.account} className="w-4 h-4" />
+            </div>
           )}
         </div>
       </div>

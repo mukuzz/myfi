@@ -355,7 +355,7 @@ const CashFlowDetailsScreen: React.FC = () => {
                 {/* Incoming Transactions Card */}
                 <button
                     onClick={() => handleOpenSheet('Incoming')}
-                    className="flex justify-between items-center max-w-md w-full p-3 bg-card rounded-lg border border-border"
+                    className="flex justify-between items-center max-w-md w-full p-3 bg-card rounded-lg border border-border bg-secondary"
                 >
                     <div>
                         <p className="text-base font-semibold text-foreground">Incoming Transactions</p>
@@ -367,7 +367,7 @@ const CashFlowDetailsScreen: React.FC = () => {
                 {/* Outgoing Transactions Card */}
                 <button
                     onClick={() => handleOpenSheet('Outgoing')}
-                    className="flex justify-between items-center max-w-md w-full p-3 bg-card rounded-lg border border-border"
+                    className="flex justify-between items-center max-w-md w-full p-3 bg-card rounded-lg border border-border bg-secondary"
 
                 >
                     <div>
@@ -380,7 +380,7 @@ const CashFlowDetailsScreen: React.FC = () => {
                 {/* Investments Card */}
                 <button
                     onClick={() => handleOpenSheet('Investment')}
-                    className="flex justify-between items-center max-w-md w-full p-3 bg-card rounded-lg border border-border "
+                    className="flex justify-between items-center max-w-md w-full p-3 bg-card rounded-lg border border-border bg-secondary"
                 >
                     <div>
                         <p className="text-base font-semibold text-foreground">Investments</p>

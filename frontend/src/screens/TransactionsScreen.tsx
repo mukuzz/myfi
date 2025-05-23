@@ -67,9 +67,9 @@ function TransactionsScreen() {
   return (
     <div className="text-foreground flex flex-col justify-stretch h-full bg-background relative">
       <div
-        className={`flex-shrink-0 bg-background py-4`}
+        className={`flex-shrink-0 bg-secondary py-4 border-b border-border`}
       >
-        <div className="flex justify-between items-start px-2">
+        <div className="flex justify-between items-center pl-2 pr-3">
           <h1 className="text-3xl font-bold pl-2">Transactions</h1>
           <div className="flex">
             {/* <button className="text-muted-foreground hover:text-foreground p-2"><FiFilter size={20} /></button> */}

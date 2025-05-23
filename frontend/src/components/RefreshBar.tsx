@@ -45,7 +45,7 @@ const RefreshBar: React.FC<RefreshBarProps> = ({ className, style }) => {
     <>
       {/* The clickable bar */}
       <button 
-        className={`flex-shrink-0 px-4 py-2 w-full bg-muted border-t border-border flex items-center justify-center cursor-pointer ${className}`}
+        className={`flex-shrink-0 px-4 py-3 w-full bg-secondary border-y border-border flex items-center justify-center cursor-pointer ${className}`}
         onClick={openRefreshSheet}
         style={style} // Apply the style prop
       >

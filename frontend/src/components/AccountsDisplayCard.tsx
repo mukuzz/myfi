@@ -83,16 +83,6 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
     ).join(' ');
   };
 
-  const getBankLogo = (bankName: string) => {
-    return (
-      <div className="w-10 h-10 flex items-center justify-center text-primary">
-        <div className="bg-muted px-2 py-1 rounded">
-          {bankName.charAt(0).toUpperCase()}
-        </div>
-      </div>
-    );
-  };
-
   const handleCopyAccountNumber = async (accountNumber: string) => {
     try {
       await copyToClipboard(accountNumber);
@@ -139,7 +129,6 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
               >
                 <AccountCard
                   account={parentAccount}
-                  getBankLogo={getBankLogo}
                   getAccountTypeLabel={getAccountTypeLabel}
                   handleCopyAccountNumber={handleCopyAccountNumber}
                   onCardClick={handleAccountClick}
@@ -163,7 +152,6 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
                     <div key={childAccount.id} className={`${index > 0 ? 'border-t border-border' : ''}`}>
                       <AccountCard
                         account={childAccount}
-                        getBankLogo={getBankLogo}
                         getAccountTypeLabel={getAccountTypeLabel}
                         handleCopyAccountNumber={handleCopyAccountNumber}
                         onCardClick={handleAccountClick}

@@ -91,10 +91,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
   return (
     <div
       ref={scrollContainerRef}
-      className="px-2 relative"
+      className="px-2 pt-4 relative"
       style={{ scrollbarWidth: 'none' }}
     >
-      <div className="sticky top-0 left-0 right-0 h-4 bg-gradient-to-b from-background to-transparent" />
 
       {transactions.length > 0 && (
         <ul className="space-y-2 p-2 pt-0">
