@@ -65,9 +65,9 @@ function TransactionsScreen() {
   }, [dispatch, hasMore, currentPage, transactionStatus]);
 
   return (
-    <div className="text-foreground flex flex-col justify-stretch h-full bg-background relative">
+    <div className="text-foreground flex flex-col justify-stretch h-full bg-background relative overflow-y-auto enable-scroll">
       <div
-        className={`flex-shrink-0 bg-secondary py-4 border-b border-border`}
+        className={`flex-shrink-0 pt-4`}
       >
         <div className="flex justify-between items-center pl-2 pr-3">
           <h1 className="text-3xl font-bold pl-2">Transactions</h1>
@@ -82,7 +82,7 @@ function TransactionsScreen() {
         </div>
       </div>
 
-      <div className='flex-grow h-full overflow-y-auto enable-scroll pb-2'>
+      <div className='flex-grow h-full pb-2'>
         {isLoadingInitial && (
           <div className="overflow-y-auto p-4 space-y-2">
             <TransactionRowSkeleton />

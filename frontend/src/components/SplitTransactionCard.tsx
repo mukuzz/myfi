@@ -23,7 +23,7 @@ const SplitTransactionCard: React.FC<SplitTransactionCardProps> = ({
   const hasChildTransactions = tx.subTransactions != null && tx.subTransactions.length > 0;
 
   return (
-    <div className={`flex flex-col border border-border rounded-xl overflow-hidden ${className}`}>
+    <div className={`flex flex-col shadow-sm border border-border rounded-xl overflow-hidden ${className}`}>
       {hasChildTransactions && (
         <button className="flex justify-between items-center bg-muted" onClick={() => openSplitView?.(tx)}>
           <div className="flex flex-row items-center p-3 text-muted-foreground">

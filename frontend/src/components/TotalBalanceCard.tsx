@@ -96,11 +96,10 @@ function TotalBalanceCard() {
             <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center mr-2 pt-[2px] text-xs">₹</span>
             Total Balance
           </div>
-          {renderSparkline()}
         </div>
 
         {/* Balance and Sparkline */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4 gap-2">
           {/* Use CurrencyDisplay for total balance */}
           <CurrencyDisplay
             amount={totalBalance}
@@ -108,6 +107,7 @@ function TotalBalanceCard() {
             showFraction={false}
             showOnlyNegative={true}
           />
+          {renderSparkline()}
         </div>
 
         {/* Aggregated Balances */}

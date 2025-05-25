@@ -110,7 +110,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
               <React.Fragment key={tx.id}>
                 {showMonthHeader && (
                   <div className="flex justify-between items-center mb-2 px-1">
-                    <h2 className="text-lg font-semibold text-muted-foreground">{currentMonthYear}</h2>
+                    <h2 className="text-sm font-semibold text-muted-foreground">{currentMonthYear}</h2>
                   </div>
                 )}
                 <SplitTransactionCard

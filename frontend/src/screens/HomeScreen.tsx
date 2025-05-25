@@ -53,20 +53,20 @@ function HomeScreen() {
     }
   }, []);
 
-  return <div className='relative h-full flex flex-col'>
+  return <div className='relative h-full flex flex-col overflow-y-auto enable-scroll'>
     <div className="bg-background text-foreground h-full flex flex-col" style={{ scrollbarWidth: 'none' }}>
-      <div className="flex flex-shrink-0 justify-between items-center bg-secondary py-4 px-5 border-b border-border">
+      <div className="flex flex-shrink-0 justify-between items-center pt-4 px-5">
         <h1 className="text-3xl font-bold">Home</h1>
         <button 
           className=" text-foreground hover:text-foreground transition-colors"
           aria-label="Settings"
           onClick={() => navigateTo(<SettingsScreen />)}
         >
-          <LuSettings2 className='w-7 h-7' />
+          <LuSettings2 className='w-6 h-6' />
         </button>
       </div>
 
-      <div className='overflow-y-auto h-full p-4 enable-scroll'>
+      <div className='h-auto p-4'>
         <div className="lg:flex lg:gap-4 space-y-4 lg:space-y-0">
 
           <div className="lg:w-1/2 flex flex-col gap-4">
