@@ -343,79 +343,80 @@ const SpendingSummaryScreen: React.FC = () => {
     // --- UI Rendering --- //
     return (
         <ScreenContainer title="Spending Summary">
-
-            {isLoading || transactionsStatus === 'loadingMore' || transactionsStatus === 'idle' ? (
-                <SpendingSummaryScreenSkeleton />
-            ) : (
-                <>
-                    {/* Filters */}
-                    <div className="flex items-center justify-center p-4 space-x-2 flex-shrink-0">
-                        <div className="flex space-x-2">
+            <div className="flex flex-col w-full justify-center items-center">
+                {isLoading || transactionsStatus === 'loadingMore' || transactionsStatus === 'idle' ? (
+                    <SpendingSummaryScreenSkeleton />
+                ) : (
+                    <>
+                        {/* Filters */}
+                        <div className="flex items-center justify-center p-4 space-x-2 flex-shrink-0">
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={handleMonthButtonClick} // Open sheet on click
+                                    className="flex items-center space-x-1 px-3 py-1.5 bg-muted rounded-lg text-sm"
+                                >
+                                    <FiCalendar size={16} />
+                                    <span>{selectedYear}</span>
+                                </button>
+                                <button
+                                    onClick={handleMonthButtonClick} // Open sheet on click
+                                    className="flex items-center space-x-1 px-3 py-1.5 bg-muted rounded-lg text-sm"
+                                >
+                                    <FiCalendar size={16} />
+                                    <span>{selectedMonth}</span>
+                                </button>
+                            </div>
                             <button
                                 onClick={handleMonthButtonClick} // Open sheet on click
-                                className="flex items-center space-x-1 px-3 py-1.5 bg-muted rounded-lg text-sm"
+                                className="p-2 bg-muted rounded-lg"
                             >
-                                <FiCalendar size={16} />
-                                <span>{selectedYear}</span>
-                            </button>
-                            <button
-                                onClick={handleMonthButtonClick} // Open sheet on click
-                                className="flex items-center space-x-1 px-3 py-1.5 bg-muted rounded-lg text-sm"
-                            >
-                                <FiCalendar size={16} />
-                                <span>{selectedMonth}</span>
+                                <FiSliders size={18} />
                             </button>
                         </div>
-                        <button
-                            onClick={handleMonthButtonClick} // Open sheet on click
-                            className="p-2 bg-muted rounded-lg"
-                        >
-                            <FiSliders size={18} />
-                        </button>
-                    </div>
 
-                    <div className='flex flex-col flex-grow overflow-y-auto'>
+                        <div className='flex flex-col flex-grow overflow-y-auto w-full max-w-sm'>
 
-                        {/* Spending List */}
-                        <div className="flex-grow p-4 space-y-3">
-                            {!isLoading && spendingByTag.length === 0 && (
-                                <p className="text-muted-foreground text-center pt-10">No spending data for this period.</p>
-                            )}
-                            {!isLoading && spendingByTag.map((item, index) => {
-                                const percentage = totalSpending > 0 ? ((item.amount / totalSpending) * 100).toFixed(1) : '0.0';
-                                const barWidthPercentage = totalSpending > 0 ? (item.amount / totalSpending) * 100 : 0;
-                                return (
-                                    <div
-                                        key={index}
-                                        className="flex bg-card p-4 rounded-xl overflow-hidden shadow-sm relative bg-input border-[1px] border-input cursor-pointer"
-                                        onClick={() => handleTagItemClick(item.name)} // Added onClick handler
-                                    >
-                                        <div className="flex w-full justify-between items-end space-x-4" style={{ zIndex: 2 }}>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium truncate text-card-foreground">{item.name}</p>
-                                                <CurrencyDisplay
-                                                    amount={item.amount}
-                                                    className="text-lg font-bold text-card-foreground"
-                                                    showType={false}
-                                                    showFraction={false}
-                                                />
-                                            </div>
-                                            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                                                {percentage}%
-                                            </span>
-                                        </div>
+                            {/* Spending List */}
+                            <div className="flex-grow p-4 space-y-3">
+                                {!isLoading && spendingByTag.length === 0 && (
+                                    <p className="text-muted-foreground text-center pt-10">No spending data for this period.</p>
+                                )}
+                                {!isLoading && spendingByTag.map((item, index) => {
+                                    const percentage = totalSpending > 0 ? ((item.amount / totalSpending) * 100).toFixed(1) : '0.0';
+                                    const barWidthPercentage = totalSpending > 0 ? (item.amount / totalSpending) * 100 : 0;
+                                    return (
                                         <div
-                                            className="absolute inset-y-0 left-0 bg-secondary rounded-r-xl border-input"
-                                            style={{ width: `${barWidthPercentage}%`, zIndex: 1 }}
-                                            aria-hidden="true"
-                                        ></div>
-                                    </div>
-                                );
-                            })}
+                                            key={index}
+                                            className="flex bg-card p-4 rounded-xl overflow-hidden shadow-sm relative bg-input border-[1px] border-input cursor-pointer"
+                                            onClick={() => handleTagItemClick(item.name)} // Added onClick handler
+                                        >
+                                            <div className="flex w-full justify-between items-end space-x-4" style={{ zIndex: 2 }}>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium truncate text-card-foreground">{item.name}</p>
+                                                    <CurrencyDisplay
+                                                        amount={item.amount}
+                                                        className="text-lg font-bold text-card-foreground"
+                                                        showType={false}
+                                                        showFraction={false}
+                                                    />
+                                                </div>
+                                                <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                                                    {percentage}%
+                                                </span>
+                                            </div>
+                                            <div
+                                                className="absolute inset-y-0 left-0 bg-secondary rounded-r-xl border-input"
+                                                style={{ width: `${barWidthPercentage}%`, zIndex: 1 }}
+                                                aria-hidden="true"
+                                            ></div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                </>
-            )}
+                    </>
+                )}
+            </div>
 
             {/* Month Filter Bottom Sheet */}
             <DraggableBottomSheet
@@ -486,6 +487,7 @@ const SpendingSummaryScreen: React.FC = () => {
                 {/* Pass filtered transactions to TransactionList */}
                 <TransactionList
                     transactions={transactionsForSelectedTag}
+                    className="overflow-y-auto"
                 />
             </DraggableBottomSheet>
 

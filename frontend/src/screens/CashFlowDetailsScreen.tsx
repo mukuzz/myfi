@@ -253,8 +253,8 @@ const CashFlowDetailsScreen: React.FC = () => {
         <ScreenContainer title="Cash Flow">
             <div className="bg-card mb-4">
                 {/* Top Section (Month, Percentages, Totals) */}
-                <div className="flex justify-between items-start p-8 pb-0">
-                    <div>
+                <div className="flex flex-col justify-center items-center p-8 pb-0 w-full">
+                    <div className="max-w-sm w-full">
                         {/* Month/Year Title - Use state variables */}
                         <h2 className="text-xl font-bold">{currentMonthName} {selectedYear}</h2>
                         {/* Percentage Changes */}
@@ -355,7 +355,7 @@ const CashFlowDetailsScreen: React.FC = () => {
                 {/* Incoming Transactions Card */}
                 <button
                     onClick={() => handleOpenSheet('Incoming')}
-                    className="flex justify-between items-center max-w-md w-full p-3 bg-card rounded-lg border border-border bg-secondary"
+                    className="flex justify-between items-center max-w-sm w-full p-3 bg-card rounded-lg border border-border bg-secondary"
                 >
                     <div>
                         <p className="text-base font-semibold text-foreground">Incoming Transactions</p>
@@ -367,7 +367,7 @@ const CashFlowDetailsScreen: React.FC = () => {
                 {/* Outgoing Transactions Card */}
                 <button
                     onClick={() => handleOpenSheet('Outgoing')}
-                    className="flex justify-between items-center max-w-md w-full p-3 bg-card rounded-lg border border-border bg-secondary"
+                    className="flex justify-between items-center max-w-sm w-full p-3 bg-card rounded-lg border border-border bg-secondary"
 
                 >
                     <div>
@@ -380,7 +380,7 @@ const CashFlowDetailsScreen: React.FC = () => {
                 {/* Investments Card */}
                 <button
                     onClick={() => handleOpenSheet('Investment')}
-                    className="flex justify-between items-center max-w-md w-full p-3 bg-card rounded-lg border border-border bg-secondary"
+                    className="flex justify-between items-center max-w-sm w-full p-3 bg-card rounded-lg border border-border bg-secondary"
                 >
                     <div>
                         <p className="text-base font-semibold text-foreground">Investments</p>
@@ -400,6 +400,7 @@ const CashFlowDetailsScreen: React.FC = () => {
                 {sheetTransactions.length > 0 ? (
                     <TransactionList
                         transactions={sheetTransactions}
+                        className="overflow-y-auto"
                     />
                 ) : (
                     <p className="text-muted-foreground text-center py-4">No transactions found.</p>

@@ -266,6 +266,21 @@ export async function fetchTransactions(page: number, size: number): Promise<Pag
   return response.json();
 }
 
+// Fetches a paginated list of transactions for a specific account
+export async function fetchTransactionsByAccountId(accountId: number, page: number = 0, size: number = 20): Promise<Page<Transaction>> {
+  const response = await fetch(`${API_BASE_URL}/transactions/account/${accountId}?page=${page}&size=${size}&sort=transactionDate,desc`);
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {}
+    console.error("Failed to fetch transactions for account:", errorMessage);
+    throw new Error(`Failed to fetch transactions for account: ${errorMessage}`);
+  }
+  return response.json();
+}
+
 // Fetches transactions specifically for the current month
 export async function fetchCurrentMonthTransactions(): Promise<Transaction[]> {
   const response = await fetch(`${API_BASE_URL}/transactions/current-month`);

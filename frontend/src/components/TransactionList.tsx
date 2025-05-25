@@ -16,10 +16,12 @@ const getMonthYear = (dateString: string): string => {
 
 interface TransactionListProps {
   transactions: Transaction[];
+  className?: string;
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
+  className
 }) => {
   const dispatch = useAppDispatch();
 
@@ -91,7 +93,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
   return (
     <div
       ref={scrollContainerRef}
-      className="px-2 pt-4 relative"
+      className={`px-2 pt-4 relative ${className}`}
       style={{ scrollbarWidth: 'none' }}
     >
 

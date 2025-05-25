@@ -2,18 +2,17 @@ import { useState, useEffect, useMemo } from 'react';
 import { Account } from '../types';
 import AddAccountView from './AddAccountSheet';
 import DraggableBottomSheet from './DraggableBottomSheet';
-import CustomToast from './CustomToast';
-import AccountCard from './AccountCard';
-import AccountDetailsModal from './AccountDetailsModal';
-import { copyToClipboard } from '../utils/clipboard';
+import AccountDetailsScreen from '../screens/AccountDetailsScreen';
+import ParentAccountCard from './ParentAccountCard';
 import {
-  FiCreditCard, FiChevronDown, FiChevronUp,
+  FiCreditCard,
 } from 'react-icons/fi';
 import Card from './Card';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAccounts as fetchAccountsRedux } from '../store/slices/accountsSlice';
 import AccountCardSkeleton from './skeletons/AccountCardSkeleton';
 import { BsWindowPlus } from 'react-icons/bs';
+import { useNavigation } from '../hooks/useNavigation';
 
 // Define props for the component
 interface AccountsDisplayCardProps {
@@ -25,10 +24,8 @@ interface AccountsDisplayCardProps {
 function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: AccountsDisplayCardProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  const [expandedParents, setExpandedParents] = useState<Record<string, boolean>>({}); // State for expanded parents
-  
+  const { navigateTo } = useNavigation();
   const dispatch = useAppDispatch();
   const { accounts: allAccounts, status, error } = useAppSelector(state => state.accounts);
 
@@ -68,39 +65,13 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
   };
 
   const handleAccountClick = (account: Account) => {
-    setSelectedAccount(account);
-    setIsDetailsSheetOpen(true);
-  };
-
-  const closeDetailsSheet = () => {
-    setIsDetailsSheetOpen(false);
-    setSelectedAccount(null);
+    navigateTo(<AccountDetailsScreen account={account} getAccountTypeLabel={getAccountTypeLabel} />);
   };
 
   const getAccountTypeLabel = (type: Account['type']) => {
     return type.split('_').map(word =>
       word.charAt(0) + word.slice(1).toLowerCase()
     ).join(' ');
-  };
-
-  const handleCopyAccountNumber = async (accountNumber: string) => {
-    try {
-      await copyToClipboard(accountNumber);
-      setToastMessage('Account number copied');
-    } catch (err) {
-      console.error('Copy failed:', err);
-      setToastMessage('Failed to copy account number');
-    } finally {
-      setTimeout(() => setToastMessage(null), 1000);
-    }
-  };
-
-  // Function to toggle parent expansion state
-  const toggleParentExpansion = (parentId: string) => {
-    setExpandedParents(prev => ({
-      ...prev,
-      [parentId]: !prev[parentId]
-    }));
   };
 
   return (
@@ -112,7 +83,7 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
         </button>
       </header>
 
-      <div className="flex-grow overflow-x-auto px-2 pb-4 pt-0 flex whitespace-nowrap" style={{ scrollbarWidth: 'none' }}>
+      <div className="flex-grow overflow-x-auto px-2 gap-2 pb-4 pt-0 flex whitespace-nowrap" style={{ scrollbarWidth: 'none' }}>
         {(status === 'loading' || status === 'idle') && (
           <>
             <AccountCardSkeleton />
@@ -120,49 +91,13 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
           </>
         )}
 
-        {status === 'succeeded' && !error && groupedAccounts.map(parentAccount => {
-          const isExpanded = !!expandedParents[parentAccount.id];
-          return (
-            <div key={parentAccount.id} className="inline-block align-top mr-2 min-w-[280px]">
-              <div
-                className={`bg-card rounded-2xl overflow-hidden border border-border relative`} // Always rounded, remove conditional border
-              >
-                <AccountCard
-                  account={parentAccount}
-                  getAccountTypeLabel={getAccountTypeLabel}
-                  handleCopyAccountNumber={handleCopyAccountNumber}
-                  onCardClick={handleAccountClick}
-                />
-                {/* Add Toggle Button if children exist */}
-                {parentAccount.children.length > 0 && (
-                  <button
-                    onClick={() => toggleParentExpansion(String(parentAccount.id))}
-                    className="absolute bottom-2 right-2 p-1 bg-muted/50 hover:bg-muted rounded-full text-muted-foreground"
-                    aria-label={isExpanded ? 'Collapse child accounts' : 'Expand child accounts'}
-                  >
-                    {isExpanded ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
-                  </button>
-                )}
-              </div>
-
-              {/* Conditionally render children */}
-              {isExpanded && parentAccount.children.length > 0 && (
-                <div className="bg-card rounded-2xl overflow-hidden border-l border-r border-b -mt-2 border-border"> {/* Adjust margin/padding */}
-                  {parentAccount.children.map((childAccount, index) => (
-                    <div key={childAccount.id} className={`${index > 0 ? 'border-t border-border' : ''}`}>
-                      <AccountCard
-                        account={childAccount}
-                        getAccountTypeLabel={getAccountTypeLabel}
-                        handleCopyAccountNumber={handleCopyAccountNumber}
-                        onCardClick={handleAccountClick}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
+        {status === 'succeeded' && !error && groupedAccounts.map(parentAccount => (
+          <ParentAccountCard
+            key={parentAccount.id}
+            parentAccount={parentAccount}
+            onCardClick={handleAccountClick}
+          />
+        ))}
 
         {status === 'succeeded' && !error && accounts.length === 0 && (
           <div className="text-center py-8 flex-shrink-0" style={{ width: '100%' }}>
@@ -179,19 +114,6 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
           availableParentAccounts={groupedAccounts}
         />
       </DraggableBottomSheet>
-
-      {/* Account Details Bottom Sheet */}
-      <DraggableBottomSheet isOpen={isDetailsSheetOpen} onClose={closeDetailsSheet} title="Account Details">
-        {selectedAccount && (
-          <AccountDetailsModal
-            account={selectedAccount}
-            onClose={closeDetailsSheet}
-            getAccountTypeLabel={getAccountTypeLabel}
-          />
-        )}
-      </DraggableBottomSheet>
-
-      <CustomToast message={toastMessage} isVisible={!!toastMessage} />
     </Card>
   );
 }

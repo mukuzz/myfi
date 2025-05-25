@@ -6,30 +6,35 @@ import AccountIcon from './AccountIcon';
 
 interface AccountCardProps {
   account: Account;
-  getAccountTypeLabel: (type: Account['type']) => string;
   handleCopyAccountNumber: (accountNumber: string) => Promise<void>;
-  onCardClick: (account: Account) => void;
+  showBalance?: boolean;
 }
 
+const getAccountTypeLabel = (type: Account['type']) => {
+  return type.split('_').map(word =>
+    word.charAt(0) + word.slice(1).toLowerCase()
+  ).join(' ');
+};
+
 const AccountCard: React.FC<AccountCardProps> = ({ 
-  account, 
-  getAccountTypeLabel,
+  account,  
   handleCopyAccountNumber,
-  onCardClick
+  showBalance = true
 }) => {
   return (
     <div 
-      className="p-4 bg-secondary cursor-pointer hover:bg-secondary/90 transition-colors" 
-      onClick={() => onCardClick(account)}
+      className="p-4 bg-secondary cursor-pointer hover:bg-secondary/90 transition-colors"
     > 
       {/* Top row: Logo/Balance */}
       <div className="flex justify-between items-center">
         <AccountIcon account={account} className="w-6 h-6" />
-        <CurrencyDisplay 
-          amount={account.balance} 
-          className="font-semibold text-right text-lg" 
-          showOnlyNegative={true}
-        />
+        {showBalance && (
+          <CurrencyDisplay 
+            amount={account.balance} 
+            className="font-semibold text-right text-lg" 
+            showOnlyNegative={true}
+          />
+        )}
       </div>
       {/* Middle row: Name/Type */}
       <div className="flex justify-between items-center mt-3"> 

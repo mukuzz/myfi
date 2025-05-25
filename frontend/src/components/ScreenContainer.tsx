@@ -4,13 +4,14 @@ import { useNavigation } from "../hooks/useNavigation";
 interface ScreenContainerProps {
     children: React.ReactNode;
     title: string;
+    className?: string;
 }
 
-const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, title }) => {
+const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, title, className }) => {
     const { goBack } = useNavigation();
 
     return (
-        <div className="fixed top-0 left-0 right-0 h-screen flex flex-col bg-background text-foreground">
+        <div className={`fixed top-0 left-0 right-0 h-screen w-screen flex flex-col bg-background text-foreground ${className}`}>
             {/* Header Bar */}
             <header className="flex-shrink-0 flex flex-row items-center justify-between p-4 border-b border-border bg-secondary ">
                 <button className="p-2"

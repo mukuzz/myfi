@@ -124,6 +124,13 @@ interface FetchTransactionRangeArgs {
     endMonth: number; // 1-indexed
 }
 
+// Define arguments for fetching transactions by account ID
+interface FetchTransactionsByAccountArgs {
+    accountId: number;
+    page?: number;
+    size?: number;
+}
+
 // Define a type that includes the meta property for thunk actions
 interface AsyncThunkAction<Payload, Arg> extends AnyAction {
     payload: Payload;
@@ -283,6 +290,24 @@ export const fetchTransactionRange = createAsyncThunk<
             console.log(`[fetchRange condition] Allowed: Fetching data for range ${startYear}-${startMonth} to ${endYear}-${endMonth}.`);
             return true;
         },
+    }
+);
+
+// Async thunk for fetching transactions by account ID
+export const fetchTransactionsByAccount = createAsyncThunk<
+    Page<Transaction>,
+    FetchTransactionsByAccountArgs,
+    { state: RootState, rejectValue: string }
+>(
+    'transactions/fetchTransactionsByAccount',
+    async ({ accountId, page = 0, size = 20 }, { rejectWithValue }): Promise<Page<Transaction>> => {
+        try {
+            const response = await apiService.fetchTransactionsByAccountId(accountId, page, size);
+            return response;
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to fetch transactions for account';
+            throw rejectWithValue(message);
+        }
     }
 );
 
@@ -522,6 +547,28 @@ const transactionsSlice = createSlice({
             .addCase(fetchTransactionRange.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = typeof action.payload === 'string' ? action.payload : 'Failed to fetch transactions for range';
+            })
+            // --- Handlers for fetchTransactionsByAccount ---
+            .addCase(fetchTransactionsByAccount.pending, (state) => {
+                if (state.transactions.length === 0) {
+                    state.status = 'loading';
+                } else {
+                    state.status = 'loadingMore';
+                }
+                state.error = null;
+            })
+            .addCase(fetchTransactionsByAccount.fulfilled, (state, action: PayloadAction<Page<Transaction>>) => {
+                const pageData = action.payload;
+                state.transactions = mergeTransactions(state.transactions, pageData.content);
+                state.transactionPage = pageData;
+                state.currentPage = pageData.number;
+                state.hasMore = !pageData.last;
+                state.status = 'succeeded';
+                state.error = null;
+            })
+            .addCase(fetchTransactionsByAccount.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = typeof action.payload === 'string' ? action.payload : 'Failed to fetch transactions for account';
             })
             // --- Handlers for createTransaction ---
             .addCase(createTransaction.pending, (state) => {

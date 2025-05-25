@@ -254,9 +254,9 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({
                                                 <circle key={`inc-${i}`} cx={xPos} cy={yScale(d.incoming)} r="8" fill="rgba(16, 185, 129, 0.8)" />
                                                 <circle key={`inv-${i}`} cx={xPos} cy={yScale(d.invested)} r="8" fill="rgba(59, 130, 246, 0.8)" />
                                                 <circle key={`out-${i}`} cx={xPos} cy={yScale(d.outgoing)} r="8" fill="rgba(239, 68, 68, 0.8)" />
-                                                <circle key={`inc-${i}-inner`} cx={xPos} cy={yScale(d.incoming)} r="4" fill="black" />
-                                                <circle key={`inv-${i}-inner`} cx={xPos} cy={yScale(d.invested)} r="4" fill="black" />
-                                                <circle key={`out-${i}-inner`} cx={xPos} cy={yScale(d.outgoing)} r="4" fill="black" />
+                                                <circle key={`inc-${i}-inner`} cx={xPos} cy={yScale(d.incoming)} r="4" fill="#fefefe" />
+                                                <circle key={`inv-${i}-inner`} cx={xPos} cy={yScale(d.invested)} r="4" fill="#fefefe" />
+                                                <circle key={`out-${i}-inner`} cx={xPos} cy={yScale(d.outgoing)} r="4" fill="#fefefe" />
                                                 {isSelected && (
                                                     <>
                                                         <circle cx={xPos} cy={yScale(d.incoming)} r="5" fill="#10B981" />
