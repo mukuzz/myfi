@@ -16,8 +16,8 @@ function BottomNav() {
   const activeScreen = tabs.find(tab => tab.name === activeTabName)?.screen || <HomeScreen />;
 
   return (
-    <nav className="bg-secondary w-full h-screen flex flex-col fixed bottom-0 disable-scroll">
-      <div className="flex-grow overflow-hidden">
+    <nav className="w-full h-screen flex flex-col fixed bottom-0 disable-scroll">
+      <div className="flex-grow bg-background overflow-hidden">
         {activeScreen}
       </div>
       <div className="flex-shrink-0">

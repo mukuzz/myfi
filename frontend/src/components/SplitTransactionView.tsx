@@ -197,23 +197,23 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
             <div className="pt-0 flex flex-col h-full text-foreground">
 
                 {/* Original Transaction Summary Card */}
-                <div className="bg-secondary rounded-lg shadow p-4 mb-6 mx-4 flex-shrink-0">
+                <div className="bg-secondary rounded-lg border border-border p-4 mb-6 mx-4 flex-shrink-0">
                     <div className="text-center mb-3">
                         <span className="text-3xl font-bold text-foreground">
                             - {formatCurrency(totalOriginalAmount)}
                         </span>
                     </div>
-                    <div className="flex justify-between text-sm text-muted-foreground border-t border-border pt-3">
+                    <div className="flex justify-between text-sm text-muted-foreground font-semibold border-t border-border pt-3">
                         <div className="flex flex-col items-start">
                             <span className="text-xs uppercase mb-1">From</span>
-                            <div className="flex items-center text-foreground">
+                            <div className="flex items-center">
                                 <FiCreditCard className="mr-2 h-4 w-4 text-primary" />
-                                <span>{displayTransaction.account?.name || 'Account'}</span>
+                                <span>{displayTransaction.account?.name || 'Account'} ({displayTransaction.account?.accountNumber.slice(-4)})</span>
                             </div>
                         </div>
                         <div className="flex flex-col items-end">
                             <span className="text-xs uppercase mb-1">On</span>
-                            <span className="text-foreground">{formatHeaderDate(displayTransaction.transactionDate)}</span>
+                            <span>{formatHeaderDate(displayTransaction.transactionDate)}</span>
                         </div>
                     </div>
                 </div>
@@ -225,7 +225,7 @@ const SplitTransactionView: React.FC<SplitTransactionViewProps> = ({
                 </div>
 
                 {/* List and Button Wrapper */}
-                <div className="bg-input rounded-xl py-4 flex flex-col overflow-hidden mb-4 mx-4 overflow-y-auto ">
+                <div className="bg-muted rounded-xl py-4 flex flex-col overflow-hidden mb-4 mx-4 overflow-y-auto ">
                     {/* List of transactions (Parent + Children) */}
                     <div className="thin-scrollbar space-y-2 mb-4">
                         {combinedTransactions.length > 0 ? (

@@ -23,7 +23,7 @@ const AccountCard: React.FC<AccountCardProps> = ({
 }) => {
   return (
     <div 
-      className="p-4 bg-secondary cursor-pointer hover:bg-secondary/90 transition-colors"
+      className="p-4 bg-secondary h-full cursor-pointer hover:bg-secondary/90 transition-colors"
     > 
       {/* Top row: Logo/Balance */}
       <div className="flex justify-between items-center">

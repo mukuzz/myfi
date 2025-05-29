@@ -57,7 +57,7 @@ function ParentAccountCard({
 
                 {/* Child Accounts - animated slide from below to right */}
                 <div
-                    className="overflow-hidden transition-all duration-300 ease-in-out"
+                    className="overflow-hidden h-full transition-all duration-300 ease-in-out"
                     style={{
                         maxWidth: maxWidth
                     }}
@@ -70,7 +70,7 @@ function ParentAccountCard({
                         {children.map((childAccount, index) => (
                             <div
                                 key={childAccount.id}
-                                className={`min-w-[270px] transition-all duration-300 ease-in-out ${isExpanded
+                                className={`min-w-[270px] h-full transition-all duration-300 ease-in-out ${isExpanded
                                     ? 'translate-x-0'
                                     : 'translate-x-[-30px]'
                                     }`}

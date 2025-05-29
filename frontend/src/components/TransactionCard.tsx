@@ -1,10 +1,10 @@
 import React from 'react';
-import { FiTag, FiCreditCard } from 'react-icons/fi';
 import { Transaction, TagMap } from '../types';
 import { formatDate } from '../utils/dateUtils';
 import { ReactComponent as ExcludedIcon } from '../assets/icons/ExcludedFromAccountingIcon.svg';
 import CurrencyDisplay from './AmountDisplay';
 import AccountIcon from './AccountIcon';
+import { BsFillTagFill } from 'react-icons/bs';
 
 interface TransactionCardProps {
   transaction: Transaction;
@@ -31,10 +31,10 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick, classNa
       }}
     >
       <div className="flex justify-between items-center mb-2 pointer-events-none">
-        <span className="text-muted-foreground text-base font-medium flex-grow mr-2 truncate">
+        <span className="text-muted-foreground text-sm font-semibold flex-grow mr-2 truncate">
           {transaction.counterParty || transaction.description}
         </span>
-        <span className="text-muted-foreground text-xs flex-shrink-0">
+        <span className="text-muted-foreground text-sm font-semibold flex-shrink-0">
           {formatDate(transaction.transactionDate)}
         </span>
       </div>
@@ -52,16 +52,16 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick, classNa
           <button
             onClick={(e) => onTagClick && onTagClick(transaction, e)}
             disabled={!onTagClick}
-            className={`text-sm text-secondary-foreground px-2 py-1.5 rounded-lg flex items-center space-x-1 bg-input 
+            className={`text-sm h-8 min-w-8 flex items-center justify-center text-secondary-foreground px-2 py-1.5 rounded-lg font-semibold space-x-1 bg-muted 
                       ${onTagClick ? 'cursor-pointer transition-colors' : 'cursor-default'}`}
           >
             {currentTagName ? (
               <>
-                <FiTag size={14} className="text-muted-foreground" />
+                <BsFillTagFill size={14} className="text-muted-foreground" />
                 <span>{currentTagName}</span>
               </>
             ) : (
-              <FiTag className="text-muted-foreground" />
+              <BsFillTagFill size={14} className="text-muted-foreground" />
             )}
           </button>
           {transaction.excludeFromAccounting && (

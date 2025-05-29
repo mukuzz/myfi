@@ -62,7 +62,7 @@ function RootLayout() {
   const isRefreshBarNeeded = true;
 
   return (
-    <div>
+    <div className='bg-background'>
       {isMobile ?
         <BottomNav />
         :

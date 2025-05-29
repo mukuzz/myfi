@@ -54,7 +54,7 @@ function HomeScreen() {
   }, []);
 
   return <div className='relative h-full flex flex-col overflow-y-auto enable-scroll'>
-    <div className="bg-background text-foreground h-full flex flex-col" style={{ scrollbarWidth: 'none' }}>
+    <div className="bg-background text-foreground h-auto flex flex-col" style={{ scrollbarWidth: 'none' }}>
       <div className="flex flex-shrink-0 justify-between items-center pt-4 px-5">
         <h1 className="text-3xl font-bold">Home</h1>
         <button 
