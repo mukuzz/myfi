@@ -113,13 +113,13 @@ function TotalBalanceCard() {
         {/* Aggregated Balances */}
         <div className="flex flex-wrap flex-row gap-2"> {/* Adjusted gap */}
           {/* Savings Aggregate */}
-          <div className="flex items-center bg-muted/80 rounded-full text-xs p-1 px-3 space-x-1">
+          <div className="flex items-center bg-muted rounded-full text-xs p-1 px-3 space-x-1">
             <span className="text-primary text-xs">BALANCE</span>
             {/* Optional label: <span className="font-medium text-foreground mr-1">Savings:</span> */}
             <span className="font-bold text-foreground">{formatCurrency(savingsBalance, 'INR', true)}</span>
           </div>
           {/* Credit Card Aggregate */}
-          <div className="flex items-center bg-muted/80 rounded-full text-xs p-1 px-3 space-x-1">
+          <div className="flex items-center bg-muted rounded-full text-xs p-1 px-3 space-x-1">
             <span className="text-primary text-xs">DEBT</span>
             <span className={`font-bold`}>{formatCurrency(creditCardBalance, 'INR', true, false)}</span>
           </div>

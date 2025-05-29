@@ -15,17 +15,16 @@ const ShimmerPill = () => (
 function TotalBalanceCardSkeleton() {
   return (
     <Card>
-      <div className="p-6 bg-secondary">
+      <div className="p-4 bg-secondary">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
             <div className="w-5 h-5 rounded-full bg-muted animate-pulse mr-2"></div>
             <ShimmerBar className="w-24 h-5" />
           </div>
-          <div className="w-5 h-5 rounded-full bg-muted animate-pulse"></div>
         </div>
 
         <div className="flex justify-between items-center mb-4">
-          <ShimmerBar className="w-1/2 h-9" />
+          <ShimmerBar className="w-1/2 h-10" />
           <ShimmerBar className="w-16 h-6" />
         </div>
 

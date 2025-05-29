@@ -1,13 +1,20 @@
 import React, { useEffect, useMemo } from 'react';
 import Card from './Card';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
+import { fetchTransactionRange } from '../store/slices/transactionsSlice';
 import { Transaction } from '../types'; // Import Transaction type
 import CurrencyDisplay from './AmountDisplay';
 import MonthlyCashFlowSkeleton from './skeletons/MonthlyCashFlowSkeleton'; // Import the skeleton
 import { useNavigation } from '../hooks/useNavigation'; // Added import
 import CashFlowDetailsScreen from '../screens/CashFlowDetailsScreen'; // Added import
 
+interface MonthlyCashFlow {
+    month: string;
+    year: number;
+    incoming: number;
+    outgoing: number;
+    invested: number;
+}
 
 const MonthlyCashFlowCard: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -20,90 +27,132 @@ const MonthlyCashFlowCard: React.FC = () => {
 
     const isLoading = status === 'loading';
 
+    // Calculate date range for last 3 months
+    const dateRange = useMemo(() => {
+        const now = new Date();
+        const endYear = now.getFullYear();
+        const endMonth = now.getMonth() + 1; // Current month (1-indexed)
+        
+        // Start from 2 months ago (to get 3 months total including current)
+        const startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        const startYear = startDate.getFullYear();
+        const startMonth = startDate.getMonth() + 1; // 1-indexed
+        
+        return { startYear, startMonth, endYear, endMonth };
+    }, []);
+
     useEffect(() => {
         if (status === 'idle' || status === 'failed') {
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth() + 1; // Month is 1-indexed for the API
-            dispatch(fetchTransactionsForMonth({ year: currentYear, month: currentMonth }));
+            const { startYear, startMonth, endYear, endMonth } = dateRange;
+            dispatch(fetchTransactionRange({ startYear, startMonth, endYear, endMonth }));
         }
-    }, [status, dispatch]);
+    }, [status, dispatch, dateRange]);
 
-    const { incoming, outgoing, invested } = useMemo(() => {
+    const monthlyData = useMemo((): MonthlyCashFlow[] => {
         if (status === 'loading') {
-            return { incoming: 0, outgoing: 0, invested: 0 };
+            return [];
         }
 
-        // Filter transactions for the current month
+        // Generate array of last 3 months
+        const months: MonthlyCashFlow[] = [];
         const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth(); // 0-indexed
+        
+        for (let i = 0; i < 3; i++) {
+            const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const year = monthDate.getFullYear();
+            const monthIndex = monthDate.getMonth(); // 0-indexed for filtering
+            const monthName = monthDate.toLocaleString('default', { month: 'short' }).toUpperCase();
+            
+            // Filter transactions for this specific month
+            const monthTransactions = transactions.filter(tx => {
+                const txDate = new Date(tx.transactionDate);
+                return txDate.getFullYear() === year && txDate.getMonth() === monthIndex;
+            });
 
-        const currentMonthTransactions = transactions.filter(tx => {
-            const txDate = new Date(tx.transactionDate);
-            return txDate.getFullYear() === currentYear && txDate.getMonth() === currentMonth;
-        });
+            let incoming = 0;
+            let outgoing = 0;
+            let invested = 0; // Placeholder for investment logic
 
-        let incomingTotal = 0;
-        let outgoingTotal = 0;
-        let investedTotal = 0; // Placeholder for investment logic
+            monthTransactions.forEach((tx: Transaction) => {
+                if (tx.excludeFromAccounting) return; // Skip excluded transactions
 
-        // Use the filtered transactions
-        currentMonthTransactions.forEach((tx: Transaction) => {
-            if (tx.excludeFromAccounting) return; // Skip excluded transactions
+                if (tx.type === 'CREDIT') {
+                    incoming += tx.amount;
+                } else if (tx.type === 'DEBIT') {
+                    // TODO: Add logic to identify investment transactions
+                    // For now, all non-excluded debits are considered outgoing
+                    outgoing += tx.amount;
+                    // Example: if (tx.tagId === INVESTMENT_TAG_ID) { invested += tx.amount; }
+                }
+            });
 
-            if (tx.type === 'CREDIT') {
-                incomingTotal += tx.amount;
-            } else if (tx.type === 'DEBIT') {
-                // TODO: Add logic to identify investment transactions
-                // For now, all non-excluded debits are considered outgoing
-                outgoingTotal += tx.amount;
-                // Example: if (tx.tagId === INVESTMENT_TAG_ID) { investedTotal += tx.amount; }
-            }
-        });
+            months.push({
+                month: monthName,
+                year,
+                incoming,
+                outgoing,
+                invested
+            });
+        }
 
-        return { incoming: incomingTotal, outgoing: outgoingTotal, invested: investedTotal };
-
-    }, [transactions, status]); // Depend on main transactions and status
+        return months;
+    }, [transactions, status]);
 
     const handleCardClick = () => {
-        const now = new Date();
-        navigateTo(<CashFlowDetailsScreen />); // Updated to use navigateTo
+        navigateTo(<CashFlowDetailsScreen />);
     };
 
-    const currentDate = new Date();
-    // Keep only month name, year will be shown on the details screen or implicitly known
-    const monthYear = `${currentDate.toLocaleString('default', { month: 'long' }).toUpperCase()} ${currentDate.getFullYear()}`;
-
     return (
-        // Make the Card itself clickable
         <Card
             className="flex flex-col cursor-pointer"
             onClick={handleCardClick}
         >
-
             {/* Content Area */}
             <div className="p-4 space-y-4 flex-grow overflow-y-auto bg-secondary">
                 <div className="flex flex-row text-muted-foreground items-center justify-between">
-                    <h1 className=" font-bold">Cash Flow</h1>
+                    <h1 className="font-bold">Cash Flow</h1>
                     <div className="text-xs font-semibold text-muted-foreground">
-                        {monthYear}
+                        Last 3 Months
                     </div>
                 </div>
 
                 {isLoading && <MonthlyCashFlowSkeleton />}
                 {!isLoading && (
-                    <div className="flex flex-row justify-between align-top font-medium flex-wrap">
-                        <div className="flex flex-grow flex-col justify-between items-start">
-                            <span className="text-sm mb-2">Incoming</span>
-                            <hr className='w-full' />
-                            <CurrencyDisplay className="text-2xl mt-3 font-bold" amount={incoming} type="CREDIT" showFraction={false} smallRupeeSymbol={true} />
-                        </div>
-                        <div className="flex flex-grow flex-col justify-between items-end">
-                            <span className="text-sm mb-2">Outgoing</span>
-                            <hr className='w-full' />
-                            <CurrencyDisplay className="text-2xl mt-3 font-bold" amount={outgoing} type="DEBIT" showFraction={false} smallRupeeSymbol={true} />
-                        </div>
+                    <div className="space-y-4">
+                        {monthlyData.map((monthData, index) => (
+                            <div key={`${monthData.year}-${monthData.month}`} className="space-y-2">
+                                <div className="grid grid-cols-3 items-center font-medium">
+                                    <div className="flex flex-grow flex-col justify-between items-start">
+                                        <span className="text-xs text-muted-foreground">Incoming</span>
+                                        <CurrencyDisplay 
+                                            className="text-xl font-bold" 
+                                            amount={monthData.incoming} 
+                                            type="CREDIT" 
+                                            showFraction={false} 
+                                            showType={false}
+                                            smallRupeeSymbol={false} 
+                                        />
+                                    </div>
+                                    <div className="text-xs font-semibold text-muted-foreground text-center">
+                                        {monthData.month}
+                                    </div>
+                                    <div className="flex flex-grow flex-col justify-between items-end">
+                                        <span className="text-xs text-muted-foreground">Outgoing</span>
+                                        <CurrencyDisplay 
+                                            className="text-xl font-bold" 
+                                            amount={monthData.outgoing} 
+                                            type="DEBIT" 
+                                            showFraction={false} 
+                                            showType={false}
+                                            smallRupeeSymbol={false} 
+                                        />
+                                    </div>
+                                </div>
+                                {index < monthlyData.length - 1 && (
+                                    <hr className="border-muted" />
+                                )}
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

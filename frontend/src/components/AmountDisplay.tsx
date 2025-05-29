@@ -43,8 +43,8 @@ const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
     <div className={`flex flex-row items-center text-muted-foreground ${className}`}>
         {showType && (showOnlyNegative ? type === 'DEBIT' : true) && <span className={`text-sm font-mono`}>{type === 'DEBIT' ? '-' : '+'}</span>}
         <div className={`flex flex-row ${smallRupeeSymbol ? 'items-start' : 'items-center'}`}>
-            <LuIndianRupee className={`${smallRupeeSymbol ? 'text-xs' : 'p-0.5 -mx-0.5'} font-base`}/>
-            <span className=' accent-foreground text-foreground'>{formattedAmount}</span>
+            <LuIndianRupee className={`${smallRupeeSymbol ? 'text-xs mt-0.5' : 'p-0.5 -mx-0.5'} font-base`}/>
+            <span className='text-foreground'>{formattedAmount}</span>
         </div>
     </div>
   );

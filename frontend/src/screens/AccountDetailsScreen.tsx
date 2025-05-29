@@ -149,7 +149,7 @@ const AccountDetailsScreen: React.FC<AccountDetailsScreenProps> = ({
         <div className="h-full flex flex-col justify-start items-start overflow-y-auto w-full sm:max-w-[350px]">
           <div className="flex-shrink-0 flex flex-row justify-start items-stretch overflow-x-auto w-full relative">
             <div className="p-6 flex-shrink-0 flex flex-row justify-start items-stretch overflow-x-auto w-full relative">
-              <ParentAccountCard parentAccount={account} onCardClick={() => { }} />
+              <ParentAccountCard parentAccount={account} />
             </div>
             <span className="absolute hidden sm:block flex-shrink-0 left-0 h-full w-6 bg-gradient-to-r from-background to-transparent" />
             <span className="absolute hidden sm:block flex-shrink-0 right-0 h-full w-6 bg-gradient-to-l from-background to-transparent" />

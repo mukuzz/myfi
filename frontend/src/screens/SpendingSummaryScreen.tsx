@@ -353,14 +353,14 @@ const SpendingSummaryScreen: React.FC = () => {
                             <div className="flex space-x-2">
                                 <button
                                     onClick={handleMonthButtonClick} // Open sheet on click
-                                    className="flex items-center space-x-1 px-3 py-1.5 bg-muted rounded-lg text-sm"
+                                    className="flex items-center space-x-1 px-3 py-1.5 bg-input rounded-lg text-sm"
                                 >
                                     <FiCalendar size={16} />
                                     <span>{selectedYear}</span>
                                 </button>
                                 <button
                                     onClick={handleMonthButtonClick} // Open sheet on click
-                                    className="flex items-center space-x-1 px-3 py-1.5 bg-muted rounded-lg text-sm"
+                                    className="flex items-center space-x-1 px-3 py-1.5 bg-input rounded-lg text-sm"
                                 >
                                     <FiCalendar size={16} />
                                     <span>{selectedMonth}</span>
@@ -368,7 +368,7 @@ const SpendingSummaryScreen: React.FC = () => {
                             </div>
                             <button
                                 onClick={handleMonthButtonClick} // Open sheet on click
-                                className="p-2 bg-muted rounded-lg"
+                                className="p-2 bg-input rounded-lg"
                             >
                                 <FiSliders size={18} />
                             </button>
@@ -387,7 +387,7 @@ const SpendingSummaryScreen: React.FC = () => {
                                     return (
                                         <div
                                             key={index}
-                                            className="flex bg-card p-4 rounded-xl overflow-hidden shadow-sm relative bg-input border-[1px] border-input cursor-pointer"
+                                            className="flex bg-card p-4 rounded-xl overflow-hidden shadow-sm relative bg-muted border-[1px] border-border cursor-pointer"
                                             onClick={() => handleTagItemClick(item.name)} // Added onClick handler
                                         >
                                             <div className="flex w-full justify-between items-end space-x-4" style={{ zIndex: 2 }}>

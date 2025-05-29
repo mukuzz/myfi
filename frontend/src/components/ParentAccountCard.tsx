@@ -7,7 +7,7 @@ import { copyToClipboard } from '../utils/clipboard';
 
 interface ParentAccountCardProps {
     parentAccount: Account;
-    onCardClick: (account: Account) => void;
+    onCardClick?: (account: Account) => void;
 }
 
 function ParentAccountCard({
@@ -45,7 +45,7 @@ function ParentAccountCard({
         <div className="flex flex-row justify-start">
             <div className="inline-flex align-top">
                 {/* Parent Account Card */}
-                <div className="min-w-[270px] relative" onClick={() => onCardClick(parentAccount)}>
+                <div className={`min-w-[270px] relative ${onCardClick ? 'cursor-pointer' : ''}`} onClick={() => onCardClick && onCardClick(parentAccount)}>
                     <div className={`bg-card overflow-hidden border border-border ${hasChildren ? 'rounded-l-2xl' : 'rounded-2xl'
                         }`}>
                         <AccountCard
@@ -57,11 +57,11 @@ function ParentAccountCard({
 
                 {/* Child Accounts - animated slide from below to right */}
                 <div
-                    className="overflow-hidden h-full transition-all duration-300 ease-in-out"
+                    className={`overflow-hidden h-full transition-all duration-300 ease-in-out ${onCardClick ? 'cursor-pointer' : ''}`}
                     style={{
                         maxWidth: maxWidth
                     }}
-                    onClick={() => onCardClick(parentAccount)}
+                    onClick={() => onCardClick && onCardClick(parentAccount)}
                 >
                     <div
                         className={`flex flex-row justify-start h-full transition-transform duration-300 ease-in-out ${isExpanded ? 'translate-x-0' : 'translate-x-[-50px]'
