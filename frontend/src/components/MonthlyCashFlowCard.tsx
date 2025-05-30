@@ -57,7 +57,7 @@ const MonthlyCashFlowCard: React.FC = () => {
         const months: MonthlyCashFlow[] = [];
         const now = new Date();
         
-        for (let i = 0; i < 3; i++) {
+        for (let i = 2; i >= 0; i--) {
             const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const year = monthDate.getFullYear();
             const monthIndex = monthDate.getMonth(); // 0-indexed for filtering
@@ -119,13 +119,16 @@ const MonthlyCashFlowCard: React.FC = () => {
                 {isLoading && <MonthlyCashFlowSkeleton />}
                 {!isLoading && (
                     <div className="space-y-4">
+                        <div className="flex flex-row justify-between text-xs font-semibold text-muted-foreground">
+                            <span className="text-sm text-muted-foreground">Incoming</span>
+                            <span className="text-sm text-muted-foreground">Outgoing</span>
+                        </div>
                         {monthlyData.map((monthData, index) => (
-                            <div key={`${monthData.year}-${monthData.month}`} className="space-y-2">
+                            <div key={`${monthData.year}-${monthData.month}`}>
                                 <div className="grid grid-cols-3 items-center font-medium">
                                     <div className="flex flex-grow flex-col justify-between items-start">
-                                        <span className="text-xs text-muted-foreground">Incoming</span>
                                         <CurrencyDisplay 
-                                            className="text-xl font-bold" 
+                                            className="font-medium" 
                                             amount={monthData.incoming} 
                                             type="CREDIT" 
                                             showFraction={false} 
@@ -137,9 +140,9 @@ const MonthlyCashFlowCard: React.FC = () => {
                                         {monthData.month}
                                     </div>
                                     <div className="flex flex-grow flex-col justify-between items-end">
-                                        <span className="text-xs text-muted-foreground">Outgoing</span>
+                                        
                                         <CurrencyDisplay 
-                                            className="text-xl font-bold" 
+                                            className="font-medium" 
                                             amount={monthData.outgoing} 
                                             type="DEBIT" 
                                             showFraction={false} 
@@ -148,9 +151,6 @@ const MonthlyCashFlowCard: React.FC = () => {
                                         />
                                     </div>
                                 </div>
-                                {index < monthlyData.length - 1 && (
-                                    <hr className="border-muted" />
-                                )}
                             </div>
                         ))}
                     </div>
