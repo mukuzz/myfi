@@ -25,14 +25,8 @@ const MonthRowSkeleton = () => (
 function MonthlyCashFlowSkeleton() {
   return (
     <div className="space-y-4">
-      {/* Header row matching the loaded UI */}
-      <div className="flex flex-row justify-between text-xs font-semibold text-muted-foreground">
-        <ShimmerBar className="w-16 h-4" />
-        <ShimmerBar className="w-16 h-4" />
-      </div>
-      
       {/* Month rows */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         {[0, 1, 2].map((index) => (
           <MonthRowSkeleton key={index} />
         ))}

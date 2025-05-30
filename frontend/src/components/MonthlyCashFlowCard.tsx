@@ -7,6 +7,7 @@ import CurrencyDisplay from './AmountDisplay';
 import MonthlyCashFlowSkeleton from './skeletons/MonthlyCashFlowSkeleton'; // Import the skeleton
 import { useNavigation } from '../hooks/useNavigation'; // Added import
 import CashFlowDetailsScreen from '../screens/CashFlowDetailsScreen'; // Added import
+import { LuMinus, LuPlus } from 'react-icons/lu';
 
 interface MonthlyCashFlow {
     month: string;
@@ -118,17 +119,13 @@ const MonthlyCashFlowCard: React.FC = () => {
 
                 {isLoading && <MonthlyCashFlowSkeleton />}
                 {!isLoading && (
-                    <div className="space-y-4">
-                        <div className="flex flex-row justify-between text-xs font-semibold text-muted-foreground">
-                            <span className="text-sm text-muted-foreground">Incoming</span>
-                            <span className="text-sm text-muted-foreground">Outgoing</span>
-                        </div>
+                    <div className="space-y-2">
                         {monthlyData.map((monthData, index) => (
                             <div key={`${monthData.year}-${monthData.month}`}>
                                 <div className="grid grid-cols-3 items-center font-medium">
                                     <div className="flex flex-grow flex-col justify-between items-start">
                                         <CurrencyDisplay 
-                                            className="font-medium" 
+                                            className="font-bold" 
                                             amount={monthData.incoming} 
                                             type="CREDIT" 
                                             showFraction={false} 
@@ -136,13 +133,15 @@ const MonthlyCashFlowCard: React.FC = () => {
                                             smallRupeeSymbol={false} 
                                         />
                                     </div>
-                                    <div className="text-xs font-semibold text-muted-foreground text-center">
-                                        {monthData.month}
+                                    <div className="flex flex-row items-center justify-center gap-1 text-xs font-mono font-semibold text-muted-foreground text-center">
+                                        <LuPlus/>
+                                        <span className="text-xs bg-muted py-1 px-2 rounded-xl text-muted-foreground">{monthData.month}</span>
+                                        <LuMinus/>
                                     </div>
                                     <div className="flex flex-grow flex-col justify-between items-end">
                                         
                                         <CurrencyDisplay 
-                                            className="font-medium" 
+                                            className="font-bold" 
                                             amount={monthData.outgoing} 
                                             type="DEBIT" 
                                             showFraction={false} 

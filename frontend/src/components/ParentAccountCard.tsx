@@ -46,7 +46,7 @@ function ParentAccountCard({
             <div className="inline-flex align-top">
                 {/* Parent Account Card */}
                 <div className={`min-w-[270px] relative ${onCardClick ? 'cursor-pointer' : ''}`} onClick={() => onCardClick && onCardClick(parentAccount)}>
-                    <div className={`bg-card overflow-hidden border border-border ${hasChildren ? 'rounded-l-2xl' : 'rounded-2xl'
+                    <div className={`bg-card overflow-hidden border-[0.7px] border-border ${hasChildren ? 'rounded-l-2xl' : 'rounded-2xl'
                         }`}>
                         <AccountCard
                             account={parentAccount}

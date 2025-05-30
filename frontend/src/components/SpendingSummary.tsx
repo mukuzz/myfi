@@ -147,7 +147,7 @@ const SpendingSummary: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                     {isLoading && <SpendingSummarySkeleton />}
                     {transactionsStatus === 'succeeded' && spendingByTag.length === 0 && (
                         <p className="text-muted-foreground text-center">No spending data for this period.</p>
@@ -163,13 +163,13 @@ const SpendingSummary: React.FC = () => {
                                         aria-hidden="true"
                                     ></div>
                                     <span
-                                        className="relative font-medium text-card-foreground block truncate px-2 py-1"
+                                        className="relative font-semibold text-card-foreground block truncate px-2 py-1"
                                     >
                                         {item.name}
                                     </span>
                                 </div>
                                 <span className="font-medium text-card-foreground whitespace-nowrap">
-                                    <CurrencyDisplay amount={item.amount} className="font-medium" showType={false} showFraction={false} />
+                                    <CurrencyDisplay amount={item.amount} className="font-bold" showType={false} showFraction={false} />
                                 </span>
                             </div>
                         );
