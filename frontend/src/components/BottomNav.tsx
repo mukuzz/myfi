@@ -23,7 +23,7 @@ function BottomNav() {
       <div className="flex-shrink-0">
         <RefreshBar className="disable-scroll"/>
       </div>
-      <div className="flex flex-shrink-0 justify-around pb-4">
+      <div className="flex flex-shrink-0 justify-around pb-6">
         {tabs.map((tab) => {
           const isActive = tab.name === activeTabName;
           return (

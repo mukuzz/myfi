@@ -53,24 +53,6 @@ function DraggableBottomSheet({
     // We only need this one effect reacting to isOpen for style cleanup.
   }, [isOpen]);
 
-  // Effect to manage background color opacity via JS
-  useEffect(() => {
-    const backgroundElement = modalBackgroundRef.current;
-    if (backgroundElement) {
-      // Ensure transition is set for both opening and closing
-      backgroundElement.style.transition = 'background-color 0.2s ease-in-out';
-      if (isOpen) {
-        // Use requestAnimationFrame to ensure the transition applies correctly after initial render/display change
-        requestAnimationFrame(() => {
-          backgroundElement.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        });
-      } else {
-        backgroundElement.style.backgroundColor = 'rgba(0, 0, 0, 0)';
-      }
-    }
-    // No cleanup needed for background-color/transition here as it's reapplied based on isOpen
-  }, [isOpen]);
-
   // Effect to prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -189,8 +171,8 @@ function DraggableBottomSheet({
 
   return ReactDOM.createPortal(
     <div
-      className={`fixed inset-0 bg-black transition-opacity duration-${animationDuration} ease-in-out
-        ${isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-1'}`}
+      className={`fixed inset-0 transition-opacity duration-${animationDuration} ease-in-out
+        ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
       style={{ zIndex: zIndex, visibility: 'hidden' }} // Apply z-index to background, visibility handled by effect
       // Close on overlay click (optional, could be a prop)
       onClick={onClose}
@@ -207,11 +189,13 @@ function DraggableBottomSheet({
         // Add touch-action to prevent browser interference when dragging the sheet
         style={{
           touchAction: isDragging.current ? 'none' : 'auto',
-          zIndex: zIndex + 10 // Make the sheet 10 higher than the background
+          zIndex: zIndex + 10, // Make the sheet 10 higher than the background
+          boxShadow: '0 0 32px 0 rgba(0,0,0,0.25)', // Large shadow all around
         }}
-        className={`fixed bottom-0 left-0 right-0 bg-background w-full max-w-lg mx-auto shadow-xl h-[95vh] flex flex-col rounded-t-xl
+        className={`fixed bottom-0 left-0 right-0 border-[0.7px] border-border bg-background w-full max-w-lg mx-auto h-[95vh] flex flex-col rounded-t-xl
                    transition-transform duration-${animationDuration} ease-in-out
-                   ${isOpen ? 'translate-y-0' : 'translate-y-[100%]'}`}
+                   ${isOpen ? 'translate-y-0' : 'translate-y-[100%]'}
+                   `}
         // Inline transform applied during drag
       >
         {/* Drag Handle Area - Now includes title */}
