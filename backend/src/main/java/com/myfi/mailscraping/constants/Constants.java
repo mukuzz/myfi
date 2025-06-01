@@ -23,7 +23,6 @@ public class Constants {
     public static final Map<String, List<String>> BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS = new HashMap<String, List<String>>() {
         {
             put(HDFC, new ArrayList<>(List.of("alerts@hdfcbank.net")));
-            put(HDFC, new ArrayList<>(List.of("alerts@hdfcbank.net")));
         }
     };
 

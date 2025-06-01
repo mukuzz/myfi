@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myfi.credentials.service.CredentialsService;
 import com.myfi.mailscraping.constants.Constants;
+import com.myfi.mailscraping.enums.EmailType;
 
 import lombok.Builder;
 import lombok.Data;
@@ -37,7 +38,7 @@ public class OpenAIService {
   private CredentialsService credentialsService;
 
   // JSON Schema for ExtractedTransactionDetails
-  private static final String TRANSACTION_DETAILS_SCHEMA = """
+  private static final String DETAILS_FROM_EMAIL_SCHEMA = """
 {
   "type": "object",
   "properties": {
@@ -55,7 +56,7 @@ public class OpenAIService {
         "DEBIT",
         "CREDIT"
       ],
-      "description": "If the money is spent or it's not clear what type of transaction it is, then use 'DEBIT'. If the money is credited or received, then use 'CREDIT'."
+      "description": "Use 'DEBIT' if the money is spent or if it's not clear what type of transaction it is. Use 'CREDIT' if the money is credited or received."
     },
     "description": {
       "type": "string",
@@ -100,7 +101,7 @@ public class OpenAIService {
 
   // System prompt template for extracting transaction details
   private final String systemPrompt = """
-      Extract credit card transaction details from the given email body:
+      Extract the required details from the given email body:
       """;
 
   @Autowired
@@ -115,7 +116,7 @@ public class OpenAIService {
     this.chatModel = OpenAiChatModel.builder().openAiApi(openAiApi).build();
   }
 
-  public Optional<ExtractedTransactionDetails> extractTransactionDetailsFromEmail(String emailBody) throws Exception {
+  public Optional<ExtractedDetailsFromEmail> extractDetailsFromEmail(String emailBody) throws Exception {
     if (chatModel == null) {
       initializeChatModel();
     }
@@ -126,7 +127,7 @@ public class OpenAIService {
     // Define OpenAI options with JSON schema response format
     OpenAiChatOptions options = OpenAiChatOptions.builder()
         .model("gpt-4.1-mini")
-        .responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, TRANSACTION_DETAILS_SCHEMA))
+        .responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, DETAILS_FROM_EMAIL_SCHEMA))
         .build();
 
     // Create prompt with messages and options
@@ -145,8 +146,8 @@ public class OpenAIService {
       }
 
       // Parse the JSON response using ObjectMapper
-      ExtractedTransactionDetails details = objectMapper.readValue(jsonResponse,
-          ExtractedTransactionDetails.class);
+      ExtractedDetailsFromEmail details = objectMapper.readValue(jsonResponse,
+          ExtractedDetailsFromEmail.class);
 
       // Basic validation after parsing
       if (details.getDescription() == null || details.getAmount() == null
@@ -181,7 +182,7 @@ public class OpenAIService {
 
   @Data
   @Builder
-  public static class ExtractedTransactionDetails {
+  public static class ExtractedDetailsFromEmail {
     private Double amount;
     @JsonProperty("transaction_date")
     private LocalDate transactionDate;
@@ -191,7 +192,7 @@ public class OpenAIService {
     @JsonProperty("account_number")
     private String accountNumber;
     @JsonProperty("email_type")
-    private String emailType;
+    private EmailType emailType;
     @JsonProperty("is_pixel_card_transaction")
     private boolean isPixelCardTransaction;
     @JsonProperty("is_transaction_successful")

@@ -7,6 +7,7 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.ListMessagesResponse;
 import com.google.api.services.gmail.model.Message;
 import com.myfi.mailscraping.constants.Constants;
+import com.myfi.mailscraping.enums.EmailType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -19,9 +20,10 @@ import com.myfi.model.Transaction;
 import com.myfi.refresh.enums.RefreshJobStatus;
 import com.myfi.refresh.enums.RefreshType;
 import com.myfi.refresh.service.RefreshTrackingService;
+import com.myfi.service.AccountHistoryService;
 import com.myfi.service.AccountService;
 import com.myfi.service.TransactionService;
-import com.myfi.mailscraping.service.OpenAIService.ExtractedTransactionDetails;
+import com.myfi.mailscraping.service.OpenAIService.ExtractedDetailsFromEmail;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -67,6 +69,9 @@ public class GmailService {
 	@Autowired
 	private RefreshTrackingService refreshTrackingService;
 
+	@Autowired
+	private AccountHistoryService accountHistoryService;
+
 	public List<String> syncAndProcessEmails() {
 		List<String> allSuccessfullyProcessedMessageIds = new ArrayList<>();
 
@@ -74,7 +79,8 @@ public class GmailService {
 
 		List<Account> allAccounts = accountService.getAllAccounts();
 		List<Account> supportedAccounts = allAccounts.stream()
-				.filter(acc -> Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(acc.getName()) || Constants.BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(acc.getName()))
+				.filter(acc -> Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(acc.getName())
+						|| Constants.BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(acc.getName()))
 				.collect(java.util.stream.Collectors.toList());
 
 		if (supportedAccounts == null || supportedAccounts.isEmpty()) {
@@ -256,49 +262,70 @@ public class GmailService {
 							}
 
 							String cleanTextBody = emailParser.extractTextFromMessage(fullMessage);
-							if (!Constants.EMAIL_SCRAPING_ACCOUNTS_WITHOUT_ACC_NUMBER_IN_MAIL.contains(account.getName())) {
-								if (!cleanTextBody.contains(accountNumber.substring(accountNumber.length() - 4))) {
-									logger.info("Skipping message ID: {} for account '{}' (OpID: {}, AccountNumber: {}) as it does not contain the account number.",
+							cleanTextBody = cleanTextBody.replaceAll("\\s", " ");
+							if (Constants.EMAIL_SCRAPING_ACCOUNTS_WITHOUT_ACC_NUMBER_IN_MAIL
+									.contains(account.getName())) {
+								if (account.getName().equals(Constants.HDFC_PIXEL)
+										&& !cleanTextBody.toLowerCase().contains("pixel")) {
+									logger.info(
+											"Skipping message ID: {} for account '{}' (OpID: {}, AccountNumber: {}) as it does not contain the keyword 'pixel'.",
 											messageId, accountName, accountOperationId, accountNumber);
 									continue;
 								}
+							} else if (!cleanTextBody.contains(accountNumber.substring(accountNumber.length() - 4))) {
+								logger.info(
+										"Skipping message ID: {} for account '{}' (OpID: {}, AccountNumber: {}) as it does not contain the account number.",
+										messageId, accountName, accountOperationId, accountNumber);
+								continue;
 							}
 							if (StringUtils.isNotBlank(cleanTextBody)) {
-								Optional<ExtractedTransactionDetails> extractedDetails = openAIService
-										.extractTransactionDetailsFromEmail(cleanTextBody);
+								Optional<ExtractedDetailsFromEmail> extractedDetails = openAIService
+										.extractDetailsFromEmail(cleanTextBody);
 								if (extractedDetails.isPresent()) {
-									Transaction transaction = mapExtractedTransactionDetailsToTransaction(messageId,
-											extractedDetails.get());
-									if (transaction != null) {
-										if (transaction.getAccount() != null
-												&& accountId.equals(transaction.getAccount().getId())) {
-											try {
-												Transaction savedTransaction = transactionService
-														.createTransaction(transaction);
-												logger.info(
-														"Saved transaction with ID: {} for message ID: {} (Account: {}, OpID: {}, AccountNumber: {})",
-														savedTransaction.getId(), messageId, accountName,
-														accountOperationId, accountNumber);
-												savedSuccessfullyCurrentMessage = true;
-											} catch (IllegalArgumentException e) {
+									if (extractedDetails.get().getEmailType() == EmailType.TRANSACTION_INFORMATION) {
+										Transaction transaction = mapExtractedTransactionDetailsToTransaction(messageId,
+												extractedDetails.get());
+										if (transaction != null) {
+											if (transaction.getAccount() != null
+													&& accountId.equals(transaction.getAccount().getId())) {
+												try {
+													Transaction savedTransaction = transactionService
+															.createTransaction(transaction);
+													logger.info(
+															"Saved transaction with ID: {} for message ID: {} (Account: {}, OpID: {}, AccountNumber: {})",
+															savedTransaction.getId(), messageId, accountName,
+															accountOperationId, accountNumber);
+													savedSuccessfullyCurrentMessage = true;
+												} catch (IllegalArgumentException e) {
+													logger.warn(
+															"Failed to save transaction (duplicate/validation) for message ID {} (Account: {}, OpID: {}, AccountNumber: {}): {}",
+															messageId, accountName, accountOperationId, accountNumber,
+															e.getMessage());
+												} catch (Exception e) {
+													logger.error(
+															"Error saving transaction for message ID {} (Account: {}, OpID: {}, AccountNumber: {}): {}",
+															messageId, accountName, accountOperationId, accountNumber,
+															e.getMessage(), e);
+												}
+											} else {
 												logger.warn(
-														"Failed to save transaction (duplicate/validation) for message ID {} (Account: {}, OpID: {}, AccountNumber: {}): {}",
-														messageId, accountName, accountOperationId, accountNumber,
-														e.getMessage());
-											} catch (Exception e) {
-												logger.error(
-														"Error saving transaction for message ID {} (Account: {}, OpID: {}, AccountNumber: {}): {}",
-														messageId, accountName, accountOperationId, accountNumber,
-														e.getMessage(), e);
+														"Skipping transaction for message ID {} as its derived account (ID: {}) does not match current processing account '{}' (ID: {}) and AccountNumber: {}. Details: {}",
+														messageId,
+														(transaction.getAccount() != null
+																? transaction.getAccount().getId()
+																: "null"),
+														accountName, accountId, accountNumber, extractedDetails.get());
 											}
-										} else {
-											logger.warn(
-													"Skipping transaction for message ID {} as its derived account (ID: {}) does not match current processing account '{}' (ID: {}) and AccountNumber: {}. Details: {}",
-													messageId,
-													(transaction.getAccount() != null ? transaction.getAccount().getId()
-															: "null"),
-													accountName, accountId, accountNumber, extractedDetails.get());
 										}
+									} else if (extractedDetails.get().getEmailType() == EmailType.ACCOUNT_BALANCE_INFORMATION) {
+										// update account balance
+										String extractedAccountNumber = extractedDetails.get().getAccountNumber();
+										if (extractedAccountNumber == null || !extractedAccountNumber.substring(extractedAccountNumber.length() - 4).equals(accountNumber.substring(accountNumber.length() - 4))) {
+											logger.warn("Not updating account blance as invalid account number: {}", extractedAccountNumber);
+											continue;
+										}
+										BigDecimal newBalance = BigDecimal.valueOf(extractedDetails.get().getAmount());
+										accountHistoryService.createAccountHistoryRecord(account.getId(), newBalance);
 									}
 								} else {
 									logger.warn(
@@ -370,8 +397,8 @@ public class GmailService {
 	}
 
 	private Transaction mapExtractedTransactionDetailsToTransaction(String messageId,
-			ExtractedTransactionDetails details) {
-		if (!details.getEmailType().equals("TRANSACTION_INFORMATION")) {
+			ExtractedDetailsFromEmail details) {
+		if (details.getEmailType() != EmailType.TRANSACTION_INFORMATION) {
 			logger.info("Skipping as not a transaction: {}", details);
 			return null;
 		}
@@ -395,14 +422,17 @@ public class GmailService {
 			account = accountService.getAccountByCardLast4DigitsNumber(
 					details.getAccountNumber().substring(details.getAccountNumber().length() - 4));
 			if (account == null) {
-				logger.warn("Account for account number not found: {}, transaction: {}", details.getAccountNumber(), details);
+				logger.warn("Account for account number not found: {}, transaction: {}", details.getAccountNumber(),
+						details);
 				return null;
 			}
 		}
 		boolean isScrapingSupportedAccount = false;
-		if (account.getType() == Account.AccountType.CREDIT_CARD && Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.keySet().contains(account.getName())) {
+		if (account.getType() == Account.AccountType.CREDIT_CARD
+				&& Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.keySet().contains(account.getName())) {
 			isScrapingSupportedAccount = true;
-		} else if (account.getType() == Account.AccountType.SAVINGS && Constants.BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.keySet().contains(account.getName())) {
+		} else if (account.getType() == Account.AccountType.SAVINGS
+				&& Constants.BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.keySet().contains(account.getName())) {
 			isScrapingSupportedAccount = true;
 		}
 		if (!isScrapingSupportedAccount) {
