@@ -216,17 +216,14 @@ function TransactionDetailView({
                 </p>
             </div>
 
-            {/* Delete Button - Conditionally Rendered */}
-            {transaction.isManualEntry && (
-                <button
+            <button
                     onClick={handleDelete}
                     disabled={isSaving} // Disable button while saving/deleting
                     className="mt-auto bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium rounded-lg text-sm px-5 py-2.5 text-center mb-2 flex items-center justify-center disabled:opacity-50 border border-red-500"
                 >
                     <FiTrash2 className="mr-2 h-4 w-4" />
                     Delete Transaction
-                </button>
-            )}
+            </button>
         </div>
     );
 }

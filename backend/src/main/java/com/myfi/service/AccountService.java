@@ -161,12 +161,12 @@ public class AccountService {
     public void updateBalance(Account account, BigDecimal balanceChange) {
         Assert.notNull(account, "Account must not be null");
         Assert.notNull(balanceChange, "Balance change must not be null");
-        populateLatestBalance(account);
-        BigDecimal newBalance = account.getBalance().add(balanceChange);
-        accountHistoryService.createAccountHistoryRecord(account.getId(), newBalance);
-        account.setBalance(newBalance);
-
-        if (account.getParentAccountId() != null) {
+        if (account.getParentAccountId() == null) {
+            populateLatestBalance(account);
+            BigDecimal newBalance = account.getBalance().add(balanceChange);
+            accountHistoryService.createAccountHistoryRecord(account.getId(), newBalance);
+            account.setBalance(newBalance);
+        } else {
             accountRepository.findById(account.getParentAccountId()).ifPresent(parentAccount -> {
                 // Ensure we don't get into an infinite loop if an account is its own parent
                 if (!parentAccount.getId().equals(account.getId())) {
