@@ -80,7 +80,13 @@ public class Account {
     }
 
     public Boolean getIsEmailScrapingSupported() {
-        return Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(this.name);
+        if (this.type == AccountType.CREDIT_CARD) {
+            return Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(this.name);
+        } else if (this.type == AccountType.SAVINGS) {
+            return Constants.BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(this.name);
+        } else {
+            return false;
+        }
     }
 
     public enum AccountType {

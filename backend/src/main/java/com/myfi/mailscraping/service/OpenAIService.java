@@ -38,51 +38,65 @@ public class OpenAIService {
 
   // JSON Schema for ExtractedTransactionDetails
   private static final String TRANSACTION_DETAILS_SCHEMA = """
-      {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "number",
-            "description": "Transaction amount as a numeric value."
-          },
-          "transaction_date": {
-            "type": "string",
-            "description": "Date of the transaction in ISO 8601 format. In the mail the dates are in the Indian date format. The Indian date format has the following order: day, month, year."
-          },
-          "type": {
-            "type": "string",
-            "enum": ["DEBIT", "CREDIT"],
-            "description": "If the money is spent, then use 'DEBIT'. If the money is credited, then use 'CREDIT'."
-          },
-          "description": {
-            "type": "string",
-            "description": "Brief description of the transaction. Include merchant name if given in the email. Start the description with the merchant name."
-          },
-          "card_number": {
-            "type": "string",
-            "description": "The last 4 digits of the card number used for the transaction."
-          },
-          "is_credit_card_transaction": {
-            "type": "boolean",
-            "description": "true if the email is a credit card transaction, false if it's just a transaction notification or something else."
-          },
-          "is_pixel_card_transaction": {
-            "type": "boolean",
-            "description": "true if the card name is pixel card, false if it's not."
-          },
-          "is_credit_card_statement": {
-            "type": "boolean",
-            "description": "true if the email is a credit card statement, false if it's just a transaction notification or something else."
-          },
-          "is_transaction_successful": {
-            "type": "boolean",
-            "description": "true if the transaction is successful, false if it's a failed transaction."
-          }
-        },
-        "required": ["amount", "transaction_date", "type", "description", "card_number", "is_credit_card_transaction", "is_pixel_card_transaction", "is_credit_card_statement", "is_transaction_successful"],
-        "additionalProperties": false
-      }
-      """;
+{
+  "type": "object",
+  "properties": {
+    "amount": {
+      "type": "number",
+      "description": "Transaction amount as a numeric value."
+    },
+    "transaction_date": {
+      "type": "string",
+      "description": "Date of the transaction in ISO 8601 format. In the mail the dates are in the Indian date format. The Indian date format has the following order: day, month, year."
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "DEBIT",
+        "CREDIT"
+      ],
+      "description": "If the money is spent or it's not clear what type of transaction it is, then use 'DEBIT'. If the money is credited or received, then use 'CREDIT'."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the transaction. Start the description with the merchant name if available."
+    },
+    "account_number": {
+      "type": "string",
+      "description": "The card number or the account number used for the transaction."
+    },
+    "email_type": {
+      "type": "string",
+      "enum": [
+        "TRANSACTION_INFORMATION",
+        "CREDIT_CARD_STATEMENT_INFORMATION",
+        "ACCOUNT_BALANCE_INFORMATION",
+        "OTHER"
+      ],
+      "description": "Type of information that the email contains."
+    },
+    "is_transaction_successful": {
+      "type": "boolean",
+      "description": "true if the transaction is successful, false if it's a failed transaction."
+    },
+    "is_pixel_card_transaction": {
+      "type": "boolean",
+      "description": "true if the card name is pixel card, false if it's not."
+    }
+  },
+  "required": [
+    "amount",
+    "transaction_date",
+    "transaction_type",
+    "description",
+    "account_number",
+    "email_type",
+    "is_transaction_successful",
+    "is_pixel_card_transaction"
+  ],
+  "additionalProperties": false
+}
+""";
 
   // System prompt template for extracting transaction details
   private final String systemPrompt = """
@@ -111,7 +125,7 @@ public class OpenAIService {
 
     // Define OpenAI options with JSON schema response format
     OpenAiChatOptions options = OpenAiChatOptions.builder()
-        .model("gpt-4.1-nano")
+        .model("gpt-4.1-mini")
         .responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, TRANSACTION_DETAILS_SCHEMA))
         .build();
 
@@ -136,10 +150,19 @@ public class OpenAIService {
 
       // Basic validation after parsing
       if (details.getDescription() == null || details.getAmount() == null
-          || details.getTransactionDate() == null || details.getType() == null
-          || details.getCardNumber() == null) {
+          || details.getTransactionDate() == null || details.getTransactionType() == null
+          || details.getAccountNumber() == null) {
         logger.warn("Parsed JSON details are incomplete: {}", details);
         return Optional.empty();
+      }
+
+      if (details.getAccountNumber() != null) {
+        if (details.getAccountNumber().length() > 4) {
+          details.setAccountNumber(details.getAccountNumber().substring(details.getAccountNumber().length() - 4));
+        } else if (details.getAccountNumber().length() < 4) {
+          logger.warn("Parsed JSON details are incomplete: {}", details);
+          return Optional.empty();
+        }
       }
 
       logger.info("Successfully parsed transaction details from OpenAI JSON response for: {}", details);
@@ -162,16 +185,15 @@ public class OpenAIService {
     private Double amount;
     @JsonProperty("transaction_date")
     private LocalDate transactionDate;
-    private String type;
+    @JsonProperty("transaction_type")
+    private String transactionType;
     private String description;
-    @JsonProperty("card_number")
-    private String cardNumber;
-    @JsonProperty("is_credit_card_transaction")
-    private boolean isCreditCardTransaction;
+    @JsonProperty("account_number")
+    private String accountNumber;
+    @JsonProperty("email_type")
+    private String emailType;
     @JsonProperty("is_pixel_card_transaction")
     private boolean isPixelCardTransaction;
-    @JsonProperty("is_credit_card_statement")
-    private boolean isCreditCardStatement;
     @JsonProperty("is_transaction_successful")
     private boolean isTransactionSuccessful;
   }

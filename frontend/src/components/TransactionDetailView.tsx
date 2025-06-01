@@ -166,7 +166,7 @@ function TransactionDetailView({
 
             {/* Account Chip Section */}
             {transaction.account && (
-                <div className="flex justify-between mb-6 w-full px-4 bg-secondary rounded-xl p-2">
+                <div className="flex justify-between mb-6 w-full px-4 bg-secondary border-[0.7px] border-border rounded-xl p-2">
                     Account
                     <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-secondary-foreground">
                         <FiCreditCard className="mr-2 h-4 w-4" />

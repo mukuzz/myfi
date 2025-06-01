@@ -70,31 +70,30 @@ public class GmailService {
 	public List<String> syncAndProcessEmails() {
 		List<String> allSuccessfullyProcessedMessageIds = new ArrayList<>();
 
-		logger.info("Starting Gmail sync process for all configured credit card accounts.");
+		logger.info("Starting Gmail sync process for all configured accounts.");
 
 		List<Account> allAccounts = accountService.getAllAccounts();
-		List<Account> creditCardAccounts = allAccounts.stream()
-				.filter(acc -> acc.getType() == Account.AccountType.CREDIT_CARD
-						&& Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(acc.getName()))
+		List<Account> supportedAccounts = allAccounts.stream()
+				.filter(acc -> Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(acc.getName()) || Constants.BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(acc.getName()))
 				.collect(java.util.stream.Collectors.toList());
 
-		if (creditCardAccounts == null || creditCardAccounts.isEmpty()) {
-			logger.info("No credit card accounts found to sync emails for.");
+		if (supportedAccounts == null || supportedAccounts.isEmpty()) {
+			logger.info("No supported accounts found to sync emails for.");
 			return allSuccessfullyProcessedMessageIds;
 		}
 
-		logger.info("Found {} credit card accounts to process for Gmail sync.", creditCardAccounts.size());
-		int totalAccounts = creditCardAccounts.size();
+		logger.info("Found {} supported accounts to process for Gmail sync.", supportedAccounts.size());
+		int totalAccounts = supportedAccounts.size();
 		int accountsProcessedCount = 0;
 
-		for (Account account : creditCardAccounts) {
+		for (Account account : supportedAccounts) {
 			String accountNumber = account.getAccountNumber();
 			String accountOperationId = String.valueOf(accountNumber);
 			refreshTrackingService.initializeOperation(RefreshType.GMAIL_SYNC, accountOperationId,
 					account.getName(), Optional.empty());
 		}
 
-		for (Account account : creditCardAccounts) {
+		for (Account account : supportedAccounts) {
 			accountsProcessedCount++;
 			String accountName = account.getName();
 			Long accountId = account.getId();
@@ -175,7 +174,7 @@ public class GmailService {
 					logger.info("Latest message epoch: {}", epochSecondsSinceLastEmail);
 				} else {
 					LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHoursMinutes(5, 30));
-					LocalDateTime threeMonthsAgo = now.minusMonths(3);
+					LocalDateTime threeMonthsAgo = now.minusMonths(2);
 
 					// Calculate the statement generation date ~3 months ago
 					Integer statementGenerationDay = account.getCcStatementGenerationDay();
@@ -257,6 +256,13 @@ public class GmailService {
 							}
 
 							String cleanTextBody = emailParser.extractTextFromMessage(fullMessage);
+							if (!Constants.EMAIL_SCRAPING_ACCOUNTS_WITHOUT_ACC_NUMBER_IN_MAIL.contains(account.getName())) {
+								if (!cleanTextBody.contains(accountNumber.substring(accountNumber.length() - 4))) {
+									logger.info("Skipping message ID: {} for account '{}' (OpID: {}, AccountNumber: {}) as it does not contain the account number.",
+											messageId, accountName, accountOperationId, accountNumber);
+									continue;
+								}
+							}
 							if (StringUtils.isNotBlank(cleanTextBody)) {
 								Optional<ExtractedTransactionDetails> extractedDetails = openAIService
 										.extractTransactionDetailsFromEmail(cleanTextBody);
@@ -365,17 +371,17 @@ public class GmailService {
 
 	private Transaction mapExtractedTransactionDetailsToTransaction(String messageId,
 			ExtractedTransactionDetails details) {
+		if (!details.getEmailType().equals("TRANSACTION_INFORMATION")) {
+			logger.info("Skipping as not a transaction: {}", details);
+			return null;
+		}
 		if (!details.isTransactionSuccessful()) {
 			logger.info("Skipping transaction as it's not successful: {}", details);
 			return null;
 		}
 		if (!details.isPixelCardTransaction()
-				&& (StringUtils.isBlank(details.getCardNumber()) || details.getCardNumber().length() < 4)) {
-			logger.warn("Card number blank or too short: {}", details);
-			return null;
-		}
-		if (details.isCreditCardStatement() || !details.isCreditCardTransaction()) {
-			logger.info("Skipping as not a credit card transaction: {}", details);
+				&& (StringUtils.isBlank(details.getAccountNumber()) || details.getAccountNumber().length() < 4)) {
+			logger.warn("Account number blank or too short: {}", details);
 			return null;
 		}
 		Account account;
@@ -387,13 +393,19 @@ public class GmailService {
 			}
 		} else {
 			account = accountService.getAccountByCardLast4DigitsNumber(
-					details.getCardNumber().substring(details.getCardNumber().length() - 4));
+					details.getAccountNumber().substring(details.getAccountNumber().length() - 4));
 			if (account == null) {
-				logger.warn("Account for card number not found: {}, transaction: {}", details.getCardNumber(), details);
+				logger.warn("Account for account number not found: {}, transaction: {}", details.getAccountNumber(), details);
 				return null;
 			}
 		}
-		if (!Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.keySet().contains(account.getName())) {
+		boolean isScrapingSupportedAccount = false;
+		if (account.getType() == Account.AccountType.CREDIT_CARD && Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.keySet().contains(account.getName())) {
+			isScrapingSupportedAccount = true;
+		} else if (account.getType() == Account.AccountType.SAVINGS && Constants.BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.keySet().contains(account.getName())) {
+			isScrapingSupportedAccount = true;
+		}
+		if (!isScrapingSupportedAccount) {
 			logger.info("Account not supported by email scraper: {}", details);
 			return null;
 		}
@@ -401,7 +413,7 @@ public class GmailService {
 				.amount(BigDecimal.valueOf(details.getAmount()))
 				.description("Email Message ID: " + messageId)
 				.counterParty(details.getDescription())
-				.type(Transaction.TransactionType.valueOf(details.getType()))
+				.type(Transaction.TransactionType.valueOf(details.getTransactionType()))
 				.transactionDate(details.getTransactionDate().atStartOfDay())
 				.createdAt(LocalDateTime.now())
 				.account(account)

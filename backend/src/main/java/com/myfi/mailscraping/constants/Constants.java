@@ -15,6 +15,21 @@ public class Constants {
         {
             put(HDFC_PIXEL, new ArrayList<>(List.of("alerts@hdfcbank.net")));
             put(ONE_CARD, new ArrayList<>(List.of("no-reply@getonecard.app", "statement@getonecard.app")));
+            put(ICICI, new ArrayList<>(List.of("credit_cards@icicibank.com")));
+            put(HDFC, new ArrayList<>(List.of("alerts@hdfcbank.net")));
+        }
+    };
+
+    public static final Map<String, List<String>> BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS = new HashMap<String, List<String>>() {
+        {
+            put(HDFC, new ArrayList<>(List.of("alerts@hdfcbank.net")));
+            put(HDFC, new ArrayList<>(List.of("alerts@hdfcbank.net")));
+        }
+    };
+
+    public static final List<String> EMAIL_SCRAPING_ACCOUNTS_WITHOUT_ACC_NUMBER_IN_MAIL = new ArrayList<String>() {
+        {
+            add(HDFC_PIXEL);
         }
     };
 
