@@ -39,25 +39,6 @@ public class CredentialsController {
         public String value;
     }
 
-    @PostMapping("/account")
-    public ResponseEntity<Void> saveOrUpdateCredentials(
-        @RequestHeader("X-Master-Key") @NotBlank String masterKey,
-        @RequestBody @Valid CredentialsRequest request
-    ) {
-        log.info("Received request to save/update credentials for account number: {} and account name: {}", request.accountNumber, request.accountName);
-        try {
-            credentialsService.saveAccountCredentials(request.accountNumber, request.accountName, request.username, request.password, masterKey);
-            log.info("Successfully saved/updated credentials for account number: {} and account name: {}", request.accountNumber, request.accountName);
-            // Return 201 CREATED if new, 200 OK if updated - for simplicity, just 200 or 201.
-            // The service itself handles create/update logic. Let's assume 201 for new/updated for simplicity.
-            return ResponseEntity.status(HttpStatus.CREATED).build();
-        } catch (Exception e) {
-            log.error("Error saving/updating credentials for account number {}: {}", request.accountNumber, e.getMessage(), e);
-            // Consider more specific error responses based on exception type
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
     @PostMapping("/key-value")
     public ResponseEntity<Void> saveOrUpdateGenericCredential(
         @RequestHeader("X-Master-Key") @NotBlank String masterKey,
@@ -73,6 +54,4 @@ public class CredentialsController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-    
 } 

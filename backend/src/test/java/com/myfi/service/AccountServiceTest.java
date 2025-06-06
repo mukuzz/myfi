@@ -1,6 +1,5 @@
 package com.myfi.service;
 
-import com.myfi.bankscraping.service.BankScrapper;
 import com.myfi.model.Account;
 import com.myfi.model.Account.AccountType;
 import com.myfi.repository.AccountRepository;
@@ -26,15 +25,6 @@ class AccountServiceTest {
 
     @Mock
     private AccountRepository accountRepository;
-
-    @Mock
-    private List<BankScrapper> bankScrapers; // Mock the list itself
-
-    @Mock
-    private BankScrapper mockScraper1; // Individual mock scrapers
-
-    @Mock
-    private BankScrapper mockScraper2;
 
     @InjectMocks
     private AccountService accountService;
@@ -257,15 +247,6 @@ class AccountServiceTest {
 
     @Test
     void getSupportedAccounts_shouldReturnMapFromScrapers() {
-        // Setup mock scrapers
-        when(mockScraper1.getBankName()).thenReturn("BankA");
-        when(mockScraper1.getSupportedAccountTypes()).thenReturn(Set.of(AccountType.SAVINGS, AccountType.CREDIT_CARD));
-        when(mockScraper2.getBankName()).thenReturn("BankB");
-        when(mockScraper2.getSupportedAccountTypes()).thenReturn(Set.of(AccountType.SAVINGS, AccountType.LOAN));
-
-        // Mock the behavior of the list iterator
-        when(bankScrapers.iterator()).thenReturn(Arrays.asList(mockScraper1, mockScraper2).iterator());
-
         Map<AccountType, List<String>> supportedAccounts = accountService.getSupportedAccounts();
 
         assertNotNull(supportedAccounts);

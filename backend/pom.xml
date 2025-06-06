@@ -65,13 +65,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Playwright for web scraping -->
-        <dependency>
-            <groupId>com.microsoft.playwright</groupId>
-            <artifactId>playwright</artifactId>
-            <version>1.42.0</version>
-        </dependency>
-
         <!-- OpenAPI/Swagger UI -->
         <dependency>
             <groupId>org.springdoc</groupId>
