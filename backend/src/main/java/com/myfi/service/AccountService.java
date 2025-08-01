@@ -14,12 +14,19 @@ import org.springframework.util.Assert;
 import com.myfi.mailscraping.constants.Constants;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class AccountService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AccountService.class);
 
     @Autowired
     private AccountRepository accountRepository;
@@ -130,40 +137,81 @@ public class AccountService {
     public void addToBalance(Account account, Transaction transaction) {
         Assert.notNull(account, "Account must not be null");
         Assert.notNull(transaction, "Transaction must not be null");
+        Assert.notNull(transaction.getAmount(), "Transaction amount must not be null");
+        Assert.notNull(transaction.getType(), "Transaction type must not be null");
+        
         BigDecimal amount = transaction.getAmount();
-        BigDecimal balanceChange = amount.abs();
-        if (transaction.getType() == TransactionType.DEBIT) {
-            balanceChange = amount.negate();
+        BigDecimal balanceChange;
+        
+        // For account balance updates:
+        // CREDIT = money coming in = positive balance change
+        // DEBIT = money going out = negative balance change
+        if (transaction.getType() == TransactionType.CREDIT) {
+            balanceChange = amount.abs(); // Always positive for credits
+        } else { // DEBIT
+            balanceChange = amount.abs().negate(); // Always negative for debits
         }
+        
         updateBalance(account, balanceChange);
     }
 
     public void subtractFromBalance(Account account, Transaction transaction) {
         Assert.notNull(account, "Account must not be null");
         Assert.notNull(transaction, "Transaction must not be null");
+        Assert.notNull(transaction.getAmount(), "Transaction amount must not be null");
+        Assert.notNull(transaction.getType(), "Transaction type must not be null");
+        
         BigDecimal amount = transaction.getAmount();
-        BigDecimal balanceChange = amount.abs();
+        BigDecimal balanceChange;
+        
+        // For balance subtraction (used when deleting transactions):
+        // Reverse the effect of the original transaction
+        // If original was CREDIT (+), subtract means (-)
+        // If original was DEBIT (-), subtract means (+)
         if (transaction.getType() == TransactionType.CREDIT) {
-            balanceChange = amount.negate();
+            balanceChange = amount.abs().negate(); // Remove the positive effect
+        } else { // DEBIT
+            balanceChange = amount.abs(); // Remove the negative effect (add back)
         }
+        
         updateBalance(account, balanceChange);
     }
 
     public void updateBalance(Account account, BigDecimal balanceChange) {
+        updateBalance(account, balanceChange, new HashSet<>());
+    }
+    
+    private void updateBalance(Account account, BigDecimal balanceChange, Set<Long> visitedAccounts) {
         Assert.notNull(account, "Account must not be null");
         Assert.notNull(balanceChange, "Balance change must not be null");
+        
+        // Prevent infinite recursion by tracking visited accounts
+        if (visitedAccounts.contains(account.getId())) {
+            logger.warn("Circular reference detected in account hierarchy for account {}", account.getId());
+            return;
+        }
+        
+        visitedAccounts.add(account.getId());
+        
         if (account.getParentAccountId() == null) {
-            populateLatestBalance(account);
-            BigDecimal newBalance = account.getBalance().add(balanceChange);
-            accountHistoryService.createAccountHistoryRecord(account.getId(), newBalance);
-            account.setBalance(newBalance);
+            // This is a root account, update its balance directly
+            try {
+                populateLatestBalance(account);
+                BigDecimal currentBalance = account.getBalance() != null ? account.getBalance() : BigDecimal.ZERO;
+                BigDecimal newBalance = currentBalance.add(balanceChange);
+                accountHistoryService.createAccountHistoryRecord(account.getId(), newBalance);
+                account.setBalance(newBalance);
+            } catch (Exception e) {
+                logger.error("Failed to update balance for account {}: {}", account.getId(), e.getMessage(), e);
+                throw new RuntimeException("Balance update failed for account " + account.getId(), e);
+            }
         } else {
-            accountRepository.findById(account.getParentAccountId()).ifPresent(parentAccount -> {
-                // Ensure we don't get into an infinite loop if an account is its own parent
-                if (!parentAccount.getId().equals(account.getId())) {
-                    updateBalance(parentAccount, balanceChange);
-                }
-            });
+            // This account has a parent, update the parent's balance instead
+            accountRepository.findById(account.getParentAccountId()).ifPresentOrElse(
+                parentAccount -> updateBalance(parentAccount, balanceChange, visitedAccounts),
+                () -> logger.warn("Parent account {} not found for account {}", 
+                                account.getParentAccountId(), account.getId())
+            );
         }
     }
 }

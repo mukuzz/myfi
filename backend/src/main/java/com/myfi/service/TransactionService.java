@@ -22,8 +22,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.YearMonth;
 import java.time.LocalTime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class TransactionService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TransactionService.class);
 
     @Autowired
     private TransactionRepository transactionRepository;
@@ -75,12 +80,24 @@ public class TransactionService {
             return existingTransaction.get();
         }
 
-        // Always update account balance when creating a transaction
-        if (transaction.getAccount() != null) {
-            accountService.addToBalance(transaction.getAccount(), transaction);
+        // Save the transaction first to ensure data consistency
+        Transaction savedTransaction = transactionRepository.save(transaction);
+        
+        // Update account balance after transaction is successfully saved
+        if (savedTransaction.getAccount() != null) {
+            try {
+                accountService.addToBalance(savedTransaction.getAccount(), savedTransaction);
+            } catch (Exception e) {
+                // Log the error but don't fail the transaction creation
+                // The transaction exists, but balance update failed
+                logger.error("Failed to update account balance for transaction {}: {}", 
+                           savedTransaction.getId(), e.getMessage(), e);
+                // Optionally, you could mark the transaction for manual balance reconciliation
+                // or implement a retry mechanism
+            }
         }
-        // If no duplicate, save the new transaction
-        return transactionRepository.save(transaction);
+        
+        return savedTransaction;
     }
 
     @Transactional

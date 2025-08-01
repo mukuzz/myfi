@@ -273,6 +273,71 @@ class TransactionServiceTest {
     }
 
     @Test
+    void createTransaction_shouldSaveTransactionEvenIfBalanceUpdateFails() {
+        Transaction newTransaction = new Transaction();
+        newTransaction.setAmount(BigDecimal.valueOf(100));
+        newTransaction.setDescription("Transaction with balance update failure");
+        newTransaction.setType(TransactionType.DEBIT);
+        newTransaction.setTransactionDate(LocalDateTime.now());
+        newTransaction.setAccount(account);
+        newTransaction.generateUniqueKey();
+
+        when(transactionRepository.findByUniqueKey(newTransaction.getUniqueKey())).thenReturn(Optional.empty());
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> {
+            Transaction saved = invocation.getArgument(0);
+            saved.setId(6L);
+            return saved;
+        });
+        
+        // Mock balance update to throw exception
+        doThrow(new RuntimeException("Balance update failed")).when(accountService).addToBalance(any(Account.class), any(Transaction.class));
+
+        Transaction created = transactionService.createTransaction(newTransaction);
+
+        // Transaction should still be created successfully
+        assertNotNull(created);
+        assertEquals(6L, created.getId());
+        verify(transactionRepository, times(1)).save(newTransaction);
+        verify(accountService, times(1)).addToBalance(account, created);
+    }
+
+    @Test 
+    void createTransaction_shouldHandleNullTransactionAmount() {
+        Transaction invalidTransaction = new Transaction();
+        invalidTransaction.setAmount(null); // Null amount
+        invalidTransaction.setDescription("Transaction with null amount");
+        invalidTransaction.setType(TransactionType.DEBIT);
+        invalidTransaction.setTransactionDate(LocalDateTime.now());
+        invalidTransaction.setAccount(account);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            transactionService.createTransaction(invalidTransaction);
+        });
+
+        assertEquals("Mandatory transaction fields (amount, description, type, transactionDate) must be provided.", exception.getMessage());
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(accountService, never()).addToBalance(any(Account.class), any(Transaction.class));
+    }
+
+    @Test
+    void createTransaction_shouldHandleNullTransactionType() {
+        Transaction invalidTransaction = new Transaction();
+        invalidTransaction.setAmount(BigDecimal.valueOf(100));
+        invalidTransaction.setDescription("Transaction with null type");
+        invalidTransaction.setType(null); // Null type
+        invalidTransaction.setTransactionDate(LocalDateTime.now());
+        invalidTransaction.setAccount(account);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            transactionService.createTransaction(invalidTransaction);
+        });
+
+        assertEquals("Mandatory transaction fields (amount, description, type, transactionDate) must be provided.", exception.getMessage());
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(accountService, never()).addToBalance(any(Account.class), any(Transaction.class));
+    }
+
+    @Test
     void updateTransaction_shouldUpdateAndReturnTransactionWhenFound() {
         Transaction updatedDetails = new Transaction();
         updatedDetails.setAmount(BigDecimal.valueOf(150));
