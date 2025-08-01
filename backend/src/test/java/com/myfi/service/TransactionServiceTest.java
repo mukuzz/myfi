@@ -35,6 +35,9 @@ class TransactionServiceTest {
     @Mock
     private TransactionRepository transactionRepository;
 
+    @Mock
+    private AccountService accountService;
+
     @InjectMocks
     private TransactionService transactionService;
 
@@ -79,7 +82,7 @@ class TransactionServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         List<Transaction> transactionList = Arrays.asList(transaction1, transaction2);
         Page<Transaction> transactionPage = new PageImpl<>(transactionList, pageable, transactionList.size());
-        when(transactionRepository.findAll(any(Pageable.class))).thenReturn(transactionPage);
+        when(transactionRepository.findAllByOrderByTransactionDateDesc(any(Pageable.class))).thenReturn(transactionPage);
 
         // Act
         Page<Transaction> result = transactionService.getAllTransactions(pageable);
@@ -89,7 +92,7 @@ class TransactionServiceTest {
         assertEquals(2, result.getTotalElements());
         assertEquals(2, result.getContent().size());
         assertEquals(transaction1, result.getContent().get(0));
-        verify(transactionRepository, times(1)).findAll(pageable);
+        verify(transactionRepository, times(1)).findAllByOrderByTransactionDateDesc(pageable);
     }
 
      @Test
@@ -97,7 +100,7 @@ class TransactionServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
         Page<Transaction> emptyPage = Page.empty(pageable);
-        when(transactionRepository.findAll(any(Pageable.class))).thenReturn(emptyPage);
+        when(transactionRepository.findAllByOrderByTransactionDateDesc(any(Pageable.class))).thenReturn(emptyPage);
 
         // Act
         Page<Transaction> result = transactionService.getAllTransactions(pageable);
@@ -106,7 +109,7 @@ class TransactionServiceTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
         assertEquals(0, result.getTotalElements());
-        verify(transactionRepository, times(1)).findAll(pageable);
+        verify(transactionRepository, times(1)).findAllByOrderByTransactionDateDesc(pageable);
     }
 
     @Test
@@ -155,6 +158,7 @@ class TransactionServiceTest {
         assertNotNull(created.getCreatedAt());
         verify(transactionRepository, times(1)).findByUniqueKey(newTransaction.getUniqueKey());
         verify(transactionRepository, times(1)).save(newTransaction);
+        verify(accountService, times(1)).addToBalance(account, newTransaction);
     }
 
     @Test
@@ -177,6 +181,7 @@ class TransactionServiceTest {
         assertEquals(transaction1.getId(), result.getId()); // Should return the existing one
         verify(transactionRepository, times(1)).findByUniqueKey(transaction1.getUniqueKey());
         verify(transactionRepository, never()).save(any(Transaction.class)); // Save should not be called
+        verify(accountService, never()).addToBalance(any(Account.class), any(Transaction.class)); // Balance should not be updated for duplicates
     }
 
     @Test
@@ -210,6 +215,61 @@ class TransactionServiceTest {
 
         assertNotNull(created.getCreatedAt());
         verify(transactionRepository).save(created);
+    }
+
+    @Test
+    void createTransaction_shouldUpdateBalanceForAllAccountTypes() {
+        // Test with SAVINGS account type
+        Account savingsAccount = new Account();
+        savingsAccount.setId(2L);
+        savingsAccount.setName("Test Savings");
+        savingsAccount.setType(Account.AccountType.SAVINGS);
+        savingsAccount.setCurrency("INR");
+
+        Transaction savingsTransaction = new Transaction();
+        savingsTransaction.setAmount(BigDecimal.valueOf(100));
+        savingsTransaction.setDescription("Savings transaction");
+        savingsTransaction.setType(TransactionType.DEBIT);
+        savingsTransaction.setTransactionDate(LocalDateTime.now());
+        savingsTransaction.setAccount(savingsAccount);
+        savingsTransaction.generateUniqueKey();
+
+        when(transactionRepository.findByUniqueKey(savingsTransaction.getUniqueKey())).thenReturn(Optional.empty());
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> {
+            Transaction saved = invocation.getArgument(0);
+            saved.setId(4L);
+            return saved;
+        });
+
+        Transaction created = transactionService.createTransaction(savingsTransaction);
+
+        assertNotNull(created);
+        assertEquals(4L, created.getId());
+        verify(accountService, times(1)).addToBalance(savingsAccount, savingsTransaction);
+    }
+
+    @Test
+    void createTransaction_shouldNotUpdateBalanceWhenAccountIsNull() {
+        Transaction transactionWithoutAccount = new Transaction();
+        transactionWithoutAccount.setAmount(BigDecimal.valueOf(100));
+        transactionWithoutAccount.setDescription("Transaction without account");
+        transactionWithoutAccount.setType(TransactionType.DEBIT);
+        transactionWithoutAccount.setTransactionDate(LocalDateTime.now());
+        transactionWithoutAccount.setAccount(null); // No account
+        transactionWithoutAccount.generateUniqueKey();
+
+        when(transactionRepository.findByUniqueKey(transactionWithoutAccount.getUniqueKey())).thenReturn(Optional.empty());
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> {
+            Transaction saved = invocation.getArgument(0);
+            saved.setId(5L);
+            return saved;
+        });
+
+        Transaction created = transactionService.createTransaction(transactionWithoutAccount);
+
+        assertNotNull(created);
+        assertEquals(5L, created.getId());
+        verify(accountService, never()).addToBalance(any(Account.class), any(Transaction.class));
     }
 
     @Test
@@ -270,6 +330,7 @@ class TransactionServiceTest {
         assertTrue(result);
         verify(transactionRepository, times(1)).findById(1L);
         verify(transactionRepository, times(1)).delete(transaction1);
+        verify(accountService, times(1)).subtractFromBalance(account, transaction1);
     }
 
     @Test
@@ -419,7 +480,7 @@ class TransactionServiceTest {
         });
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
-        assertEquals("Parent transaction with ID 99 not found", exception.getReason());
+        assertEquals("Parent transaction with ID 99 not found.", exception.getReason());
         verify(transactionRepository, never()).save(any(Transaction.class));
     }
 

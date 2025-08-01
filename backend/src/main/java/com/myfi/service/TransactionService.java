@@ -75,13 +75,9 @@ public class TransactionService {
             return existingTransaction.get();
         }
 
-        if (transaction.getAccount() != null && transaction.getAccount().getType() == AccountType.CREDIT_CARD) {
-            if (transaction.getType() == TransactionType.CREDIT) {
-                transaction.setExcludeFromAccounting(true);
-            }
-            if (Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(transaction.getAccount().getName())) {
-                accountService.addToBalance(transaction.getAccount(), transaction);
-            }
+        // Always update account balance when creating a transaction
+        if (transaction.getAccount() != null) {
+            accountService.addToBalance(transaction.getAccount(), transaction);
         }
         // If no duplicate, save the new transaction
         return transactionRepository.save(transaction);
@@ -148,10 +144,8 @@ public class TransactionService {
     public boolean deleteTransaction(Long id) {
         return transactionRepository.findById(id)
                 .map(transaction -> {
-                    if (transaction.getAccount() != null
-                            && transaction.getAccount().getType() == AccountType.CREDIT_CARD
-                            && Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS
-                                    .containsKey(transaction.getAccount().getName())) {
+                    // Always update account balance when deleting a transaction
+                    if (transaction.getAccount() != null) {
                         accountService.subtractFromBalance(transaction.getAccount(), transaction);
                     }
                     transactionRepository.delete(transaction);
