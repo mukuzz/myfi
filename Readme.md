@@ -27,7 +27,6 @@ A modern personal finance management application with seamless transaction updat
 - Maven
 - Hibernate (ORM)
 - SQLite JDBC Driver
-- Playwright (for web scraping tasks)
 - Lombok
 - Springdoc OpenAPI (Swagger UI) - Currenlty exposed on prod as well, as application exptected to be accessible only in private network
 

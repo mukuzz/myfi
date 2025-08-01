@@ -55,7 +55,7 @@ function HomeScreen() {
 
   return <div className='relative h-full flex flex-col overflow-y-auto enable-scroll'>
     <div className="bg-background text-foreground h-auto flex flex-col" style={{ scrollbarWidth: 'none' }}>
-      <div className="flex flex-shrink-0 justify-between items-center pt-4 px-5">
+      <div className="flex flex-shrink-0 justify-between items-center pt-6 px-5">
         <h1 className="text-3xl font-bold">Home</h1>
         <button 
           className=" text-foreground hover:text-foreground transition-colors"
@@ -66,7 +66,7 @@ function HomeScreen() {
         </button>
       </div>
 
-      <div className='h-auto p-4'>
+      <div className='h-auto p-4 pt-6'>
         <div className="lg:flex lg:gap-4 space-y-4 lg:space-y-0">
 
           <div className="lg:w-1/2 flex flex-col gap-4">

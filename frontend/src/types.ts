@@ -49,15 +49,6 @@ export interface Account {
   parentAccountId?: number | null; // Optional parent account ID
 }
 
-// Type for the scraping request payload
-export interface ScrapeRequest {
-  accountId: number;
-  accountType: string; // Or use AccountType enum if defined on frontend
-  accountName: string;
-  username: string;
-  password?: string; // Password might be optional if already stored/handled securely
-  accountNumber: string;
-}
 
 // Represents com.myfi.refreshTracker.enums.RefreshJobStatus
 export enum RefreshJobStatus {

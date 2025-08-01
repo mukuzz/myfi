@@ -1,4 +1,4 @@
-import { Transaction, Account, ScrapeRequest, Tag, Page, AggregatedRefreshStatusResponseType } from '../types';
+import { Transaction, Account, Tag, Page, AggregatedRefreshStatusResponseType } from '../types';
 
 // Use environment variable or default.
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/api/v1';
@@ -186,19 +186,6 @@ export const createTransaction = async (transactionData: Partial<Omit<Transactio
   return response.json();
 };
 
-// Trigger scraping process for given accounts
-export const triggerScraping = async (scrapeRequests: ScrapeRequest[]): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/scraping/scrape`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(scrapeRequests),
-  });
-  // Backend returns 200 OK on successful initiation or completion with/without errors
-  await handleResponse(response); 
-  // No specific return value needed
-};
 
 // Fetch the last scrape time
 export const getLastScrapeTime = async (): Promise<number | null> => {
