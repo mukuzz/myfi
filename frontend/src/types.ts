@@ -45,7 +45,6 @@ export interface Account {
   isActive: boolean;
   accountNumber: string;
   children?: Account[] | null;
-  ccStatementGenerationDay?: number | null;
   parentAccountId?: number | null; // Optional parent account ID
 }
 

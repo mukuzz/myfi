@@ -308,11 +308,11 @@ public class GmailService {
 			queryBuilder.append(" after:").append(epochSecondsSinceLastEmail);
 			logger.info("Using global latest message epoch: {}", epochSecondsSinceLastEmail);
 		} else {
-			// No processed messages yet, use default time range (3 months ago)
+			// No processed messages yet, use default time range (1 month ago)
 			LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHoursMinutes(5, 30));
-			LocalDateTime threeMonthsAgo = now.minusMonths(3);
-			queryBuilder.append(" after:").append(threeMonthsAgo.toEpochSecond(ZoneOffset.ofHoursMinutes(5, 30)));
-			logger.info("Using default 3-month lookback period");
+			LocalDateTime oneMonthAgo = now.minusMonths(1);
+			queryBuilder.append(" after:").append(oneMonthAgo.toEpochSecond(ZoneOffset.ofHoursMinutes(5, 30)));
+			logger.info("Using default 1-month lookback period");
 		}
 
 		return queryBuilder.toString();
