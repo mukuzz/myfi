@@ -23,6 +23,7 @@ import com.myfi.refresh.service.RefreshTrackingService;
 import com.myfi.service.AccountHistoryService;
 import com.myfi.service.AccountService;
 import com.myfi.service.TransactionService;
+import com.myfi.service.CurrencyConversionService;
 import com.myfi.mailscraping.service.OpenAIService.ExtractedDetailsFromEmail;
 
 import java.io.IOException;
@@ -72,6 +73,9 @@ public class GmailService {
 
 	@Autowired
 	private AccountMatchingService accountMatchingService;
+
+	@Autowired
+	private CurrencyConversionService currencyConversionService;
 
 	public List<String> syncAndProcessEmails() {
 		return syncAndProcessEmailsNewImplementation();
@@ -208,44 +212,6 @@ public class GmailService {
 			refreshTrackingService.failOperation(RefreshType.GMAIL_SYNC, operationId,
 					"Unexpected error: " + e.getMessage());
 		}
-
-		return allSuccessfullyProcessedMessageIds;
-	}
-
-	/**
-	 * Legacy account-based processing implementation (deprecated).
-	 * Kept for backward compatibility and testing purposes.
-	 */
-	@Deprecated
-	public List<String> syncAndProcessEmailsLegacy() {
-		List<String> allSuccessfullyProcessedMessageIds = new ArrayList<>();
-
-		logger.info("Starting Gmail sync process using legacy account-based approach.");
-
-		List<Account> allAccounts = accountService.getAllAccounts();
-		List<Account> supportedAccounts = allAccounts.stream()
-				.filter(acc -> Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(acc.getName())
-						|| Constants.BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(acc.getName()))
-				.collect(Collectors.toList());
-
-		if (supportedAccounts == null || supportedAccounts.isEmpty()) {
-			logger.info("No supported accounts found to sync emails for.");
-			return allSuccessfullyProcessedMessageIds;
-		}
-
-		logger.info("Found {} supported accounts to process for Gmail sync.", supportedAccounts.size());
-		int totalAccounts = supportedAccounts.size();
-		int accountsProcessedCount = 0;
-
-		for (Account account : supportedAccounts) {
-			String accountNumber = account.getAccountNumber();
-			String accountOperationId = String.valueOf(accountNumber);
-			refreshTrackingService.initializeOperation(RefreshType.GMAIL_SYNC, accountOperationId,
-					account.getName(), Optional.empty());
-		}
-
-		// Legacy processing logic would go here - truncated for brevity since it's deprecated
-		logger.warn("Legacy account-based processing is deprecated. Use syncAndProcessEmailsNewImplementation() instead.");
 
 		return allSuccessfullyProcessedMessageIds;
 	}
@@ -466,8 +432,32 @@ public class GmailService {
 			}
 		}
 
+		// Handle currency conversion
+		BigDecimal originalAmount = BigDecimal.valueOf(details.getAmount());
+		BigDecimal convertedAmount = originalAmount;
+		String currencyCode = details.getCurrencyCode();
+		
+		// Validate currency code
+		if (!currencyConversionService.isValidCurrencyCode(currencyCode)) {
+			logger.warn("Invalid currency code '{}' for transaction, defaulting to INR", currencyCode);
+			currencyCode = "INR";
+		}
+		
+		// Convert to INR if not already in INR
+		if (!"INR".equalsIgnoreCase(currencyCode)) {
+			convertedAmount = currencyConversionService.convertToINR(
+				originalAmount, 
+				currencyCode, 
+				details.getTransactionDate()
+			);
+			logger.info("Converted {} {} to {} INR for transaction on {}", 
+				originalAmount, currencyCode, convertedAmount, details.getTransactionDate());
+		}
+
 		return Transaction.builder()
-				.amount(BigDecimal.valueOf(details.getAmount()))
+				.amount(convertedAmount)
+				.originalAmount(originalAmount)
+				.currencyCode(currencyCode)
 				.description("Email Message ID: " + messageId)
 				.counterParty(details.getDescription())
 				.type(Transaction.TransactionType.valueOf(details.getTransactionType()))
@@ -489,61 +479,4 @@ public class GmailService {
 		return isCreditCardSupported || isBankAccountSupported;
 	}
 
-	/**
-	 * Legacy method - kept for backward compatibility.
-	 */
-	@Deprecated
-	private Transaction mapExtractedTransactionDetailsToTransaction(String messageId,
-			ExtractedDetailsFromEmail details) {
-		if (details.getEmailType() != EmailType.TRANSACTION_INFORMATION) {
-			logger.info("Skipping as not a transaction: {}", details);
-			return null;
-		}
-		if (!details.isTransactionSuccessful()) {
-			logger.info("Skipping transaction as it's not successful: {}", details);
-			return null;
-		}
-		if (!details.isPixelCardTransaction()
-				&& (StringUtils.isBlank(details.getAccountNumber()) || details.getAccountNumber().length() < 4)) {
-			logger.warn("Account number blank or too short: {}", details);
-			return null;
-		}
-		Account account;
-		if (details.isPixelCardTransaction()) {
-			account = accountService.getAccountByTypeAndName(Account.AccountType.CREDIT_CARD, Constants.HDFC_PIXEL);
-			if (account == null) {
-				logger.warn("Pixel card account not found for transaction: {}", details);
-				return null;
-			}
-		} else {
-			account = accountService.getAccountByCardLast4DigitsNumber(
-					details.getAccountNumber().substring(details.getAccountNumber().length() - 4));
-			if (account == null) {
-				logger.warn("Account for account number not found: {}, transaction: {}", details.getAccountNumber(),
-						details);
-				return null;
-			}
-		}
-		boolean isScrapingSupportedAccount = false;
-		if (account.getType() == Account.AccountType.CREDIT_CARD
-				&& Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.keySet().contains(account.getName())) {
-			isScrapingSupportedAccount = true;
-		} else if (account.getType() == Account.AccountType.SAVINGS
-				&& Constants.BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.keySet().contains(account.getName())) {
-			isScrapingSupportedAccount = true;
-		}
-		if (!isScrapingSupportedAccount) {
-			logger.info("Account not supported by email scraper: {}", details);
-			return null;
-		}
-		return Transaction.builder()
-				.amount(BigDecimal.valueOf(details.getAmount()))
-				.description("Email Message ID: " + messageId)
-				.counterParty(details.getDescription())
-				.type(Transaction.TransactionType.valueOf(details.getTransactionType()))
-				.transactionDate(details.getTransactionDate().atStartOfDay())
-				.createdAt(LocalDateTime.now())
-				.account(account)
-				.build();
-	}
 }

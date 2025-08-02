@@ -72,6 +72,7 @@ class OpenAIServiceTest {
         String validJsonResponse = """
             {
                 "amount": 50.0,
+                "currency_code": "USD",
                 "transaction_date": "2024-01-15",
                 "transaction_type": "DEBIT",
                 "description": "Amazon purchase",
@@ -99,6 +100,7 @@ class OpenAIServiceTest {
         assertTrue(result.isPresent());
         ExtractedDetailsFromEmail details = result.get();
         assertEquals(50.0, details.getAmount());
+        assertEquals("USD", details.getCurrencyCode());
         assertEquals(LocalDate.of(2024, 1, 15), details.getTransactionDate());
         assertEquals("DEBIT", details.getTransactionType());
         assertEquals("Amazon purchase", details.getDescription());
@@ -117,6 +119,7 @@ class OpenAIServiceTest {
         String jsonResponseWithLongAccountNumber = """
             {
                 "amount": 100.0,
+                "currency_code": "INR",
                 "transaction_date": "2024-01-15",
                 "transaction_type": "DEBIT",
                 "description": "Test transaction",
@@ -151,6 +154,7 @@ class OpenAIServiceTest {
         String jsonResponseWithShortAccountNumber = """
             {
                 "amount": 100.0,
+                "currency_code": "INR",
                 "transaction_date": "2024-01-15",
                 "transaction_type": "DEBIT",
                 "description": "Test transaction",
@@ -320,6 +324,7 @@ class OpenAIServiceTest {
         String validJsonResponse = """
             {
                 "amount": 50.0,
+                "currency_code": "USD",
                 "transaction_date": "2024-01-15",
                 "transaction_type": "DEBIT",
                 "description": "Amazon purchase",
@@ -374,6 +379,7 @@ class OpenAIServiceTest {
         String pixelCardJsonResponse = """
             {
                 "amount": 25.5,
+                "currency_code": "INR",
                 "transaction_date": "2024-01-20",
                 "transaction_type": "DEBIT",
                 "description": "Starbucks purchase",
@@ -412,6 +418,7 @@ class OpenAIServiceTest {
         String failedTransactionJsonResponse = """
             {
                 "amount": 100.0,
+                "currency_code": "INR",
                 "transaction_date": "2024-01-22",
                 "transaction_type": "DEBIT",
                 "description": "Amazon purchase - FAILED",
@@ -450,6 +457,7 @@ class OpenAIServiceTest {
         String statementJsonResponse = """
             {
                 "amount": 500.0,
+                "currency_code": "INR",
                 "transaction_date": "2024-01-25",
                 "transaction_type": "DEBIT",
                 "description": "Credit card statement",

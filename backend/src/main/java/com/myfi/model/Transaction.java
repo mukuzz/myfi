@@ -34,6 +34,12 @@ public class Transaction {
     @Column(nullable = false)
     private BigDecimal amount;
 
+    @Column(name = "original_amount")
+    private BigDecimal originalAmount;
+
+    @Column(name = "currency_code", length = 3)
+    private String currencyCode;
+
     @NotNull
     @Column(nullable = false)
     private String description;

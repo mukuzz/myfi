@@ -4,7 +4,9 @@ export type Tab = 'Home' | 'Transactions';
 // Updated Transaction interface based on Java model
 export interface Transaction {
   id: number; // Assuming Long maps to number in JSON
-  amount: number; // Assuming BigDecimal maps to number
+  amount: number; // Assuming BigDecimal maps to number (converted INR amount)
+  originalAmount?: number; // Original amount in original currency
+  currencyCode?: string; // ISO 4217 currency code
   description: string;
   type: 'CREDIT' | 'DEBIT';
   transactionDate: string; // Dates usually come as ISO strings

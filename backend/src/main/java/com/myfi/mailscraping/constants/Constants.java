@@ -42,5 +42,6 @@ public class Constants {
     public static final String GOOGLE_OAUTH_CLIENT_ID_KEY = "GOOGLE_OAUTH_CLIENT_ID";
     public static final String GOOGLE_OAUTH_CLIENT_SECRET_KEY = "GOOGLE_OAUTH_CLIENT_SECRET";
     public static final String OPENAI_API_KEY_KEY = "OPENAI_API_KEY";
+    public static final String OPEN_EXCHANGE_RATES_API_KEY_KEY = "OPEN_EXCHANGE_RATES_API_KEY";
     public static final String APP_HOST_URL_KEY = "APP_HOST_URL";
 }

@@ -46,6 +46,10 @@ public class OpenAIService {
       "type": "number",
       "description": "Transaction amount as a numeric value."
     },
+    "currency_code": {
+      "type": "string",
+      "description": "ISO 4217 currency code (3 characters) for the transaction amount. If not explicitly mentioned, assume INR for Indian transactions."
+    },
     "transaction_date": {
       "type": "string",
       "description": "Date of the transaction in ISO 8601 format. In the mail the dates are in the Indian date format. The Indian date format has the following order: day, month, year."
@@ -87,6 +91,7 @@ public class OpenAIService {
   },
   "required": [
     "amount",
+    "currency_code",
     "transaction_date",
     "transaction_type",
     "description",
@@ -152,7 +157,7 @@ public class OpenAIService {
       // Basic validation after parsing
       if (details.getDescription() == null || details.getAmount() == null
           || details.getTransactionDate() == null || details.getTransactionType() == null
-          || details.getAccountNumber() == null) {
+          || details.getAccountNumber() == null || details.getCurrencyCode() == null) {
         logger.warn("Parsed JSON details are incomplete: {}", details);
         return Optional.empty();
       }
@@ -184,6 +189,8 @@ public class OpenAIService {
   @Builder
   public static class ExtractedDetailsFromEmail {
     private Double amount;
+    @JsonProperty("currency_code")
+    private String currencyCode;
     @JsonProperty("transaction_date")
     private LocalDate transactionDate;
     @JsonProperty("transaction_type")

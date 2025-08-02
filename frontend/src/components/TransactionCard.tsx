@@ -42,12 +42,19 @@ function TransactionCard({ transaction, tagMap, onTagClick, onCardClick, classNa
       <hr className="border-t border-border my-2 pointer-events-none" />
 
       <div className="flex justify-between items-center mt-1 pointer-events-none">
-        <CurrencyDisplay 
-          amount={transaction.amount}
-          className='text-xl font-bold text-foreground'
-          smallRupeeSymbol={true}
-          type={transaction.type}
-        />
+        <div className="flex flex-col">
+          <CurrencyDisplay 
+            amount={transaction.amount}
+            className='text-xl font-bold text-foreground'
+            smallRupeeSymbol={true}
+            type={transaction.type}
+          />
+          {transaction.originalAmount && transaction.currencyCode && transaction.currencyCode !== 'INR' && (
+            <span className="text-xs text-muted-foreground mt-1">
+              Original: {transaction.originalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {transaction.currencyCode}
+            </span>
+          )}
+        </div>
         <div className="flex items-center space-x-2 whitespace-nowrap overflow-hidden text-ellipsis pointer-events-auto">
           <button
             onClick={(e) => onTagClick && onTagClick(transaction, e)}

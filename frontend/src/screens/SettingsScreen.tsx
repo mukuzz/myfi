@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiMail, FiSave, FiKey } from 'react-icons/fi';
+import { FiMail, FiSave, FiKey, FiDollarSign, FiSettings, FiDatabase, FiLink } from 'react-icons/fi';
 import { fetchGoogleAuthUrl, setCredentialKeyValue } from '../services/apiService';
 import PassphraseModal from '../components/PassphraseModal';
 import ScreenContainer from '../components/ScreenContainer';
@@ -9,6 +9,7 @@ const CREDENTIAL_KEYS = {
   GOOGLE_OAUTH_CLIENT_ID: "GOOGLE_OAUTH_CLIENT_ID",
   GOOGLE_OAUTH_CLIENT_SECRET: "GOOGLE_OAUTH_CLIENT_SECRET",
   OPENAI_API_KEY: "OPENAI_API_KEY",
+  OPEN_EXCHANGE_RATES_API_KEY: "OPEN_EXCHANGE_RATES_API_KEY",
   APP_HOST_URL: "APP_HOST_URL",
 } as const;
 
@@ -23,6 +24,7 @@ function SettingsScreen() {
   const [googleClientId, setGoogleClientId] = useState<string>('');
   const [googleClientSecret, setGoogleClientSecret] = useState<string>('');
   const [openaiApiKey, setOpenaiApiKey] = useState<string>('');
+  const [openExchangeRatesApiKey, setOpenExchangeRatesApiKey] = useState<string>('');
   const [appHostUrl, setAppHostUrl] = useState<string>('');
 
   const handleOpenPassphraseModalForGmail = () => {
@@ -57,6 +59,9 @@ function SettingsScreen() {
         case CREDENTIAL_KEYS.OPENAI_API_KEY:
           valueToSet = openaiApiKey;
           break;
+        case CREDENTIAL_KEYS.OPEN_EXCHANGE_RATES_API_KEY:
+          valueToSet = openExchangeRatesApiKey;
+          break;
         case CREDENTIAL_KEYS.APP_HOST_URL:
           valueToSet = appHostUrl;
           break;
@@ -76,6 +81,7 @@ function SettingsScreen() {
           case CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_ID: setGoogleClientId(''); break;
           case CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_SECRET: setGoogleClientSecret(''); break;
           case CREDENTIAL_KEYS.OPENAI_API_KEY: setOpenaiApiKey(''); break;
+          case CREDENTIAL_KEYS.OPEN_EXCHANGE_RATES_API_KEY: setOpenExchangeRatesApiKey(''); break;
           case CREDENTIAL_KEYS.APP_HOST_URL: setAppHostUrl(''); break;
         }
       } catch (error) {
@@ -91,28 +97,40 @@ function SettingsScreen() {
     key: CredentialKey,
     value: string,
     setter: (val: string) => void,
-    placeholder: string
+    placeholder: string,
+    description?: string,
+    icon?: React.ReactNode,
+    type?: string
   ) => (
-    <div key={key} className="mb-4">
-      <label htmlFor={key} className="block text-sm font-medium text-muted-foreground mb-1">
-        {key.replace(/_/g, ' ')}
-      </label>
-      <div className="flex items-center gap-2">
+    <div key={key} className="bg-card border border-border rounded-lg p-4">
+      <div className="flex items-start gap-3 mb-3">
+        {icon && <div className="text-primary mt-0.5">{icon}</div>}
+        <div className="flex-1">
+          <label htmlFor={key} className="block text-sm font-semibold text-foreground mb-1">
+            {key.replace(/_/g, ' ').replace(/API/g, 'API').replace(/URL/g, 'URL')}
+          </label>
+          {description && (
+            <p className="text-xs text-muted-foreground mb-2">{description}</p>
+          )}
+        </div>
+      </div>
+      <div className="flex w-full items-center gap-2">
         <input
           id={key}
-          type="text"
+          type={type}
           value={value}
           onChange={(e) => setter(e.target.value)}
           placeholder={placeholder}
-          className="flex-grow p-2 border border-border rounded-md bg-input text-foreground placeholder:text-muted-foreground"
+          className="flex-grow p-3 border border-border rounded-md bg-input text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all w-full"
         />
         <button
           onClick={() => handleOpenPassphraseModalForKeySet(key)}
-          className="flex items-center gap-2 px-3 py-1.5 text-primary text-sm border border-border rounded-md hover:bg-muted transition-colors"
+          disabled={!value.trim()}
+          className="flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground text-sm rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           aria-label={`Set ${key.replace(/_/g, ' ')}`}
         >
-          <FiSave size={18} />
-          Set
+          <FiSave size={16} />
+          Save
         </button>
       </div>
     </div>
@@ -120,35 +138,118 @@ function SettingsScreen() {
 
   return (
     <ScreenContainer title="Settings">
-      <div className="bg-background text-foreground flex flex-col flex-grow space-y-6 p-4 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-        <div className="p-4 border border-border rounded-md">
-          <h2 className="text-xl font-semibold mb-3">Gmail Integration</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Connect your Gmail account to automatically sync email transactions and updates.
-          </p>
+      <div className="bg-background text-foreground flex flex-col flex-grow space-y-8 p-6 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+        
+        {/* Gmail Integration Section */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <FiMail className="text-blue-600 dark:text-blue-400" size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-blue-900 dark:text-blue-100">Gmail Integration</h2>
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                Connect your Gmail account for automatic transaction sync
+              </p>
+            </div>
+          </div>
           <button
             onClick={handleOpenPassphraseModalForGmail}
-            className="flex items-center gap-2 px-3 py-1.5 text-primary text-sm border border-border rounded-md hover:bg-muted transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
           >
             <FiMail size={18} />
-            Connect Gmail
+            Connect Gmail Account
           </button>
         </div>
 
-        <div className="p-4 border border-border rounded-md">
-          <div className="flex items-top gap-2 mb-3">
-            <FiKey className='mt-1' size={20} />
-            <h2 className="text-xl font-semibold">API Credentials & Configuration</h2>
+        {/* API Configuration Section */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <FiSettings className="text-primary" size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">API Configuration</h2>
+              <p className="text-sm text-muted-foreground">
+                Configure API keys and application settings. All values are encrypted and require master key authentication.
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground mb-6">
-            Set the necessary API keys and configuration values for the application. Each value requires the master key for an authorized update.
-          </p>
 
-          {renderInputForKey(CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_ID, googleClientId, setGoogleClientId, "Enter Google OAuth Client ID")}
-          {renderInputForKey(CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_SECRET, googleClientSecret, setGoogleClientSecret, "Enter Google OAuth Client Secret")}
-          {renderInputForKey(CREDENTIAL_KEYS.OPENAI_API_KEY, openaiApiKey, setOpenaiApiKey, "Enter OpenAI API Key")}
-          {renderInputForKey(CREDENTIAL_KEYS.APP_HOST_URL, appHostUrl, setAppHostUrl, "e.g., http://localhost:8080")}
+          {/* Google OAuth Section */}
+          <div className="space-y-4">
+            <h3 className="text-base font-medium text-foreground flex items-center gap-2">
+              <FiDatabase size={18} />
+              Google OAuth Configuration
+            </h3>
+            <div className="grid gap-4">
+              {renderInputForKey(
+                CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_ID, 
+                googleClientId, 
+                setGoogleClientId, 
+                "Enter Google OAuth Client ID",
+                "Client ID from Google Cloud Console for OAuth authentication",
+                <FiKey size={16} />,
+                "password"
+              )}
+              {renderInputForKey(
+                CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_SECRET, 
+                googleClientSecret, 
+                setGoogleClientSecret, 
+                "Enter Google OAuth Client Secret",
+                "Client Secret from Google Cloud Console for OAuth authentication",
+                <FiKey size={16} />,
+                "password"
+              )}
+            </div>
+          </div>
 
+          {/* AI & External APIs Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground flex items-center gap-2">
+              <FiDollarSign size={18} />
+              AI & External Services
+            </h3>
+            <div className="grid gap-4">
+              {renderInputForKey(
+                CREDENTIAL_KEYS.OPENAI_API_KEY, 
+                openaiApiKey, 
+                setOpenaiApiKey, 
+                "Enter OpenAI API Key",
+                "API key for transaction extraction and processing via OpenAI",
+                <FiDatabase size={16} />,
+                "password"
+              )}
+              {renderInputForKey(
+                CREDENTIAL_KEYS.OPEN_EXCHANGE_RATES_API_KEY, 
+                openExchangeRatesApiKey, 
+                setOpenExchangeRatesApiKey, 
+                "Enter Open Exchange Rates API Key",
+                "API key for real-time currency conversion and historical exchange rates",
+                <FiDollarSign size={16} />,
+                "password"
+              )}
+            </div>
+          </div>
+
+          {/* Application Configuration Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground flex items-center gap-2">
+              <FiLink size={18} />
+              Application Configuration
+            </h3>
+            <div className="grid gap-4">
+              {renderInputForKey(
+                CREDENTIAL_KEYS.APP_HOST_URL, 
+                appHostUrl, 
+                setAppHostUrl, 
+                "e.g., http://localhost:8080 or https://yourdomain.com",
+                "Base URL for the application backend server",
+                <FiLink size={16} />,
+                "url"
+              )}
+            </div>
+          </div>
         </div>
 
         <PassphraseModal
