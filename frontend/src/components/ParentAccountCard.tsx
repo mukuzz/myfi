@@ -7,16 +7,18 @@ import { copyToClipboard } from '../utils/clipboard';
 
 interface ParentAccountCardProps {
     parentAccount: Account;
-    onCardClick?: (account: Account) => void;
+    onCardClick?: (account: Account, isChild: boolean) => void;
     onEditBalance?: () => void;
     showEditBalance?: boolean;
+    showBalance?: boolean;
 }
 
 function ParentAccountCard({
     parentAccount,
     onCardClick,
     onEditBalance,
-    showEditBalance = false
+    showEditBalance = false,
+    showBalance = true
 }: ParentAccountCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -49,7 +51,7 @@ function ParentAccountCard({
         <div className="flex flex-row justify-start">
             <div className="inline-flex align-top">
                 {/* Parent Account Card */}
-                <div className={`min-w-[270px] relative ${onCardClick ? 'cursor-pointer' : ''}`} onClick={() => onCardClick && onCardClick(parentAccount)}>
+                <div className={`min-w-[270px] relative ${onCardClick ? 'cursor-pointer' : ''}`} onClick={() => onCardClick && onCardClick(parentAccount, false)}>
                     <div className={`bg-card overflow-hidden border-[0.7px] border-border ${hasChildren ? 'rounded-l-2xl' : 'rounded-2xl'
                         }`}>
                         <AccountCard
@@ -57,6 +59,7 @@ function ParentAccountCard({
                             handleCopyAccountNumber={handleCopyAccountNumber}
                             onEditBalance={onEditBalance}
                             showEditBalance={showEditBalance}
+                            showBalance={showBalance}
                         />
                     </div>
                 </div>
@@ -67,7 +70,6 @@ function ParentAccountCard({
                     style={{
                         maxWidth: maxWidth
                     }}
-                    onClick={() => onCardClick && onCardClick(parentAccount)}
                 >
                     <div
                         className={`flex flex-row justify-start h-full transition-transform duration-300 ease-in-out ${isExpanded ? 'translate-x-0' : 'translate-x-[-50px]'
@@ -83,6 +85,7 @@ function ParentAccountCard({
                                 style={{
                                     transitionDelay: isExpanded ? `${index * 100}ms` : '0ms'
                                 }}
+                                onClick={() => onCardClick && onCardClick(childAccount, true)}
                             >
                                 <div className={`bg-card overflow-hidden h-full border border-border`}>
                                     <AccountCard

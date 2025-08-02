@@ -64,8 +64,8 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
     closeSheet();
   };
 
-  const handleAccountClick = (account: Account) => {
-    navigateTo(<AccountDetailsScreen account={account} getAccountTypeLabel={getAccountTypeLabel} />);
+  const handleAccountClick = (account: Account, isChild: boolean = false) => {
+    navigateTo(<AccountDetailsScreen account={account} getAccountTypeLabel={getAccountTypeLabel} isChild={isChild} />);
   };
 
   const getAccountTypeLabel = (type: Account['type']) => {
@@ -95,7 +95,7 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
           <ParentAccountCard
             key={parentAccount.id}
             parentAccount={parentAccount}
-            onCardClick={handleAccountClick}
+            onCardClick={(account, isChild) => handleAccountClick(account, isChild)}
           />
         ))}
 

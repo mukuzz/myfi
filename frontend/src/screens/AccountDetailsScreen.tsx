@@ -15,12 +15,14 @@ import CurrencyDisplay from '../components/AmountDisplay';
 interface AccountDetailsScreenProps {
   account: Account;
   getAccountTypeLabel: (type: Account['type']) => string;
+  isChild?: boolean;
 }
 
 
 const AccountDetailsScreen: React.FC<AccountDetailsScreenProps> = ({
   account,
   getAccountTypeLabel,
+  isChild = false,
 }) => {
   const dispatch = useAppDispatch();
 
@@ -142,6 +144,7 @@ const AccountDetailsScreen: React.FC<AccountDetailsScreenProps> = ({
                 parentAccount={updatedAccount} 
                 onEditBalance={handleEditBalance}
                 showEditBalance={true}
+                showBalance={!isChild}
               />
             </div>
             <span className="absolute hidden sm:block flex-shrink-0 left-0 h-full w-6 bg-gradient-to-r from-background to-transparent" />
