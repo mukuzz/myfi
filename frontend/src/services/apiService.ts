@@ -154,6 +154,37 @@ export const createAccount = async (accountData: Omit<Account, 'id' | 'createdAt
 };
 
 /**
+ * Updates the balance of a specific account.
+ * @param accountId The ID of the account to update.
+ * @param newBalance The new balance amount.
+ * @returns The updated account data from the server.
+ * @throws Error if the update fails.
+ */
+export const updateAccountBalance = async (accountId: number, newBalance: number): Promise<Account> => {
+  const response = await fetch(`${API_BASE_URL}/accounts/${accountId}/balance`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ balance: newBalance }),
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {
+      // Ignore if response body is not JSON or empty
+    }
+    console.error(`Failed to update account balance for account ${accountId}:`, errorMessage);
+    throw new Error(`Failed to update account balance: ${errorMessage}`);
+  }
+
+  return response.json();
+};
+
+/**
  * Creates a new transaction on the server.
  * @param transactionData The data for the new transaction.
  * @returns The created transaction data from the server.

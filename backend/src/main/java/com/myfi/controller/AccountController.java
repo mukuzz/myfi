@@ -63,4 +63,29 @@ public class AccountController {
     public Map<AccountType, List<String>> getSupportedAccounts() {
         return accountService.getSupportedAccounts();
     }
+
+    @PutMapping("/{id}/balance")
+    public ResponseEntity<Account> updateAccountBalance(@PathVariable Long id, @RequestBody Map<String, Object> requestBody) {
+        try {
+            Object balanceObj = requestBody.get("balance");
+            if (balanceObj == null) {
+                return ResponseEntity.badRequest().body(null);
+            }
+            
+            java.math.BigDecimal newBalance;
+            if (balanceObj instanceof Number) {
+                newBalance = java.math.BigDecimal.valueOf(((Number) balanceObj).doubleValue());
+            } else {
+                newBalance = new java.math.BigDecimal(balanceObj.toString());
+            }
+            
+            return accountService.updateAccountBalance(id, newBalance)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 } 

@@ -104,6 +104,25 @@ export const deleteAccount = createAsyncThunk<
     }
 );
 
+// Async thunk for updating account balance
+export const updateAccountBalance = createAsyncThunk<
+    Account, // Return type: the updated account
+    { accountId: number; newBalance: number }, // Argument type: account ID and new balance
+    { rejectValue: string } // Thunk config
+>(
+    'accounts/updateAccountBalance',
+    async ({ accountId, newBalance }, { rejectWithValue }) => {
+        try {
+            // Use the imported apiService function
+            const updatedAccount = await apiService.updateAccountBalance(accountId, newBalance);
+            return updatedAccount;
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to update account balance';
+            return rejectWithValue(message);
+        }
+    }
+);
+
 // Create the accounts slice
 const accountsSlice = createSlice({
     name: 'accounts',
@@ -166,6 +185,23 @@ const accountsSlice = createSlice({
             .addCase(deleteAccount.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to delete account';
+            })
+            // Update Account Balance Cases
+            .addCase(updateAccountBalance.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(updateAccountBalance.fulfilled, (state, action: PayloadAction<Account>) => {
+                state.status = 'succeeded';
+                // Update the account in the list with the new balance
+                const index = state.accounts.findIndex(account => account.id === action.payload.id);
+                if (index !== -1) {
+                    state.accounts[index] = action.payload;
+                }
+            })
+            .addCase(updateAccountBalance.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to update account balance';
             });
     },
 });

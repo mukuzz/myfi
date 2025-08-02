@@ -8,11 +8,15 @@ import { copyToClipboard } from '../utils/clipboard';
 interface ParentAccountCardProps {
     parentAccount: Account;
     onCardClick?: (account: Account) => void;
+    onEditBalance?: () => void;
+    showEditBalance?: boolean;
 }
 
 function ParentAccountCard({
     parentAccount,
-    onCardClick
+    onCardClick,
+    onEditBalance,
+    showEditBalance = false
 }: ParentAccountCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -51,6 +55,8 @@ function ParentAccountCard({
                         <AccountCard
                             account={parentAccount}
                             handleCopyAccountNumber={handleCopyAccountNumber}
+                            onEditBalance={onEditBalance}
+                            showEditBalance={showEditBalance}
                         />
                     </div>
                 </div>

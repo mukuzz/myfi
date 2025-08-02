@@ -180,6 +180,34 @@ public class AccountService {
     public void updateBalance(Account account, BigDecimal balanceChange) {
         updateBalance(account, balanceChange, new HashSet<>());
     }
+
+    @Transactional
+    public Optional<Account> updateAccountBalance(Long id, BigDecimal newBalance) {
+        Assert.notNull(newBalance, "New balance must not be null");
+        
+        return accountRepository.findById(id)
+                .map(account -> {
+                    try {
+                        // Create new balance history record with the specified balance
+                        accountHistoryService.createAccountHistoryRecord(account.getId(), newBalance);
+                        
+                        // Update the account object with the new balance
+                        account.setBalance(newBalance);
+                        account.setUpdatedAt(LocalDateTime.now());
+                        
+                        // Save the account (updates timestamp)
+                        Account updatedAccount = accountRepository.save(account);
+                        
+                        // Ensure balance is populated
+                        populateLatestBalance(updatedAccount);
+                        
+                        return updatedAccount;
+                    } catch (Exception e) {
+                        logger.error("Failed to update balance for account {}: {}", account.getId(), e.getMessage(), e);
+                        throw new RuntimeException("Balance update failed for account " + account.getId(), e);
+                    }
+                });
+    }
     
     private void updateBalance(Account account, BigDecimal balanceChange, Set<Long> visitedAccounts) {
         Assert.notNull(account, "Account must not be null");

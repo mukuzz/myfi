@@ -1,6 +1,6 @@
 import React from 'react';
 import { Account } from '../types';
-import { FiCopy } from 'react-icons/fi';
+import { FiCopy, FiEdit2 } from 'react-icons/fi';
 import CurrencyDisplay from './AmountDisplay';
 import AccountIcon from './AccountIcon';
 
@@ -8,6 +8,8 @@ interface AccountCardProps {
   account: Account;
   handleCopyAccountNumber: (accountNumber: string) => Promise<void>;
   showBalance?: boolean;
+  onEditBalance?: () => void;
+  showEditBalance?: boolean;
 }
 
 const getAccountTypeLabel = (type: Account['type']) => {
@@ -19,7 +21,9 @@ const getAccountTypeLabel = (type: Account['type']) => {
 const AccountCard: React.FC<AccountCardProps> = ({ 
   account,  
   handleCopyAccountNumber,
-  showBalance = true
+  showBalance = true,
+  onEditBalance,
+  showEditBalance = false
 }) => {
   return (
     <div 
@@ -29,11 +33,25 @@ const AccountCard: React.FC<AccountCardProps> = ({
       <div className="flex justify-between items-center">
         <AccountIcon account={account} className="w-6 h-6" />
         {showBalance && (
-          <CurrencyDisplay 
-            amount={account.balance} 
-            className="font-semibold text-right text-lg" 
-            showOnlyNegative={true}
-          />
+          <div className="flex items-center space-x-1">
+            <CurrencyDisplay 
+              amount={account.balance} 
+              className="font-semibold text-right text-lg" 
+              showOnlyNegative={true}
+            />
+            {showEditBalance && onEditBalance && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditBalance();
+                }}
+                className="p-1 text-muted-foreground hover:text-primary transition-colors"
+                title="Edit balance"
+              >
+                <FiEdit2 className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         )}
       </div>
       {/* Middle row: Name/Type */}
