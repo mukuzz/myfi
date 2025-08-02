@@ -311,6 +311,46 @@ export const fetchTransactionsByAccount = createAsyncThunk<
     }
 );
 
+// Async thunk for forcing transactions refresh (bypasses conditions)
+export const forceRefreshTransactions = createAsyncThunk<
+    Page<Transaction>,
+    { page?: number; size?: number } | void,
+    { state: RootState, rejectValue: string }
+>(
+    'transactions/forceRefreshTransactions',
+    async (args, { rejectWithValue }): Promise<Page<Transaction>> => {
+        try {
+            const page = args?.page ?? 0;
+            const size = args?.size ?? 20;
+            const response = await apiService.fetchTransactions(page, size);
+            return response;
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to force refresh transactions';
+            throw rejectWithValue(message);
+        }
+    }
+    // No condition - always allow refresh
+);
+
+// Async thunk for forcing transactions refresh for a specific month (bypasses conditions)
+export const forceRefreshTransactionsForMonth = createAsyncThunk<
+    Transaction[],
+    { year: number; month: number },
+    { state: RootState, rejectValue: string }
+>(
+    'transactions/forceRefreshTransactionsForMonth',
+    async ({ year, month }, { rejectWithValue }): Promise<Transaction[]> => {
+        try {
+            const response = await apiService.fetchTransactionsForMonth(year, month);
+            return response;
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to force refresh transactions for month';
+            throw rejectWithValue(message);
+        }
+    }
+    // No condition - always allow refresh
+);
+
 // Create Transaction
 export const createTransaction = createAsyncThunk<
     Transaction, // Returns the created transaction
@@ -769,6 +809,68 @@ const transactionsSlice = createSlice({
                     // state.transactionPage.totalElements = state.transactions.filter(tx => !tx.parentId).length; // Example: Count only parents
                      state.transactionPage.totalElements = state.transactions.length; // Or simply update with current length if total includes sub-tx
                 }
+            })
+            // --- Handlers for forceRefreshTransactions ---
+            .addCase(forceRefreshTransactions.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(forceRefreshTransactions.fulfilled, (state, action: PayloadAction<Page<Transaction>>) => {
+                const pageData = action.payload;
+                // Reset transactions completely for force refresh
+                state.transactions = pageData.content.sort(sortTransactionsByDateDesc);
+                state.transactionPage = pageData;
+                state.currentPage = pageData.number;
+                state.hasMore = !pageData.last;
+                state.status = 'succeeded';
+                state.error = null;
+                // Reset availableMonths since we're doing a complete refresh
+                state.availableMonths = {};
+            })
+            .addCase(forceRefreshTransactions.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to force refresh transactions';
+            })
+            // --- Handlers for forceRefreshTransactionsForMonth ---
+            .addCase(forceRefreshTransactionsForMonth.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(forceRefreshTransactionsForMonth.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                const fetchedTransactions = action.payload;
+                const { year, month } = action.meta.arg;
+
+                // For force refresh, replace transactions for this month completely
+                const existingIds = new Set();
+                const filteredTransactions = state.transactions.filter(tx => {
+                    const txDate = new Date(tx.transactionDate);
+                    const txYear = txDate.getFullYear();
+                    const txMonth = txDate.getMonth() + 1;
+                    
+                    // Keep transactions that are NOT from the forced refresh month/year
+                    if (txYear === year && txMonth === month) {
+                        return false; // Remove old transactions from this month
+                    }
+                    existingIds.add(tx.id);
+                    return true;
+                });
+
+                // Add all new transactions for this month
+                const newTransactions = fetchedTransactions.filter(tx => !existingIds.has(tx.id));
+                state.transactions = [...filteredTransactions, ...newTransactions].sort(sortTransactionsByDateDesc);
+
+                // Mark this month as available
+                if (!state.availableMonths[year.toString()]) {
+                    state.availableMonths[year.toString()] = {};
+                }
+                state.availableMonths[year.toString()][month] = true;
+
+                state.error = null;
+            })
+            .addCase(forceRefreshTransactionsForMonth.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to force refresh transactions for month';
             });
     },
 });

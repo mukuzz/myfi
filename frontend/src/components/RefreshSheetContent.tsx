@@ -6,7 +6,8 @@ import { formatDistanceToNow } from '../utils/datetimeUtils';
 import PassphraseModal from './PassphraseModal';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store/store';
-import { fetchTransactions, fetchTransactionsForMonth } from '../store/slices/transactionsSlice';
+import { forceRefreshTransactions, forceRefreshTransactionsForMonth } from '../store/slices/transactionsSlice';
+import { forceRefreshAccounts } from '../store/slices/accountsSlice';
 import AccountProgressItem from './AccountProgressItem';
 
 interface RefreshSheetContentProps {
@@ -75,11 +76,15 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
             console.log("Refresh finished successfully.");
             setComponentStatus('success');
             setErrorMessage(null);
-            dispatch(fetchTransactions() as any);
+            
+            // Force refresh all data after successful refresh
+            dispatch(forceRefreshAccounts() as any);
+            dispatch(forceRefreshTransactions() as any);
             const now = new Date();
             const currentYear = now.getFullYear();
             const currentMonth = now.getMonth() + 1;
-            dispatch(fetchTransactionsForMonth({ year: currentYear, month: currentMonth }) as any);
+            dispatch(forceRefreshTransactionsForMonth({ year: currentYear, month: currentMonth }) as any);
+            
             onRefreshSuccess();
           }
         } else {

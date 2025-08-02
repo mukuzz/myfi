@@ -47,6 +47,25 @@ export const fetchAccounts = createAsyncThunk<
     }
 );
 
+// Async thunk for forcing accounts refresh (bypasses conditions)
+export const forceRefreshAccounts = createAsyncThunk<
+    Account[], // Return type
+    void, // Argument type (none)
+    { state: RootState, rejectValue: string } // Thunk config with RootState
+>(
+    'accounts/forceRefreshAccounts',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await apiService.fetchAccounts();
+            return response;
+        } catch (error: any) {
+            const message = error instanceof Error ? error.message : 'Failed to fetch accounts';
+            throw rejectWithValue(message);
+        }
+    }
+    // No condition - always allow refresh
+);
+
 // Async thunk for creating an account
 export const createAccount = createAsyncThunk<
     Account, // Return type: the newly created account
@@ -119,6 +138,19 @@ const accountsSlice = createSlice({
             .addCase(createAccount.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to create account';
+            })
+            // Force Refresh Accounts Cases
+            .addCase(forceRefreshAccounts.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(forceRefreshAccounts.fulfilled, (state, action: PayloadAction<Account[]>) => {
+                state.status = 'succeeded';
+                state.accounts = action.payload;
+            })
+            .addCase(forceRefreshAccounts.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = typeof action.payload === 'string' ? action.payload : action.error.message ?? 'Failed to force refresh accounts';
             })
             // Delete Account Cases
             .addCase(deleteAccount.pending, (state) => {
