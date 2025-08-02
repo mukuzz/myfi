@@ -20,10 +20,10 @@ function BottomNav() {
       <div className="flex-grow bg-background overflow-hidden">
         {activeScreen}
       </div>
-      {/* <div className="flex-shrink-0">
+      <div className="flex-shrink-0">
         <RefreshBar className="disable-scroll"/>
-      </div> */}
-      <div className="flex flex-shrink-0 border-t border-border justify-around pb-6">
+      </div>
+      <div className="flex flex-shrink-0 border-t border-border justify-around pb-4">
         {tabs.map((tab) => {
           const isActive = tab.name === activeTabName;
           return (
