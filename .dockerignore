@@ -37,3 +37,5 @@
 # Docker specific
 Dockerfile
 .dockerignore 
+
+myfi-app.tar

@@ -5,22 +5,22 @@ WORKDIR /app/frontend
 
 # Copy package files and install dependencies
 COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm install
+RUN npm ci --omit=dev
 
-# Copy the rest of the frontend code
+# Copy only necessary frontend source files
 COPY frontend/ ./
 
 # Build the frontend
 RUN npm run build
 
 # Stage 2: Build Backend
-FROM maven:3.8.4-openjdk-17 AS backend-builder
+FROM maven:3.9.6-eclipse-temurin-17 AS backend-builder
 
 WORKDIR /app/backend
 
-# Copy pom.xml and download dependencies
+# Copy pom.xml and download dependencies (cache layer)
 COPY backend/pom.xml ./
-RUN mvn dependency:go-offline
+RUN mvn dependency:go-offline -B
 
 # Copy backend source code
 COPY backend/src ./src
@@ -28,11 +28,11 @@ COPY backend/src ./src
 # Copy frontend build artifacts into Spring Boot static resources
 COPY --from=frontend-builder /app/frontend/build ./src/main/resources/static
 
-# Build the backend JAR
-RUN mvn package -DskipTests
+# Build the backend JAR with optimized settings
+RUN mvn package -DskipTests -B --no-transfer-progress
 
 # Stage 3: Final Runtime Image
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
