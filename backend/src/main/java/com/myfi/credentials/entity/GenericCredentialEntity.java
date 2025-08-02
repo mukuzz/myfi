@@ -25,15 +25,11 @@ public class GenericCredentialEntity {
     @Column(nullable = false, unique = true)
     private String credentialKey; // The key for the credential, e.g., "OPENAI_API_KEY"
 
-    @Column(nullable = false, length = 1024) // Increased length for encrypted data
-    private String encryptedValue;
+    @Column(nullable = false, length = 1024)
+    private String value;
 
-    @Column(nullable = false)
-    private String salt;
-
-    public GenericCredentialEntity(String credentialKey, String encryptedValue, String salt) {
+    public GenericCredentialEntity(String credentialKey, String value) {
         this.credentialKey = credentialKey;
-        this.encryptedValue = encryptedValue;
-        this.salt = salt;
+        this.value = value;
     }
 } 

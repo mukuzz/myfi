@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { FiMail, FiSave, FiKey, FiDollarSign, FiSettings, FiDatabase, FiLink } from 'react-icons/fi';
 import { fetchGoogleAuthUrl, setCredentialKeyValue } from '../services/apiService';
-import PassphraseModal from '../components/PassphraseModal';
 import ScreenContainer from '../components/ScreenContainer';
 
 // Define the keys to be managed
@@ -17,8 +16,6 @@ const CREDENTIAL_KEYS = {
 type CredentialKey = typeof CREDENTIAL_KEYS[keyof typeof CREDENTIAL_KEYS];
 
 function SettingsScreen() {
-  const [isPassphraseModalOpen, setIsPassphraseModalOpen] = useState<boolean>(false);
-  const [currentKeyToSet, setCurrentKeyToSet] = useState<CredentialKey | null>(null);
 
   // State for input values
   const [googleClientId, setGoogleClientId] = useState<string>('');
@@ -27,71 +24,58 @@ function SettingsScreen() {
   const [openExchangeRatesApiKey, setOpenExchangeRatesApiKey] = useState<string>('');
   const [appHostUrl, setAppHostUrl] = useState<string>('');
 
-  const handleOpenPassphraseModalForGmail = () => {
-    setCurrentKeyToSet(null); // Differentiate from setting other keys
-    setIsPassphraseModalOpen(true);
-  };
-
-  const handleOpenPassphraseModalForKeySet = (key: CredentialKey) => {
-    setCurrentKeyToSet(key);
-    setIsPassphraseModalOpen(true);
-  };
-
-  const handlePassphraseSubmit = async (masterKey: string) => {
-    setIsPassphraseModalOpen(false);
-    if (!currentKeyToSet) { // This is for Gmail Auth URL
-      try {
-        const authUrl = await fetchGoogleAuthUrl(masterKey);
-        window.location.href = authUrl;
-      } catch (error) {
-        console.error('Failed to initiate Google Auth:', error);
-        alert(`Failed to start Google Authentication: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    } else { // This is for setting a key-value pair
-      let valueToSet = '';
-      switch (currentKeyToSet) {
-        case CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_ID:
-          valueToSet = googleClientId;
-          break;
-        case CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_SECRET:
-          valueToSet = googleClientSecret;
-          break;
-        case CREDENTIAL_KEYS.OPENAI_API_KEY:
-          valueToSet = openaiApiKey;
-          break;
-        case CREDENTIAL_KEYS.OPEN_EXCHANGE_RATES_API_KEY:
-          valueToSet = openExchangeRatesApiKey;
-          break;
-        case CREDENTIAL_KEYS.APP_HOST_URL:
-          valueToSet = appHostUrl;
-          break;
-      }
-
-      if (!valueToSet.trim()) {
-        alert(`Value for ${currentKeyToSet} cannot be empty.`);
-        setCurrentKeyToSet(null);
-        return;
-      }
-
-      try {
-        await setCredentialKeyValue(currentKeyToSet, valueToSet, masterKey);
-        alert(`Successfully set ${currentKeyToSet}`);
-        // Optionally clear the input field after successful submission
-        switch (currentKeyToSet) {
-          case CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_ID: setGoogleClientId(''); break;
-          case CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_SECRET: setGoogleClientSecret(''); break;
-          case CREDENTIAL_KEYS.OPENAI_API_KEY: setOpenaiApiKey(''); break;
-          case CREDENTIAL_KEYS.OPEN_EXCHANGE_RATES_API_KEY: setOpenExchangeRatesApiKey(''); break;
-          case CREDENTIAL_KEYS.APP_HOST_URL: setAppHostUrl(''); break;
-        }
-      } catch (error) {
-        console.error(`Failed to set ${currentKeyToSet}:`, error);
-        alert(`Failed to set ${currentKeyToSet}: ${error instanceof Error ? error.message : String(error)}`);
-      } finally {
-        setCurrentKeyToSet(null);
-      }
+  const handleGmailAuth = async () => {
+    try {
+      const authUrl = await fetchGoogleAuthUrl();
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('Failed to initiate Google Auth:', error);
+      alert(`Failed to start Google Authentication: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
+
+  const handleSetCredential = async (key: CredentialKey) => {
+    let valueToSet = '';
+    switch (key) {
+      case CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_ID:
+        valueToSet = googleClientId;
+        break;
+      case CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_SECRET:
+        valueToSet = googleClientSecret;
+        break;
+      case CREDENTIAL_KEYS.OPENAI_API_KEY:
+        valueToSet = openaiApiKey;
+        break;
+      case CREDENTIAL_KEYS.OPEN_EXCHANGE_RATES_API_KEY:
+        valueToSet = openExchangeRatesApiKey;
+        break;
+      case CREDENTIAL_KEYS.APP_HOST_URL:
+        valueToSet = appHostUrl;
+        break;
+    }
+
+    if (!valueToSet.trim()) {
+      alert(`Value for ${key} cannot be empty.`);
+      return;
+    }
+
+    try {
+      await setCredentialKeyValue(key, valueToSet);
+      alert(`Successfully set ${key}`);
+      // Clear the input field after successful submission
+      switch (key) {
+        case CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_ID: setGoogleClientId(''); break;
+        case CREDENTIAL_KEYS.GOOGLE_OAUTH_CLIENT_SECRET: setGoogleClientSecret(''); break;
+        case CREDENTIAL_KEYS.OPENAI_API_KEY: setOpenaiApiKey(''); break;
+        case CREDENTIAL_KEYS.OPEN_EXCHANGE_RATES_API_KEY: setOpenExchangeRatesApiKey(''); break;
+        case CREDENTIAL_KEYS.APP_HOST_URL: setAppHostUrl(''); break;
+      }
+    } catch (error) {
+      console.error(`Failed to set ${key}:`, error);
+      alert(`Failed to set ${key}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
 
   const renderInputForKey = (
     key: CredentialKey,
@@ -124,7 +108,7 @@ function SettingsScreen() {
           className="flex-grow p-3 border border-border rounded-md bg-input text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all w-full"
         />
         <button
-          onClick={() => handleOpenPassphraseModalForKeySet(key)}
+          onClick={() => handleSetCredential(key)}
           disabled={!value.trim()}
           className="flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground text-sm rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           aria-label={`Set ${key.replace(/_/g, ' ')}`}
@@ -141,20 +125,20 @@ function SettingsScreen() {
       <div className="bg-background text-foreground flex flex-col flex-grow space-y-8 p-6 overflow-y-auto" style={{ scrollbarWidth: 'none', fontSize: '14px' }}>
         
         {/* Gmail Integration Section */}
-        <div className="flex flex-col gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+        <div className="flex flex-col gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <FiMail className="text-blue-600 dark:text-blue-400" size={24} />
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FiMail className="text-blue-600" size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Gmail Integration</h2>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
+              <h2 className="text-lg font-semibold text-blue-900">Gmail Integration</h2>
+              <p className="text-sm text-blue-700">
                 Connect your Gmail account for automatic transaction sync
               </p>
             </div>
           </div>
           <button
-            onClick={handleOpenPassphraseModalForGmail}
+            onClick={handleGmailAuth}
             className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium w-full sm:w-fit"
           >
             <FiMail size={18} />
@@ -252,14 +236,6 @@ function SettingsScreen() {
           </div>
         </div>
 
-        <PassphraseModal
-          isOpen={isPassphraseModalOpen}
-          onClose={() => {
-            setIsPassphraseModalOpen(false);
-            setCurrentKeyToSet(null);
-          }}
-          onPassphraseSubmit={handlePassphraseSubmit}
-        />
       </div>
     </ScreenContainer>
   );

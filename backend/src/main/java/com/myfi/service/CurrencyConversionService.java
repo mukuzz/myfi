@@ -77,7 +77,7 @@ public class CurrencyConversionService {
      */
     private BigDecimal getHistoricalExchangeRate(String sourceCurrency, LocalDate date) {
         try {
-            String apiKey = credentialsService.getCredential(Constants.OPEN_EXCHANGE_RATES_API_KEY_KEY, null);
+            String apiKey = credentialsService.getCredential(Constants.OPEN_EXCHANGE_RATES_API_KEY_KEY);
             if (apiKey == null || apiKey.trim().isEmpty()) {
                 logger.warn("Open Exchange Rates API key not found. Cannot fetch exchange rates.");
                 return null;

@@ -71,7 +71,7 @@ class CurrencyConversionServiceTest {
     @Test
     void testConvertToINR_NoApiKey() throws Exception {
         // Mock no API key available
-        when(credentialsService.getCredential(eq(Constants.OPEN_EXCHANGE_RATES_API_KEY_KEY), eq(null)))
+        when(credentialsService.getCredential(eq(Constants.OPEN_EXCHANGE_RATES_API_KEY_KEY)))
                 .thenReturn(null);
         
         BigDecimal amount = new BigDecimal("100.00");

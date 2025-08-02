@@ -62,7 +62,7 @@ class OpenAIServiceTest {
         objectMapperField.set(openAIService, objectMapper);
 
         // Make credentials service stubbing lenient to avoid unnecessary stubbing errors
-        lenient().when(credentialsService.getCredential(eq(Constants.OPENAI_API_KEY_KEY), any())).thenReturn("test-api-key");
+        lenient().when(credentialsService.getCredential(eq(Constants.OPENAI_API_KEY_KEY))).thenReturn("test-api-key");
     }
 
     @Test
@@ -503,7 +503,7 @@ class OpenAIServiceTest {
         credentialsServiceField.set(openAIService, credentialsService);
 
         // Override the lenient stubbing for this specific test
-        lenient().when(credentialsService.getCredential(eq(Constants.OPENAI_API_KEY_KEY), any()))
+        lenient().when(credentialsService.getCredential(eq(Constants.OPENAI_API_KEY_KEY)))
             .thenThrow(new RuntimeException("Credentials service error"));
 
         // Act & Assert

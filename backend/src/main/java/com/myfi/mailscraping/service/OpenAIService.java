@@ -115,7 +115,7 @@ public class OpenAIService {
   }
 
   public void initializeChatModel() throws Exception {
-    String apiKey = credentialsService.getCredential(Constants.OPENAI_API_KEY_KEY, null);
+    String apiKey = credentialsService.getCredential(Constants.OPENAI_API_KEY_KEY);
     
     OpenAiApi openAiApi = OpenAiApi.builder().apiKey(apiKey).build();
     this.chatModel = OpenAiChatModel.builder().openAiApi(openAiApi).build();

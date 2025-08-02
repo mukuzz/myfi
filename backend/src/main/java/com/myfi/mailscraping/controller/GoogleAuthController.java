@@ -9,9 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
-import jakarta.validation.constraints.NotBlank;
 
 import com.myfi.mailscraping.service.GoogleAuthService;
 
@@ -31,12 +29,11 @@ public class GoogleAuthController {
     private String frontendRedirectBase;
 
     @GetMapping("/url")
-    public ResponseEntity<Map<String, String>> getAuthorizationUrl(@RequestHeader("X-Master-Key") @NotBlank String masterKey) {
+    public ResponseEntity<Map<String, String>> getAuthorizationUrl() {
         if (googleAuthService.hasRefreshToken()) {
             logger.info("Google refresh token already exists, providing auth URL for potential re-auth.");
         }
-        // Get the URL from the service, now passing the masterKey
-        String url = googleAuthService.getAuthorizationUrl(masterKey);
+        String url = googleAuthService.getAuthorizationUrl();
         return ResponseEntity.ok(Map.of("url", url));
     }
 

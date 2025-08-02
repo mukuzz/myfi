@@ -22,6 +22,7 @@ import com.myfi.refresh.enums.RefreshType;
 import com.myfi.refresh.service.RefreshTrackingService;
 import com.myfi.service.AccountHistoryService;
 import com.myfi.service.AccountService;
+import com.myfi.service.SystemStatusService;
 import com.myfi.service.TransactionService;
 import com.myfi.service.CurrencyConversionService;
 import com.myfi.mailscraping.service.OpenAIService.ExtractedDetailsFromEmail;
@@ -76,6 +77,9 @@ public class GmailService {
 
 	@Autowired
 	private CurrencyConversionService currencyConversionService;
+
+	@Autowired
+	private SystemStatusService systemStatusService;
 
 	public List<String> syncAndProcessEmails() {
 		return syncAndProcessEmailsNewImplementation();
@@ -146,6 +150,7 @@ public class GmailService {
 				logger.info("No new emails found to process");
 				refreshTrackingService.completeOperationSuccessfully(RefreshType.GMAIL_SYNC, operationId,
 						"No new emails found to process");
+				systemStatusService.updateLastScrapeTime();
 				return allSuccessfullyProcessedMessageIds;
 			}
 
@@ -206,6 +211,7 @@ public class GmailService {
 					totalEmails, totalTransactionsCreated);
 			logger.info(completionMessage);
 			refreshTrackingService.completeOperationSuccessfully(RefreshType.GMAIL_SYNC, operationId, completionMessage);
+			systemStatusService.updateLastScrapeTime();
 
 		} catch (Exception e) {
 			logger.error("Unexpected error during Gmail sync: {}", e.getMessage(), e);

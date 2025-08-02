@@ -54,9 +54,9 @@ public class GoogleAuthService {
 
         String clientId, clientSecret;
         try {
-            clientId = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_ID_KEY, null);
-            clientSecret = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_SECRET_KEY, null);
-            String appHostUrl = credentialsService.getCredential(Constants.APP_HOST_URL_KEY, null);
+            clientId = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_ID_KEY);
+            clientSecret = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_SECRET_KEY);
+            String appHostUrl = credentialsService.getCredential(Constants.APP_HOST_URL_KEY);
             redirectUri = appHostUrl + "/api/v1/auth/google/callback";
         } catch (Exception e) {
             logger.error("No secret found for decrypting Google OAuth client ID and secret: {}", e.getMessage(), e);
@@ -84,8 +84,7 @@ public class GoogleAuthService {
      *
      * @return The authorization URL string.
      */
-    public String getAuthorizationUrl(String masterKey) {
-        credentialsService.setMasterKey(masterKey);
+    public String getAuthorizationUrl() {
         if (flow == null) {
             try {
                 initGoogleAuthorizationCodeFlow(httpTransport);
@@ -230,8 +229,8 @@ public class GoogleAuthService {
 
         String clientId, clientSecret;
         try {
-            clientId = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_ID_KEY, null);
-            clientSecret = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_SECRET_KEY, null);
+            clientId = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_ID_KEY);
+            clientSecret = credentialsService.getCredential(Constants.GOOGLE_OAUTH_CLIENT_SECRET_KEY);
         } catch (Exception e) {
             logger.error("No secret found for decrypting Google OAuth client ID and secret: {}", e.getMessage(), e);
             throw new IOException("Failed to decrypt Google OAuth client ID and secret.", e);

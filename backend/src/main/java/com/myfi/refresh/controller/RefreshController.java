@@ -5,12 +5,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import com.myfi.credentials.service.CredentialsService;
 import com.myfi.mailscraping.service.GmailService;
 import com.myfi.refresh.dto.AggregatedRefreshStatusResponse;
 import com.myfi.refresh.service.RefreshTrackingService;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -26,19 +24,14 @@ public class RefreshController {
     private RefreshTrackingService refreshTrackingService;
 
     @Autowired
-    private CredentialsService credentialsService;
-
-    @Autowired
     private GmailService gmailService;
 
 
     @PostMapping("/trigger-full-refresh")
-    public ResponseEntity<Map<String, String>> triggerFullRefresh(
-            @RequestHeader("X-Master-Key") @NotBlank(message = "X-Master-Key header is required") String masterKey) {
+    public ResponseEntity<Map<String, String>> triggerFullRefresh() {
         log.info("Received request to trigger full refresh (Gmail Sync).");
         // Trigger Gmail Sync Asynchronously
         try {
-            credentialsService.setMasterKey(masterKey);
             log.info("Triggering Gmail sync.");
             CompletableFuture.runAsync(() -> gmailService.syncAndProcessEmails());
         } catch (Exception e) {

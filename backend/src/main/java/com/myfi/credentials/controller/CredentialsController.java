@@ -41,12 +41,11 @@ public class CredentialsController {
 
     @PostMapping("/key-value")
     public ResponseEntity<Void> saveOrUpdateGenericCredential(
-        @RequestHeader("X-Master-Key") @NotBlank String masterKey,
         @RequestBody @Valid GenericCredentialRequest request
     ) {
         log.info("Received request to save/update generic credential for key: {}", request.key);
         try {
-            credentialsService.saveCredential(request.key, request.value, masterKey);
+            credentialsService.saveCredential(request.key, request.value);
             log.info("Successfully saved/updated generic credential for key: {}", request.key);
             return ResponseEntity.status(HttpStatus.CREATED).build(); // 201 for new/updated
         } catch (Exception e) {

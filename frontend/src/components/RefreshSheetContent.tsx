@@ -3,7 +3,6 @@ import { triggerFullRefresh, getOverallRefreshStatus } from '../services/apiServ
 import { OperationStatusDetailType, RefreshJobStatus } from '../types';
 import { FiRefreshCw, FiLoader, FiInfo } from 'react-icons/fi';
 import { formatDistanceToNow } from '../utils/datetimeUtils';
-import PassphraseModal from './PassphraseModal';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store/store';
 import { forceRefreshTransactions, forceRefreshTransactionsForMonth } from '../store/slices/transactionsSlice';
@@ -23,7 +22,6 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
   const [componentStatus, setComponentStatus] = useState<ComponentStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [displayProgress, setDisplayProgress] = useState<{ [accountNumber: string]: OperationStatusDetailType }>({});
-  const [isMasterKeyModalOpen, setIsMasterKeyModalOpen] = useState<boolean>(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const statusResetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -137,7 +135,7 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
     };
    }, [startPolling, stopPolling]);
 
-  const handleRefreshRequest = useCallback(() => {
+  const handleRefreshRequest = useCallback(async () => {
     setErrorMessage(null);
     setDisplayProgress({});
 
@@ -153,17 +151,13 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
         setErrorMessage('No accounts configured in the application. Add accounts to enable refresh.');
         return;
     }
-    setIsMasterKeyModalOpen(true);
-  }, [allAccounts, accountsStatus, accountsError]);
 
-  const handleMasterKeySubmit = useCallback(async (masterKey: string) => {
-    setIsMasterKeyModalOpen(false);
     setComponentStatus('loading');
     setErrorMessage(null);
     setDisplayProgress({});
 
     try {
-      await triggerFullRefresh(masterKey);
+      await triggerFullRefresh();
       console.log("Full refresh triggered successfully.");
       startPolling();
     } catch (err: any) {
@@ -176,11 +170,9 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
       setComponentStatus('error');
       setDisplayProgress({});
     }
-  }, [allAccounts, startPolling]);
+  }, [allAccounts, accountsStatus, accountsError, startPolling]);
 
-  const handleCloseMasterKeyModal = useCallback(() => {
-    setIsMasterKeyModalOpen(false);
-  }, []);
+
 
   const displayProgressList: OperationStatusDetailType[] = Object.values(displayProgress);
 
@@ -240,11 +232,6 @@ function RefreshSheetContent({ onClose, lastRefreshTime, onRefreshSuccess }: Ref
                 )}
             </div>
         </div>
-        <PassphraseModal
-          isOpen={isMasterKeyModalOpen}
-          onClose={handleCloseMasterKeyModal}
-          onPassphraseSubmit={handleMasterKeySubmit}
-        />
     </div>
   );
 }

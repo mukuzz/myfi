@@ -527,16 +527,14 @@ export const getOverallRefreshStatus = async (): Promise<AggregatedRefreshStatus
 
 
 /**
- * Triggers a full refresh of all accounts using a master key.
- * @param masterKey The master key for authorizing the refresh.
+ * Triggers a full refresh of all accounts.
  * @throws Error if the API call fails.
  */
-export const triggerFullRefresh = async (masterKey: string): Promise<void> => {
+export const triggerFullRefresh = async (): Promise<void> => {
   const response = await fetch(`${API_BASE_URL}/refresh/trigger-full-refresh`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json', // Though body is empty, Content-Type might be expected
-      'X-Master-Key': masterKey,
+      'Content-Type': 'application/json',
       'accept': '*/*',
     },
     body: '', // Empty body as per curl
@@ -546,61 +544,12 @@ export const triggerFullRefresh = async (masterKey: string): Promise<void> => {
 };
 
 /**
- * Saves or updates user credentials on the server.
- * @param accountNumber The account number.
- * @param accountName The account name.
- * @param username The username for the account.
- * @param password The password for the account.
- * @param masterKey The master key for the account.
- * @throws Error if the API call fails.
- */
-export const saveCredentials = async (
-  accountNumber: string,
-  accountName: string,
-  username: string,
-  password: string,
-  masterKey: string
-): Promise<void> => {
-  // TODO: The X-Master-Key should ideally be stored in an environment variable and not hardcoded.
-  // const MASTER_KEY = 'notsecure'; // Removed hardcoded key
-
-  const response = await fetch(`${API_BASE_URL}/credentials/account`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Master-Key': masterKey, // Use passed masterKey
-      'accept': '*/*',
-    },
-    body: JSON.stringify({
-      accountNumber,
-      accountName,
-      username,
-      password,
-    }),
-  });
-
-  // Using handleResponse to centralize error handling and JSON parsing logic
-  // If the response is not ok, handleResponse will throw an error.
-  // If the response is ok but no content (e.g. 204), it will return null.
-  // If the response is ok with JSON content, it will parse and return it.
-  // For a POST that might return 200/201 with no body or just a success message,
-  // we might not need the parsed body, but handleResponse is safe.
-  await handleResponse(response); 
-  // No specific return value needed if the server returns 200/201/204 on success.
-};
-
-/**
  * Fetches the Google Authentication URL from the backend.
- * @param masterKey The master key to be sent in the header.
  * @returns A promise that resolves with the URL string.
  * @throws Error if the fetch fails or the URL is not received.
  */
-export const fetchGoogleAuthUrl = async (masterKey: string): Promise<string> => {
-  const response = await fetch(`${API_BASE_URL}/auth/google/url`, {
-    headers: {
-      'X-Master-Key': masterKey,
-    },
-  });
+export const fetchGoogleAuthUrl = async (): Promise<string> => {
+  const response = await fetch(`${API_BASE_URL}/auth/google/url`);
   const data = await handleResponse(response); // Use existing handler
   if (data && data.url) {
     return data.url;
@@ -609,12 +558,11 @@ export const fetchGoogleAuthUrl = async (masterKey: string): Promise<string> => 
   }
 };
 
-export async function setCredentialKeyValue(key: string, value: string, masterKey: string): Promise<void> {
+export async function setCredentialKeyValue(key: string, value: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/credentials/key-value`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Master-Key': masterKey,
       'accept': '*/*',
     },
     body: JSON.stringify({ key, value }),
