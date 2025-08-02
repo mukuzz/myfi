@@ -44,4 +44,5 @@ public class Constants {
     public static final String OPENAI_API_KEY_KEY = "OPENAI_API_KEY";
     public static final String OPEN_EXCHANGE_RATES_API_KEY_KEY = "OPEN_EXCHANGE_RATES_API_KEY";
     public static final String APP_HOST_URL_KEY = "APP_HOST_URL";
+    public static final String FORCE_GMAIL_LOOKBACK_UNTIL_DATE_KEY = "FORCE_GMAIL_LOOKBACK_UNTIL_DATE";
 }

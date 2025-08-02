@@ -1,10 +1,9 @@
 package com.myfi.service;
 
-import com.myfi.model.Account.AccountType;
+import com.myfi.credentials.service.CredentialsService;
 import com.myfi.mailscraping.constants.Constants;
 import com.myfi.mailscraping.service.ProcessedGmailMessagesTrackerService;
 import com.myfi.model.Transaction;
-import com.myfi.model.Transaction.TransactionType;
 import com.myfi.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +38,9 @@ public class TransactionService {
 
     @Autowired
     private ProcessedGmailMessagesTrackerService processedGmailMessagesTrackerService;
+
+    @Autowired
+    private CredentialsService credentialsService;
 
     @Transactional(readOnly = true)
     public Page<Transaction> getAllTransactions(Pageable pageable) {
@@ -173,6 +175,22 @@ public class TransactionService {
                     // If the transaction was created from an email, un-track the email for the specific account
                     if (transaction.getEmailMessageId() != null && transaction.getAccount() != null) {
                         processedGmailMessagesTrackerService.unmarkEmailProcessed(transaction.getEmailMessageId(), transaction.getAccount().getAccountNumber());
+                        try {
+                            final String LOOKBACK_KEY = Constants.FORCE_GMAIL_LOOKBACK_UNTIL_DATE_KEY;
+                            String existingLookback = credentialsService.getCredential(LOOKBACK_KEY);
+                            LocalDateTime transactionDate = transaction.getTransactionDate();
+
+                            if (existingLookback != null) {
+                                LocalDateTime existingDate = LocalDateTime.parse(existingLookback);
+                                if (transactionDate.isBefore(existingDate)) {
+                                    credentialsService.saveCredential(LOOKBACK_KEY, transactionDate.toString());
+                                }
+                            } else {
+                                credentialsService.saveCredential(LOOKBACK_KEY, transactionDate.toString());
+                            }
+                        } catch (Exception e) {
+                            logger.error("Failed to save lookback date", e);
+                        }
                     }
 
                     transactionRepository.delete(transaction);

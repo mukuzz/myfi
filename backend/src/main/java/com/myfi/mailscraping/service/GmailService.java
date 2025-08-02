@@ -26,6 +26,7 @@ import com.myfi.service.SystemStatusService;
 import com.myfi.service.TransactionService;
 import com.myfi.service.CurrencyConversionService;
 import com.myfi.mailscraping.service.OpenAIService.ExtractedDetailsFromEmail;
+import com.myfi.credentials.service.CredentialsService;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -80,6 +81,9 @@ public class GmailService {
 
 	@Autowired
 	private SystemStatusService systemStatusService;
+
+	@Autowired
+	private CredentialsService credentialsService;
 
 	public List<String> syncAndProcessEmails() {
 		return syncAndProcessEmailsNewImplementation();
@@ -165,29 +169,30 @@ public class GmailService {
 
 			for (Message emailSummary : allEmails) {
 				String messageId = emailSummary.getId();
+				logger.info("Processing email {}", messageId);
 				processedEmails++;
 
 				try {
 					// Check if email was already processed globally
-					if (processedGmailMessagesTrackerService.isEmailProcessed(messageId)) {
-						// Check if there are any unprocessed accounts for this email
-						Set<String> allAccountNumbers = supportedAccounts.stream()
-								.map(Account::getAccountNumber)
-								.collect(Collectors.toSet());
-						Set<String> unprocessedAccounts = processedGmailMessagesTrackerService
-								.getUnprocessedAccountsForEmail(messageId, allAccountNumbers);
+					// if (processedGmailMessagesTrackerService.isEmailProcessed(messageId)) {
+					// 	// Check if there are any unprocessed accounts for this email
+					// 	Set<String> allAccountNumbers = supportedAccounts.stream()
+					// 			.map(Account::getAccountNumber)
+					// 			.collect(Collectors.toSet());
+					// 	Set<String> unprocessedAccounts = processedGmailMessagesTrackerService
+					// 			.getUnprocessedAccountsForEmail(messageId, allAccountNumbers);
 
-						if (unprocessedAccounts.isEmpty()) {
-							logger.debug("Email {} already fully processed for all accounts", messageId);
-							continue;
-						} else {
-							logger.info("Email {} partially processed, processing for {} remaining accounts",
-									messageId, unprocessedAccounts.size());
-						}
-					}
+					// 	if (unprocessedAccounts.isEmpty()) {
+					// 		logger.debug("Email {} already fully processed for all accounts", messageId);
+					// 		continue;
+					// 	} else {
+					// 		logger.info("Email {} partially processed, processing for {} remaining accounts",
+					// 				messageId, unprocessedAccounts.size());
+					// 	}
+					// }
 
 					// Process this email
-					int transactionsFromEmail = processEmailForAllAccounts(service, emailSummary, supportedAccounts, operationId);
+					int transactionsFromEmail = processEmailForAllSupportedAccounts(service, emailSummary, supportedAccounts, operationId);
 					totalTransactionsCreated += transactionsFromEmail;
 
 					if (transactionsFromEmail > 0) {
@@ -273,26 +278,42 @@ public class GmailService {
 		queryBuilder.append(String.join(" OR ", allSenderEmails));
 		queryBuilder.append("}");
 
-		// For each account, get the latest message date or default to 1 month ago if not found
-		LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHoursMinutes(5, 30));
-		LocalDateTime oneMonthAgo = now.minusMonths(1);
+		try {
+			final String LOOKBACK_KEY = Constants.FORCE_GMAIL_LOOKBACK_UNTIL_DATE_KEY;
+			String lookbackDateStr = credentialsService.getCredential(LOOKBACK_KEY);
 
-		List<LocalDateTime> lastMessageDates = supportedAccounts.stream()
-			.map(account -> processedGmailMessagesTrackerService.findLatestMessageDateTimeForAccount(account.getAccountNumber())
-				.orElse(oneMonthAgo))
-			.collect(Collectors.toList());
+			if (lookbackDateStr != null) {
+				LocalDateTime lookbackDate = LocalDateTime.parse(lookbackDateStr);
+				long epochSeconds = lookbackDate.toEpochSecond(ZoneOffset.ofHoursMinutes(5, 30)) - 1;
+				queryBuilder.append(" after:").append(epochSeconds);
+				logger.info("Using forced lookback date: {}", lookbackDate);
+				credentialsService.deleteCredential(LOOKBACK_KEY);
+			} else {
+				// Use the default logic if no forced lookback is set
+				LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHoursMinutes(5, 30));
+				LocalDateTime oneMonthAgo = now.minusMonths(1);
 
-		// Find the earliest date among all accounts
-		Optional<LocalDateTime> earliestLastMessageDate = lastMessageDates.stream().min(LocalDateTime::compareTo);
+				List<LocalDateTime> lastMessageDates = supportedAccounts.stream()
+					.map(account -> processedGmailMessagesTrackerService.findLatestMessageDateTimeForAccount(account.getAccountNumber())
+						.orElse(oneMonthAgo))
+					.collect(Collectors.toList());
 
-		if (earliestLastMessageDate.isPresent()) {
-			long epochSecondsSinceLastEmail = earliestLastMessageDate.get().toEpochSecond(ZoneOffset.UTC) - 1;
-			queryBuilder.append(" after:").append(epochSecondsSinceLastEmail);
-			logger.info("Using earliest last message epoch: {}", epochSecondsSinceLastEmail);
-		} else {
-			// Fallback, should not happen, but just in case
-			queryBuilder.append(" after:").append(oneMonthAgo.toEpochSecond(ZoneOffset.ofHoursMinutes(5, 30)));
-			logger.info("Using default 1-month lookback period");
+				Optional<LocalDateTime> earliestLastMessageDate = lastMessageDates.stream().min(LocalDateTime::compareTo);
+
+				if (earliestLastMessageDate.isPresent()) {
+					long epochSecondsSinceLastEmail = earliestLastMessageDate.get().toEpochSecond(ZoneOffset.UTC) - 1;
+					queryBuilder.append(" after:").append(epochSecondsSinceLastEmail);
+					logger.info("Using earliest last message epoch: {}", epochSecondsSinceLastEmail);
+				} else {
+					queryBuilder.append(" after:").append(oneMonthAgo.toEpochSecond(ZoneOffset.ofHoursMinutes(5, 30)));
+					logger.info("Using default 1-month lookback period");
+				}
+			}
+		} catch (Exception e) {
+			logger.error("Failed to determine lookback date, defaulting to 30 days", e);
+			LocalDateTime thirtyDaysAgo = LocalDateTime.now(ZoneOffset.UTC).minusDays(30);
+			long epochSeconds = thirtyDaysAgo.toEpochSecond(ZoneOffset.UTC);
+			queryBuilder.append(" after:").append(epochSeconds);
 		}
 
 		return queryBuilder.toString();
@@ -302,7 +323,7 @@ public class GmailService {
 	 * Processes a single email against all relevant accounts.
 	 * This is the core method of the new email-based approach.
 	 */
-	private int processEmailForAllAccounts(Gmail service, Message emailSummary, List<Account> supportedAccounts, String operationId) {
+	private int processEmailForAllSupportedAccounts(Gmail service, Message emailSummary, List<Account> supportedAccounts, String operationId) {
 		String messageId = emailSummary.getId();
 		int transactionsCreated = 0;
 		Set<String> processedAccountNumbers = new HashSet<>();
@@ -327,14 +348,19 @@ public class GmailService {
 
 			// Find all accounts that match this email content
 			List<Account> matchingAccounts = accountMatchingService.findMatchingAccounts(cleanTextBody, supportedAccounts);
+			Set<String> matchingAccountNumbers = matchingAccounts.stream().map(Account::getAccountNumber).collect(Collectors.toSet());
 			
+			Set<String> nonMatchingAccountNumbers = supportedAccounts.stream().map(Account::getAccountNumber).collect(Collectors.toSet());
+			nonMatchingAccountNumbers.removeAll(matchingAccountNumbers);
+			processedGmailMessagesTrackerService.markEmailProcessedForAccounts(messageId, nonMatchingAccountNumbers, messageDateTime, 0);
+
 			if (matchingAccounts.isEmpty()) {
-				logger.debug("No matching accounts found for email {}", messageId);
+				logger.debug("No matching accounts found for email {}. Non-matching accounts: {}", messageId, nonMatchingAccountNumbers);
 				return 0;
 			}
 
 			// Filter out accounts that have already processed this email
-			Set<String> matchingAccountNumbers = matchingAccounts.stream().map(Account::getAccountNumber).collect(Collectors.toSet());
+			
 			Set<String> unprocessedAccountNumbers = processedGmailMessagesTrackerService.getUnprocessedAccountsForEmail(messageId, matchingAccountNumbers);
 
 			// If there are no accounts left to process for this email, skip it.
@@ -444,6 +470,10 @@ public class GmailService {
 			if (!processedAccountNumbers.isEmpty()) {
 				processedGmailMessagesTrackerService.markEmailProcessedForAccounts(messageId, processedAccountNumbers, messageDateTime, transactionsCreated);
 			}
+			// Mark the email as processed for all accounts that were not processed
+			Set<String> unProcessedMatchingAccountNumbers = new HashSet<>(matchingAccountNumbers);
+			unProcessedMatchingAccountNumbers.removeAll(processedAccountNumbers);
+			processedGmailMessagesTrackerService.markEmailProcessedForAccounts(messageId, unProcessedMatchingAccountNumbers, messageDateTime, transactionsCreated);
 
 		} catch (IOException e) {
 			logger.error("IOException fetching/processing email {}: {}", messageId, e.getMessage(), e);
@@ -528,18 +558,6 @@ public class GmailService {
 				.account(targetAccount)
 				.emailMessageId(messageId)
 				.build();
-	}
-
-	/**
-	 * Checks if an account is supported for email processing.
-	 */
-	private boolean isAccountSupportedForEmailProcessing(Account account) {
-		boolean isCreditCardSupported = account.getType() == Account.AccountType.CREDIT_CARD
-				&& Constants.CC_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(account.getName());
-		boolean isBankAccountSupported = account.getType() == Account.AccountType.SAVINGS
-				&& Constants.BANK_EMAIL_SCRAPING_SUPPORTED_EMAILS_IDS.containsKey(account.getName());
-		
-		return isCreditCardSupported || isBankAccountSupported;
 	}
 
 }
