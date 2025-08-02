@@ -23,5 +23,13 @@ export function buildTagHierarchy(tags: Tag[]): HierarchicalTag[] {
     }
   });
 
+  // Sort root tags by orderIndex
+  rootTags.sort((a, b) => a.orderIndex - b.orderIndex);
+  
+  // Sort children within each parent by orderIndex
+  rootTags.forEach(parentTag => {
+    parentTag.children.sort((a, b) => a.orderIndex - b.orderIndex);
+  });
+
   return rootTags;
 } 

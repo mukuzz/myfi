@@ -27,6 +27,10 @@ public class Tag {
     @Column(name = "parent_tag_id")
     private Long parentTagId;
 
+    // Order index for displaying tags in custom order
+    @Column(name = "order_index")
+    private Integer orderIndex;
+
     // Note: Child tags are implicitly defined by other tags referencing this tag's ID 
     // in their parentTagId field. We don't store a list of children here.
 

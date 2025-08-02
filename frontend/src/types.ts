@@ -29,6 +29,7 @@ export interface Tag {
   id: number;
   name: string;
   parentTagId?: number | null; // Optional parent ID
+  orderIndex: number; // Order index for custom sorting
 }
 
 // Type for the map of tag IDs to Tag objects

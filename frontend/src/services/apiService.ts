@@ -369,6 +369,94 @@ export async function fetchTags(): Promise<Tag[]> {
   return response.json();
 }
 
+// Tag reordering types
+export interface TagOrderUpdate {
+  tagId: number;
+  newOrderIndex: number;
+}
+
+// Reorder tags
+export async function reorderTags(updates: TagOrderUpdate[]): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/tags/reorder`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(updates),
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {}
+    console.error("Failed to reorder tags:", errorMessage);
+    throw new Error(`Failed to reorder tags: ${errorMessage}`);
+  }
+}
+
+// Create a new tag
+export async function createTag(tagData: Omit<Tag, 'id'>): Promise<Tag> {
+  const response = await fetch(`${API_BASE_URL}/tags`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(tagData),
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {}
+    console.error("Failed to create tag:", errorMessage);
+    throw new Error(`Failed to create tag: ${errorMessage}`);
+  }
+  return response.json();
+}
+
+// Update an existing tag
+export async function updateTag(id: number, tagData: Partial<Omit<Tag, 'id'>>): Promise<Tag> {
+  const response = await fetch(`${API_BASE_URL}/tags/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(tagData),
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {}
+    console.error("Failed to update tag:", errorMessage);
+    throw new Error(`Failed to update tag: ${errorMessage}`);
+  }
+  return response.json();
+}
+
+// Delete a tag
+export async function deleteTag(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/tags/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.message || JSON.stringify(errorBody) || errorMessage;
+    } catch (e) {}
+    console.error("Failed to delete tag:", errorMessage);
+    throw new Error(`Failed to delete tag: ${errorMessage}`);
+  }
+}
+
 export async function updateTransactionTagApi(
   transactionId: number,
   transactionData: Omit<Transaction, 'id' | 'tagId'>, // Send other transaction fields

@@ -17,13 +17,13 @@ public class TagService {
 
     @Transactional(readOnly = true)
     public List<Tag> getAllTags() {
-        // Consider fetching tags hierarchically or providing options for flat/hierarchical fetching
-        return tagRepository.findAll(); 
+        // Fetch tags ordered by orderIndex for consistent display
+        return tagRepository.findAllByOrderByOrderIndexAsc(); 
     }
 
     @Transactional(readOnly = true)
     public List<Tag> getTopLevelTags() {
-        return tagRepository.findByParentTagIdIsNull();
+        return tagRepository.findByParentTagIdIsNullOrderByOrderIndexAsc();
     }
 
     @Transactional(readOnly = true)
@@ -33,7 +33,7 @@ public class TagService {
 
     @Transactional(readOnly = true)
     public List<Tag> getChildTags(Long parentId) {
-        return tagRepository.findByParentTagId(parentId);
+        return tagRepository.findByParentTagIdOrderByOrderIndexAsc(parentId);
     }
 
     @Transactional
@@ -48,9 +48,21 @@ public class TagService {
             // Check if the parent ID exists
             tagRepository.findById(tag.getParentTagId())
                 .orElseThrow(() -> new IllegalArgumentException("Parent tag with ID " + tag.getParentTagId() + " not found."));
-            // No need to set an object, the ID is already on the tag being created
         } else {
             tag.setParentTagId(null); // Ensure it's null if no ID provided
+        }
+        
+        // Set orderIndex if not provided - place at end of siblings
+        if (tag.getOrderIndex() == null) {
+            List<Tag> siblings = tag.getParentTagId() != null 
+                ? tagRepository.findByParentTagIdOrderByOrderIndexAsc(tag.getParentTagId())
+                : tagRepository.findByParentTagIdIsNullOrderByOrderIndexAsc();
+            
+            int maxOrder = siblings.stream()
+                .mapToInt(Tag::getOrderIndex)
+                .max()
+                .orElse(-1);
+            tag.setOrderIndex(maxOrder + 1);
         }
         
         return tagRepository.save(tag);
@@ -70,7 +82,8 @@ public class TagService {
                     existingTag.setName(tagDetails.getName());
                 }
 
-                // Update parent tag relationship using ID
+                // Update parent tag relationship only if explicitly provided
+                // Since frontend now always sends parentTagId and orderIndex, we can safely update
                 Long newParentId = tagDetails.getParentTagId();
                 if (newParentId != null) {
                     // Check if trying to set itself as parent
@@ -87,7 +100,13 @@ public class TagService {
                         .orElseThrow(() -> new IllegalArgumentException("Parent tag with ID " + newParentId + " not found."));
                     existingTag.setParentTagId(newParentId);
                 } else {
+                    // If parentTagId is explicitly null, it means it's a top-level tag
                     existingTag.setParentTagId(null);
+                }
+                
+                // Update orderIndex if provided
+                if (tagDetails.getOrderIndex() != null) {
+                    existingTag.setOrderIndex(tagDetails.getOrderIndex());
                 }
                 
                 return tagRepository.save(existingTag);
@@ -117,7 +136,7 @@ public class TagService {
                 // Option 3: Reassign children to the deleted tag's parent (if it exists)
                 
                 // Example: Promote children to top-level
-                List<Tag> children = tagRepository.findByParentTagId(id);
+                List<Tag> children = tagRepository.findByParentTagIdOrderByOrderIndexAsc(id);
                 for (Tag child : children) {
                     child.setParentTagId(null);
                     tagRepository.save(child); // Save each child explicitly
@@ -127,5 +146,33 @@ public class TagService {
                 tagRepository.delete(tag);
                 return true;
             }).orElse(false);
+    }
+    
+    @Transactional
+    public void reorderTags(List<TagOrderUpdate> updates) {
+        for (TagOrderUpdate update : updates) {
+            tagRepository.findById(update.getTagId()).ifPresent(tag -> {
+                tag.setOrderIndex(update.getNewOrderIndex());
+                tagRepository.save(tag);
+            });
+        }
+    }
+    
+    // DTO for tag reordering
+    public static class TagOrderUpdate {
+        private Long tagId;
+        private Integer newOrderIndex;
+        
+        public TagOrderUpdate() {}
+        
+        public TagOrderUpdate(Long tagId, Integer newOrderIndex) {
+            this.tagId = tagId;
+            this.newOrderIndex = newOrderIndex;
+        }
+        
+        public Long getTagId() { return tagId; }
+        public void setTagId(Long tagId) { this.tagId = tagId; }
+        public Integer getNewOrderIndex() { return newOrderIndex; }
+        public void setNewOrderIndex(Integer newOrderIndex) { this.newOrderIndex = newOrderIndex; }
     }
 } 

@@ -2,6 +2,7 @@ package com.myfi.controller;
 
 import com.myfi.model.Tag;
 import com.myfi.service.TagService;
+import com.myfi.service.TagService.TagOrderUpdate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -72,6 +73,16 @@ public class TagController {
             return ResponseEntity.noContent().build();
         } else {
             return ResponseEntity.notFound().build();
+        }
+    }
+    
+    @PutMapping("/reorder")
+    public ResponseEntity<?> reorderTags(@RequestBody List<TagOrderUpdate> updates) {
+        try {
+            tagService.reorderTags(updates);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 } 

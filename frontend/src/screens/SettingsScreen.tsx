@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { FiMail, FiSave, FiKey, FiDollarSign, FiSettings, FiDatabase, FiLink } from 'react-icons/fi';
+import { FiMail, FiSave, FiKey, FiDollarSign, FiSettings, FiDatabase, FiLink, FiTag, FiChevronRight } from 'react-icons/fi';
 import { fetchGoogleAuthUrl, setCredentialKeyValue } from '../services/apiService';
 import ScreenContainer from '../components/ScreenContainer';
+import { useNavigation } from '../hooks/useNavigation';
+import TagManagementScreen from './TagManagementScreen';
 
 // Define the keys to be managed
 const CREDENTIAL_KEYS = {
@@ -16,6 +18,7 @@ const CREDENTIAL_KEYS = {
 type CredentialKey = typeof CREDENTIAL_KEYS[keyof typeof CREDENTIAL_KEYS];
 
 function SettingsScreen() {
+  const { navigateTo } = useNavigation();
 
   // State for input values
   const [googleClientId, setGoogleClientId] = useState<string>('');
@@ -76,6 +79,9 @@ function SettingsScreen() {
     }
   };
 
+  const handleTagManagement = () => {
+    navigateTo(<TagManagementScreen />);
+  };
 
   const renderInputForKey = (
     key: CredentialKey,
@@ -124,22 +130,47 @@ function SettingsScreen() {
     <ScreenContainer title="Settings">
       <div className="bg-background text-foreground flex flex-col flex-grow space-y-8 p-6 overflow-y-auto" style={{ scrollbarWidth: 'none', fontSize: '14px' }}>
         
-        {/* Gmail Integration Section */}
-        <div className="flex flex-col gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+        {/* Tag Management Section */}
+        <div className="flex flex-col gap-4 bg-card border border-border rounded-xl p-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FiMail className="text-blue-600" size={24} />
+            <div className="p-2 bg-secondary rounded-lg">
+              <FiTag className="text-foreground" size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-blue-900">Gmail Integration</h2>
-              <p className="text-sm text-blue-700">
+              <h2 className="text-lg font-semibold text-foreground">Tag Management</h2>
+              <p className="text-sm text-muted-foreground">
+                Create and organize tags for categorizing your transactions
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleTagManagement}
+            className="flex items-center justify-between px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors font-medium w-full sm:w-fit"
+          >
+            <div className="flex items-center gap-2">
+              <FiTag size={18} />
+              Manage Tags
+            </div>
+            <FiChevronRight size={18} />
+          </button>
+        </div>
+
+        {/* Gmail Integration Section */}
+        <div className="flex flex-col gap-4 bg-card border border-border rounded-xl p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-secondary rounded-lg">
+              <FiMail className="text-foreground" size={24} />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Gmail Integration</h2>
+              <p className="text-sm text-muted-foreground">
                 Connect your Gmail account for automatic transaction sync
               </p>
             </div>
           </div>
           <button
             onClick={handleGmailAuth}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium w-full sm:w-fit"
+            className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors font-medium w-full sm:w-fit"
           >
             <FiMail size={18} />
             Connect Gmail Account

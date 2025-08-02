@@ -12,9 +12,12 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
 
     Optional<Tag> findByName(String name);
 
-    // Find top-level tags (those without a parent)
-    List<Tag> findByParentTagIdIsNull();
+    // Find top-level tags (those without a parent) ordered by orderIndex
+    List<Tag> findByParentTagIdIsNullOrderByOrderIndexAsc();
 
-    // Find direct children of a specific tag
-    List<Tag> findByParentTagId(Long parentTagId);
+    // Find direct children of a specific tag ordered by orderIndex
+    List<Tag> findByParentTagIdOrderByOrderIndexAsc(Long parentTagId);
+
+    // Find all tags ordered by orderIndex
+    List<Tag> findAllByOrderByOrderIndexAsc();
 } 
