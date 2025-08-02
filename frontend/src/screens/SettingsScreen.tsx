@@ -138,16 +138,16 @@ function SettingsScreen() {
 
   return (
     <ScreenContainer title="Settings">
-      <div className="bg-background text-foreground flex flex-col flex-grow space-y-8 p-6 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+      <div className="bg-background text-foreground flex flex-col flex-grow space-y-8 p-6 overflow-y-auto" style={{ scrollbarWidth: 'none', fontSize: '14px' }}>
         
         {/* Gmail Integration Section */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="flex flex-col gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+          <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
               <FiMail className="text-blue-600 dark:text-blue-400" size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-blue-900 dark:text-blue-100">Gmail Integration</h2>
+              <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Gmail Integration</h2>
               <p className="text-sm text-blue-700 dark:text-blue-300">
                 Connect your Gmail account for automatic transaction sync
               </p>
@@ -155,7 +155,7 @@ function SettingsScreen() {
           </div>
           <button
             onClick={handleOpenPassphraseModalForGmail}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium w-full sm:w-fit"
           >
             <FiMail size={18} />
             Connect Gmail Account
