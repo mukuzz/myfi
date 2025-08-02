@@ -430,12 +430,27 @@ public class GmailService {
 
 		// Enhanced validation using account matching
 		if (!accountMatchingService.validateAccountMatch(targetAccount, details.getAccountNumber())) {
-			logger.debug("Account {} does not match extracted account number {}", 
+			logger.debug("Account {} does not match extracted account number {}. Checking for fallback.",
 					targetAccount.getName(), details.getAccountNumber());
-			// Still create transaction if this is a supported account (for banks that don't always include account numbers)
-			if (!isAccountSupportedForEmailProcessing(targetAccount)) {
+
+			// Fallback for HDFC Pixel card which may not have account number in all emails.
+			// This is a specific exception to prevent creating transactions for wrong accounts.
+			boolean isHdfcPixelCard = Constants.HDFC_PIXEL.equalsIgnoreCase(targetAccount.getName());
+
+			if (!isHdfcPixelCard) {
+				logger.warn("Account number mismatch. Skipping transaction for account {}.", targetAccount.getName());
 				return null;
 			}
+
+			// Additionally, ensure the AI also identified it as a Pixel card transaction for extra safety.
+			if (!details.isPixelCardTransaction()) {
+				logger.warn(
+						"Account is HDFC Pixel, but AI did not identify this as a Pixel card transaction. Skipping for safety.");
+				return null;
+			}
+
+			logger.info("Proceeding with transaction for HDFC Pixel card based on fallback logic for account {}.",
+					targetAccount.getName());
 		}
 
 		// Handle currency conversion
