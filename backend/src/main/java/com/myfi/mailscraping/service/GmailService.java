@@ -371,6 +371,19 @@ public class GmailService {
 			ExtractedDetailsFromEmail details = extractedDetails.get();
 			logger.debug("Extracted details from email {}: type={}, successful={}", messageId, details.getEmailType(), details.isTransactionSuccessful());
 
+			// Safeguard 1: Validate Transaction Date
+			if (messageDateTime != null) {
+				java.time.LocalDate aiDate = details.getTransactionDate();
+				java.time.LocalDate emailDate = messageDateTime.toLocalDate();
+				long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(aiDate, emailDate);
+
+				if (Math.abs(daysBetween) > 1) {
+					logger.warn("AI-extracted date {} is more than 1 day away from email received date {}. Overriding with email date.", aiDate, emailDate);
+					details.setTransactionDate(emailDate);
+				}
+			}
+
+
 			// Process based on email type
 			if (details.getEmailType() == EmailType.TRANSACTION_INFORMATION && details.isTransactionSuccessful()) {
 				// Create transactions for matching accounts
