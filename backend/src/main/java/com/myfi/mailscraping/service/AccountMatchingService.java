@@ -1,5 +1,6 @@
 package com.myfi.mailscraping.service;
 
+import com.myfi.mailscraping.constants.Constants;
 import com.myfi.model.Account;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,10 +114,12 @@ public class AccountMatchingService {
         String cleanContent = emailContent.toLowerCase();
 
         for (Account account : accounts) {
-            String accountName = account.getName().toLowerCase();
+            if (!account.getName().equals(Constants.HDFC_PIXEL)) {
+                continue;
+            }
             
             // Create variations of the account name for matching
-            List<String> nameVariations = generateBankNameVariations(accountName);
+            List<String> nameVariations = generateBankNameVariations(account.getName());
             
             for (String variation : nameVariations) {
                 if (cleanContent.contains(variation)) {
@@ -167,43 +170,10 @@ public class AccountMatchingService {
     private List<String> generateBankNameVariations(String bankName) {
         List<String> variations = new ArrayList<>();
         
-        // Original name
-        variations.add(bankName);
-        
         // Common bank name mappings
-        if (bankName.contains("hdfc")) {
-            variations.add("hdfc");
-            variations.add("hdfc bank");
-            variations.add("housing development finance corporation");
-        }
-        
-        if (bankName.contains("icici")) {
-            variations.add("icici");
-            variations.add("icici bank");
-            variations.add("industrial credit and investment corporation");
-        }
-        
-        if (bankName.contains("sbi")) {
-            variations.add("sbi");
-            variations.add("state bank");
-            variations.add("state bank of india");
-        }
-        
-        if (bankName.contains("axis")) {
-            variations.add("axis");
-            variations.add("axis bank");
-        }
-        
-        if (bankName.contains("kotak")) {
-            variations.add("kotak");
-            variations.add("kotak mahindra");
-            variations.add("kotak bank");
-        }
-        
-        if (bankName.contains("onecard")) {
-            variations.add("onecard");
-            variations.add("one card");
-            variations.add("federal bank");
+        if (bankName.equals(Constants.HDFC_PIXEL)) {
+            variations.add("hdfc pixel");
+            variations.add("pixel");
         }
         
         // Remove duplicates and empty strings
