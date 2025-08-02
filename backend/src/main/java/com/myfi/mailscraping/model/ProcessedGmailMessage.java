@@ -34,10 +34,10 @@ public class ProcessedGmailMessage {
     @Builder.Default
     private Set<String> processedAccountNumbers = new HashSet<>();
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime firstProcessedAt;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime lastProcessedAt;
 
     @Column(nullable = false)
