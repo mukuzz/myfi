@@ -108,10 +108,15 @@ function AccountsDisplayCard({ title, accountTypes, emptyStateMessage }: Account
       </div>
 
       {/* Add Account Bottom Sheet */}
-      <DraggableBottomSheet isOpen={isSheetOpen} onClose={closeSheet} title="Add New Account">
+      <DraggableBottomSheet 
+        isOpen={isSheetOpen} 
+        onClose={closeSheet} 
+        title={"Add New Account"}
+      >
         <AddAccountView
           onAccountCreated={handleAccountCreated}
           availableParentAccounts={groupedAccounts}
+          prefilledAccountType={accountTypes.length === 1 ? accountTypes[0] : undefined}
         />
       </DraggableBottomSheet>
     </Card>

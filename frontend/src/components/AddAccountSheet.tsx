@@ -7,17 +7,16 @@ import { fetchSupportedAccounts } from '../store/slices/supportedAccountsSlice';
 interface AddAccountViewProps {
   onAccountCreated: (newAccount: Account) => void;
   availableParentAccounts: Account[];
+  prefilledAccountType?: Account['type'];
 }
 
-function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccountViewProps) {
+function AddAccountView({ onAccountCreated, availableParentAccounts, prefilledAccountType }: AddAccountViewProps) {
   const dispatch = useAppDispatch();
   // Select supported accounts state from Redux
   const { types: supportedAccounts, status: supportedAccountsStatus, error: supportedAccountsError } = useAppSelector(state => state.supportedAccounts);
   const [name, setName] = useState('');
-  const [type, setType] = useState<Account['type'] | ''>('');
+  const [type, setType] = useState<Account['type'] | ''>(prefilledAccountType || '');
   const [suggestedNames, setSuggestedNames] = useState<string[]>([]);
-  const [balance, setBalance] = useState('');
-  const [currency, setCurrency] = useState('INR');
   const [accountNumber, setAccountNumber] = useState('');
   const [parentAccountId, setParentAccountId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -29,6 +28,16 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
       dispatch(fetchSupportedAccounts());
     }
   }, [supportedAccountsStatus, dispatch]);
+
+  // Handle prefilled account type when supported accounts are loaded
+  useEffect(() => {
+    if (prefilledAccountType && supportedAccounts && supportedAccountsStatus === 'succeeded') {
+      const namesForType = supportedAccounts[prefilledAccountType];
+      if (namesForType && namesForType.length > 0) {
+        setSuggestedNames(namesForType);
+      }
+    }
+  }, [prefilledAccountType, supportedAccounts, supportedAccountsStatus]);
 
   const getAccountTypeLabel = (type: Account['type']) => {
     return type.split('_').map(word =>
@@ -62,15 +71,10 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
         return;
     }
 
-    // Handle empty balance input as 0
-    const balanceValue = balance.trim() === '' ? 0 : parseFloat(balance);
+    // Use default values for balance and currency
+    const balanceValue = 0; // Default balance to 0
+    const currencyValue = 'INR'; // Default currency to INR
     const trimmedAccountNumber = accountNumber.trim();
-
-    if (isNaN(balanceValue)) {
-        setSubmitError('Please enter a valid number for the balance.');
-        setIsLoading(false);
-        return;
-    }
 
     if (!trimmedAccountNumber) {
         setSubmitError('Please enter an account number.');
@@ -82,7 +86,7 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
       name,
       type: type!,
       balance: balanceValue,
-      currency,
+      currency: currencyValue,
       accountNumber: trimmedAccountNumber,
       isActive: true,
       parentAccountId: parentAccountId ? parseInt(parentAccountId, 10) : null,
@@ -95,9 +99,7 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
       if (createAccount.fulfilled.match(resultAction)) {
         const newAccount = resultAction.payload;
         setName('');
-        setType('');
-        setBalance('');
-        setCurrency('INR');
+        setType(prefilledAccountType || '');
         setAccountNumber('');
         setParentAccountId('');
         setSubmitError(null);
@@ -144,8 +146,8 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
                 value={type}
                 onChange={handleTypeChange}
                 required
-                className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary appearance-none"
-                disabled={supportedAccountsStatus !== 'succeeded' || !supportedAccounts || Object.keys(supportedAccounts).length === 0}
+                className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!!prefilledAccountType || supportedAccountsStatus !== 'succeeded' || !supportedAccounts || Object.keys(supportedAccounts).length === 0}
               >
                  <option value="" disabled>-- Select Type --</option>
                  {
@@ -185,36 +187,6 @@ function AddAccountView({ onAccountCreated, availableParentAccounts }: AddAccoun
               </select>
             </div>
 
-            <div>
-              <label htmlFor="balance" className="block text-sm font-medium text-muted-foreground mb-1">
-                Initial Balance
-              </label>
-              <input
-                type="number"
-                id="balance"
-                value={balance}
-                onChange={(e) => setBalance(e.target.value)}
-                step="0.01"
-                className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
-                placeholder="0.00"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="currency" className="block text-sm font-medium text-muted-foreground mb-1">
-                Currency
-              </label>
-              <input
-                type="text"
-                id="currency"
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                required
-                maxLength={3}
-                className="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
-                placeholder="e.g., INR"
-              />
-            </div>
 
             <div>
               <label htmlFor="accountNumber" className="block text-sm font-medium text-muted-foreground mb-1">
