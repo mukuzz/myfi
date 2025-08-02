@@ -192,7 +192,7 @@ function DraggableBottomSheet({
           zIndex: zIndex + 10, // Make the sheet 10 higher than the background
           boxShadow: '0 0 32px 0 rgba(0,0,0,0.25)', // Large shadow all around
         }}
-        className={`fixed bottom-0 left-0 right-0 border-[0.7px] border-border bg-background w-full max-w-lg mx-auto h-[95vh] flex flex-col rounded-t-xl
+        className={`fixed bottom-0 left-0 right-0 border-[0.7px] border-border bg-background w-full max-w-lg mx-auto h-[95%] flex flex-col rounded-t-xl
                    transition-transform duration-${animationDuration} ease-in-out
                    ${isOpen ? 'translate-y-0' : 'translate-y-[100%]'}
                    `}

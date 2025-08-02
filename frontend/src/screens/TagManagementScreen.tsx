@@ -30,9 +30,9 @@ function AddTagModal({ isOpen, onClose, onAdd, parentTag }: AddTagModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white border border-border rounded-lg p-6 w-full max-w-md">
         <h3 className="text-lg font-semibold text-foreground mb-4">
-          {parentTag ? `Add Child Tag to "${parentTag.name}"` : 'Add Parent Tag'}
+          {parentTag ? `Add Child Tag to "${parentTag.name}"` : 'Add Tag for a Major Category'}
         </h3>
         <form onSubmit={handleSubmit}>
           <input
@@ -94,7 +94,7 @@ function EditTagModal({ isOpen, onClose, onEdit, tag }: EditTagModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white border border-border rounded-lg p-6 w-full max-w-md">
         <h3 className="text-lg font-semibold text-foreground mb-4">
           Edit Tag
         </h3>
@@ -143,22 +143,17 @@ interface TagItemProps {
 function TagItem({ tag, level, onAddChild, onEdit, onReorder, onReorderChild, canMoveUp, canMoveDown }: TagItemProps) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg">
-        <div className="flex items-center gap-2 flex-1" style={{ paddingLeft: `${level * 20}px` }}>
+      <div className="flex items-center justify-start gap-3 p-3 bg-card border border-border rounded-lg w-full">
+        <div className="flex flex-grow flex-row items-center justify-start gap-2 w-full" style={{ paddingLeft: `${level * 20}px` }}>
           {level === 0 ? (
             <FiFolder className="text-primary" size={18} />
           ) : (
             <FiTag className="text-muted-foreground" size={16} />
           )}
-          <span className="text-foreground font-medium">{tag.name}</span>
-          {tag.children.length > 0 && (
-            <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
-              {tag.children.length} child{tag.children.length !== 1 ? 'ren' : ''}
-            </span>
-          )}
+          <span className="text-foreground font-medium text-wrap break-words text-ellipsis w-full">{tag.name}</span>
         </div>
         
-        <div className="flex items-center gap-1">
+        <div className="flex flex-0 items-center gap-1">
           {/* Reorder buttons */}
           <button
             onClick={() => onReorder(tag, 'up')}
@@ -368,7 +363,7 @@ function TagManagementScreen() {
             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
             <FiPlus size={16} />
-            Add Parent Tag
+            Add
           </button>
         </div>
         

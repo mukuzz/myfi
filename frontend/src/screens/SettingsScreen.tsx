@@ -131,7 +131,7 @@ function SettingsScreen() {
       <div className="bg-background text-foreground flex flex-col flex-grow space-y-8 p-6 overflow-y-auto" style={{ scrollbarWidth: 'none', fontSize: '14px' }}>
         
         {/* Tag Management Section */}
-        <div className="flex flex-col gap-4 bg-card border border-border rounded-xl p-6">
+        <div className="flex flex-col gap-4 bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-secondary rounded-lg">
               <FiTag className="text-foreground" size={24} />
@@ -156,7 +156,7 @@ function SettingsScreen() {
         </div>
 
         {/* Gmail Integration Section */}
-        <div className="flex flex-col gap-4 bg-card border border-border rounded-xl p-6">
+        <div className="flex flex-col gap-4 bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-secondary rounded-lg">
               <FiMail className="text-foreground" size={24} />

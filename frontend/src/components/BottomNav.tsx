@@ -16,14 +16,14 @@ function BottomNav() {
   const activeScreen = tabs.find(tab => tab.name === activeTabName)?.screen || <HomeScreen />;
 
   return (
-    <nav className="w-full h-screen flex flex-col fixed bottom-0 disable-scroll">
+    <nav className="w-full flex flex-col fixed bottom-0 disable-scroll h-full">
       <div className="flex-grow bg-background overflow-hidden">
         {activeScreen}
       </div>
       <div className="flex-shrink-0">
         <RefreshBar className="disable-scroll"/>
       </div>
-      <div className="flex flex-shrink-0 border-t border-border justify-around pb-4">
+      <div className="flex flex-shrink-0 justify-around pb-4">
         {tabs.map((tab) => {
           const isActive = tab.name === activeTabName;
           return (

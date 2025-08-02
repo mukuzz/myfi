@@ -25,7 +25,7 @@ const AccountSelectionModal: React.FC<AccountSelectionModalProps> = ({
     return (
         <DraggableBottomSheet isOpen={isOpen} onClose={onClose} title="Select Account">
             <div className="p-4 bg-background text-foreground rounded-t-lg">
-                <ul className="space-y-2 max-h-[60vh] overflow-y-auto thin-scrollbar">
+                <ul className="space-y-2 max-h-[60%] overflow-y-auto thin-scrollbar">
                     {/* CASH Option */}
                     <li
                         key="cash-account"

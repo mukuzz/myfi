@@ -11,7 +11,7 @@ const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, title, clas
     const { goBack } = useNavigation();
 
     return (
-        <div className={`fixed top-0 left-0 right-0 h-screen w-screen flex flex-col bg-background text-foreground ${className}`}>
+        <div className={`fixed top-0 left-0 right-0 h-full w-screen flex flex-col bg-background text-foreground ${className}`}>
             {/* Header Bar */}
             <header className="flex-shrink-0 flex flex-row items-center justify-between p-4 border-b border-border bg-secondary ">
                 <button className="p-2"
