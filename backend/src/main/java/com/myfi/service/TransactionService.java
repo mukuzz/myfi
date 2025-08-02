@@ -2,6 +2,7 @@ package com.myfi.service;
 
 import com.myfi.model.Account.AccountType;
 import com.myfi.mailscraping.constants.Constants;
+import com.myfi.mailscraping.service.ProcessedGmailMessagesTrackerService;
 import com.myfi.model.Transaction;
 import com.myfi.model.Transaction.TransactionType;
 import com.myfi.repository.TransactionRepository;
@@ -35,6 +36,9 @@ public class TransactionService {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private ProcessedGmailMessagesTrackerService processedGmailMessagesTrackerService;
 
     @Transactional(readOnly = true)
     public Page<Transaction> getAllTransactions(Pageable pageable) {
@@ -165,6 +169,12 @@ public class TransactionService {
                     if (transaction.getAccount() != null) {
                         accountService.subtractFromBalance(transaction.getAccount(), transaction);
                     }
+
+                    // If the transaction was created from an email, un-track the email for the specific account
+                    if (transaction.getEmailMessageId() != null && transaction.getAccount() != null) {
+                        processedGmailMessagesTrackerService.unmarkEmailProcessed(transaction.getEmailMessageId(), transaction.getAccount().getAccountNumber());
+                    }
+
                     transactionRepository.delete(transaction);
                     return true;
                 }).orElse(false);

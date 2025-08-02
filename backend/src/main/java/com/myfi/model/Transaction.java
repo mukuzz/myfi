@@ -88,6 +88,9 @@ public class Transaction {
     @ColumnDefault("FALSE")
     private Boolean isManualEntry;
 
+    @Column(name = "email_message_id")
+    private String emailMessageId;
+
     public enum TransactionType {
         CREDIT,
         DEBIT

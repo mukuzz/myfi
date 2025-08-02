@@ -161,6 +161,32 @@ public class ProcessedGmailMessagesTrackerService {
         markEmailProcessedForAccounts(messageId, Set.of(accountNumber), messageDateTime, transactionCount);
     }
 
+    @Transactional
+    public void unmarkEmailProcessed(String messageId, String accountNumber) {
+        if (messageId == null || messageId.isBlank() || accountNumber == null || accountNumber.isBlank()) {
+            logger.warn("Attempted to unmark with a null or blank message ID or account number. Skipping.");
+            return;
+        }
+
+        Optional<ProcessedGmailMessage> existingMessageOpt = repository.findByMessageId(messageId);
+        if (existingMessageOpt.isPresent()) {
+            ProcessedGmailMessage existingMessage = existingMessageOpt.get();
+            if (existingMessage.getProcessedAccountNumbers().contains(accountNumber)) {
+                existingMessage.getProcessedAccountNumbers().remove(accountNumber);
+                if (existingMessage.getProcessedAccountNumbers().isEmpty()) {
+                    // If no accounts are left, delete the whole record
+                    repository.delete(existingMessage);
+                    logger.info("Removed last account from message ID: {}. Deleting record.", messageId);
+                } else {
+                    repository.save(existingMessage);
+                    logger.info("Unmarked account {} for message ID: {}", accountNumber, messageId);
+                }
+            }
+        } else {
+            logger.warn("Attempted to unmark a message ID that was not tracked: {}", messageId);
+        }
+    }
+
     // Legacy methods for backward compatibility (deprecated but still functional)
     @Deprecated
     @Transactional(readOnly = true)

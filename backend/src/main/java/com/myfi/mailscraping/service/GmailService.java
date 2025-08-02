@@ -273,16 +273,24 @@ public class GmailService {
 		queryBuilder.append(String.join(" OR ", allSenderEmails));
 		queryBuilder.append("}");
 
-		// Add date filter based on latest processed message globally
-		Optional<LocalDateTime> latestDateTimeOpt = processedGmailMessagesTrackerService.findLatestMessageDateTime();
-		if (latestDateTimeOpt.isPresent()) {
-			long epochSecondsSinceLastEmail = latestDateTimeOpt.get().toEpochSecond(ZoneOffset.UTC) - 1;
+		// For each account, get the latest message date or default to 1 month ago if not found
+		LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHoursMinutes(5, 30));
+		LocalDateTime oneMonthAgo = now.minusMonths(1);
+
+		List<LocalDateTime> lastMessageDates = supportedAccounts.stream()
+			.map(account -> processedGmailMessagesTrackerService.findLatestMessageDateTimeForAccount(account.getAccountNumber())
+				.orElse(oneMonthAgo))
+			.collect(Collectors.toList());
+
+		// Find the earliest date among all accounts
+		Optional<LocalDateTime> earliestLastMessageDate = lastMessageDates.stream().min(LocalDateTime::compareTo);
+
+		if (earliestLastMessageDate.isPresent()) {
+			long epochSecondsSinceLastEmail = earliestLastMessageDate.get().toEpochSecond(ZoneOffset.UTC) - 1;
 			queryBuilder.append(" after:").append(epochSecondsSinceLastEmail);
-			logger.info("Using global latest message epoch: {}", epochSecondsSinceLastEmail);
+			logger.info("Using earliest last message epoch: {}", epochSecondsSinceLastEmail);
 		} else {
-			// No processed messages yet, use default time range (1 month ago)
-			LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHoursMinutes(5, 30));
-			LocalDateTime oneMonthAgo = now.minusMonths(1);
+			// Fallback, should not happen, but just in case
 			queryBuilder.append(" after:").append(oneMonthAgo.toEpochSecond(ZoneOffset.ofHoursMinutes(5, 30)));
 			logger.info("Using default 1-month lookback period");
 		}
@@ -323,6 +331,26 @@ public class GmailService {
 			if (matchingAccounts.isEmpty()) {
 				logger.debug("No matching accounts found for email {}", messageId);
 				return 0;
+			}
+
+			// Filter out accounts that have already processed this email
+			Set<String> matchingAccountNumbers = matchingAccounts.stream().map(Account::getAccountNumber).collect(Collectors.toSet());
+			Set<String> unprocessedAccountNumbers = processedGmailMessagesTrackerService.getUnprocessedAccountsForEmail(messageId, matchingAccountNumbers);
+
+			// If there are no accounts left to process for this email, skip it.
+			if (unprocessedAccountNumbers.isEmpty()) {
+				logger.debug("All matching accounts have already processed email {}. Skipping.", messageId);
+				return 0;
+			}
+
+			// If the list of unprocessed accounts is smaller than the list of matching accounts,
+			// it means some have been processed. We filter the list to only include the unprocessed ones.
+			if (unprocessedAccountNumbers.size() < matchingAccountNumbers.size()) {
+				logger.info("Filtering matching accounts for email {}. Before: {}, After: {}", 
+					messageId, matchingAccounts.size(), unprocessedAccountNumbers.size());
+				matchingAccounts = matchingAccounts.stream()
+					.filter(acc -> unprocessedAccountNumbers.contains(acc.getAccountNumber()))
+					.collect(Collectors.toList());
 			}
 
 			logger.info("Email {} matches {} accounts: {}", messageId, matchingAccounts.size(),
@@ -485,6 +513,7 @@ public class GmailService {
 				.transactionDate(details.getTransactionDate().atStartOfDay())
 				.createdAt(LocalDateTime.now())
 				.account(targetAccount)
+				.emailMessageId(messageId)
 				.build();
 	}
 
