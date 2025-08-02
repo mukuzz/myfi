@@ -395,7 +395,6 @@ const CashFlowDetailsScreen: React.FC = () => {
                 isOpen={isSheetOpen}
                 onClose={() => setIsSheetOpen(false)}
                 title={sheetTitle}
-                zIndex={50} // Ensure it's above the footer buttons (z-30)
             >
                 {sheetTransactions.length > 0 ? (
                     <TransactionList
